@@ -1,0 +1,69 @@
+contract: vcgen.grit42_membership_bank.v1
+name: grit42-study-domain-propagation
+seed_study_id: RAT1
+source_domains: [DM, EX, TS, TA, TE, TX]
+scout_source_identity: grit42-study-slice-sha256:6c10a240fb4ab4662c8eb07656c3f91e1f43c0fd5b309ddf061fc4b462153b1c
+
+# Select DM.ARMCD, TA.ARMCD, TE.ETCD, TX.TXPARMCD, and TX.TXVAL. The DM
+# anchor limits the bank to the twenty subjects in arm 1S1.
+base_rules:
+- field: {kind: send_column, domain: DM, column: STUDYID, value_type: string}
+  operator: eq
+  value: RAT1
+- field: {kind: send_column, domain: DM, column: ARMCD, value_type: string}
+  operator: eq
+  value: 1S1
+
+cases:
+- id: baseline
+  title: RAT1 arm 1S1 baseline
+  intent: Establish the twenty-subject arm-specific set.
+  scout_expected_count: 20
+
+- id: trial_arm_code
+  title: Matching Trial Arms code
+  intent: Confirm that a matching TA study row propagates to every anchored subject.
+  scout_expected_count: 20
+  condition:
+    field: {kind: send_column, domain: TA, column: ARMCD, value_type: string}
+    operator: eq
+    value: 1S1
+
+- id: trial_element_baseline
+  title: Matching Trial Elements baseline code
+  intent: Confirm propagation from a second study-grain domain without USUBJID.
+  scout_expected_count: 20
+  condition:
+    field: {kind: send_column, domain: TE, column: ETCD, value_type: string}
+    operator: eq
+    value: PHb
+
+- id: trial_set_arm_pair
+  title: Matching Trial Sets arm parameter and value
+  intent: Combine same-row semantics with study-grain TX propagation.
+  scout_expected_count: 20
+  condition:
+    group: and
+    children:
+    - field: {kind: send_column, domain: TX, column: TXPARMCD, value_type: string}
+      operator: eq
+      value: ARMCD
+    - field: {kind: send_column, domain: TX, column: TXVAL, value_type: string}
+      operator: eq
+      value: 1S1
+
+- id: trial_set_split_row_control
+  title: Trial Sets rules in separate nested groups
+  intent: Confirm independent study sets across a TX group boundary.
+  scout_expected_count: 20
+  conditions:
+  - group: and
+    children:
+    - field: {kind: send_column, domain: TX, column: TXPARMCD, value_type: string}
+      operator: eq
+      value: ARMCD
+  - group: and
+    children:
+    - field: {kind: send_column, domain: TX, column: TXVAL, value_type: string}
+      operator: eq
+      value: 1S1

@@ -1,0 +1,6 @@
+# yaml-language-server: $schema=../vcgen.cohort_query.v4.schema.json
+# Minimal query: every DM subject and no observations.
+# An absent predicate is the DM-universe selection.
+
+contract: vcgen.cohort_query.v4
+query_id: all_subjects

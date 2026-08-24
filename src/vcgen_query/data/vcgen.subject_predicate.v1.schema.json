@@ -1,0 +1,96 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vict3r.org/schemas/vcgen.subject_predicate.v1.schema.json",
+  "title": "VCGen subject predicate v1",
+  "oneOf": [
+    {"$ref": "#/$defs/rule"},
+    {"$ref": "#/$defs/group"}
+  ],
+  "$defs": {
+    "identifier": {"type": "string", "pattern": "^[A-Z][A-Z0-9_]*$"},
+    "valueType": {"enum": ["string", "number", "datetime"]},
+    "field": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "domain", "column", "value_type"],
+          "properties": {
+            "kind": {"const": "send_column"},
+            "domain": {"$ref": "#/$defs/identifier"},
+            "column": {"$ref": "#/$defs/identifier"},
+            "value_type": {"$ref": "#/$defs/valueType"}
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "name", "value_type"],
+          "properties": {
+            "kind": {"const": "derived"},
+            "name": {
+              "enum": ["supplier", "study_type", "dose_duration_days", "test_facility", "study_start_year", "glp_status", "species", "sex", "strain", "route", "dose_frequency", "treatment_vehicle", "baseline_body_weight_g", "age_days"]
+            },
+            "value_type": {"$ref": "#/$defs/valueType"}
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "endpoint", "value_type"],
+          "properties": {
+            "kind": {"const": "pre_study_endpoint"},
+            "endpoint": {"type": "string", "minLength": 1},
+            "value_type": {"const": "number"}
+          }
+        }
+      ]
+    },
+    "rule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["field", "operator"],
+      "properties": {
+        "field": {"$ref": "#/$defs/field"},
+        "operator": {
+          "enum": ["eq", "ne", "in", "not_in", "contains", "not_contains", "starts_with", "not_starts_with", "ends_with", "not_ends_with", "is_empty", "is_not_empty", "gt", "gte", "lt", "lte", "between", "not_between"]
+        },
+        "value": {}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"operator": {"enum": ["is_empty", "is_not_empty"]}}},
+          "then": {"not": {"required": ["value"]}}
+        },
+        {
+          "if": {"properties": {"operator": {"enum": ["in", "not_in"]}}},
+          "then": {"required": ["value"], "properties": {"value": {"type": "array", "minItems": 1}}}
+        },
+        {
+          "if": {"properties": {"operator": {"enum": ["between", "not_between"]}}},
+          "then": {"required": ["value"], "properties": {"value": {"type": "array", "minItems": 2, "maxItems": 2}}}
+        },
+        {
+          "if": {"properties": {"operator": {"not": {"enum": ["is_empty", "is_not_empty", "in", "not_in", "between", "not_between"]}}}},
+          "then": {"required": ["value"], "properties": {"value": {"not": {"type": "array"}}}}
+        }
+      ]
+    },
+    "group": {
+      "type": "object",
+      "description": "Direct send_column rule children from one SEND domain are evaluated against one source row. Nested groups and other field or domain relations lift independently to subject sets.",
+      "additionalProperties": false,
+      "required": ["group", "children"],
+      "properties": {
+        "group": {"enum": ["and", "or"]},
+        "negated": {"type": "boolean"},
+        "children": {
+          "type": "array",
+          "minItems": 1,
+          "description": "A nested group creates a separate subject-set boundary.",
+          "items": {"$ref": "#"}
+        }
+      }
+    }
+  }
+}

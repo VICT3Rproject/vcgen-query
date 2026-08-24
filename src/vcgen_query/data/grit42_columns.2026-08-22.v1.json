@@ -1,0 +1,4200 @@
+{
+  "contract": "grit42.columns_page_capture.v1",
+  "captured_on": "2026-08-22",
+  "source_url": "https://vict3r.upf.edu/vict3rsubjectqueries/10326463/columns",
+  "counts": {
+    "domains": 36,
+    "domain_endpoint_occurrences": 830,
+    "unique_endpoint_codes": 602
+  },
+  "domain_labels": {
+    "BG": "Body Weight Gains",
+    "BW": "Body Weight",
+    "CL": "Clinical Observations",
+    "CO": "Comments",
+    "CV": "Cardiovascular Findings",
+    "DD": "Death Diagnosis and Details",
+    "DM": "Demographics",
+    "DS": "Disposition",
+    "EG": "ECG",
+    "EX": "Exposure",
+    "FW": "Food and Water Consumption",
+    "LB": "Laboratory",
+    "MA": "Macroscopic Findings",
+    "MI": "Microscopic Findings",
+    "OM": "Organ Measurements",
+    "PC": "Pharmacokinetic Concentrations",
+    "PM": "Palpable Masses",
+    "POOLDEF": "Pool Definition",
+    "PP": "Pharmacokinetics Parameters",
+    "RE": "Respiratory",
+    "RELREC": "Related Records",
+    "SC": "Subject Characteristics",
+    "SE": "Subject Elements",
+    "SUPPCL": "Supplemental Qualifiers CL",
+    "SUPPLB": "Supplemental Qualifiers LB",
+    "SUPPMA": "Supplemental Qualifiers MA",
+    "SUPPMI": "Supplemental Qualifiers MI",
+    "SUPPPC": "Supplemental Qualifiers PC",
+    "TA": "Trial Arms",
+    "TE": "Trial Elements",
+    "TF": "Tumor Findings",
+    "TS": "Trial Summary",
+    "TX": "Trial Sets",
+    "VS": "Vital Signs",
+    "XV": "XV",
+    "WSI": "WSI"
+  },
+  "rows": [
+    {
+      "domain": "BG",
+      "endpoint": "STUDYID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "BG",
+      "endpoint": "DOMAIN",
+      "ui_type": "string"
+    },
+    {
+      "domain": "BG",
+      "endpoint": "USUBJID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "BG",
+      "endpoint": "BGSEQ",
+      "ui_type": "numeric"
+    },
+    {
+      "domain": "BG",
+      "endpoint": "BGTESTCD",
+      "ui_type": "string"
+    },
+    {
+      "domain": "BG",
+      "endpoint": "BGTEST",
+      "ui_type": "string"
+    },
+    {
+      "domain": "BG",
+      "endpoint": "BGORRES",
+      "ui_type": "string"
+    },
+    {
+      "domain": "BG",
+      "endpoint": "BGORRESU",
+      "ui_type": "string"
+    },
+    {
+      "domain": "BG",
+      "endpoint": "BGSTRESC",
+      "ui_type": "string"
+    },
+    {
+      "domain": "BG",
+      "endpoint": "BGSTRESN",
+      "ui_type": "numeric"
+    },
+    {
+      "domain": "BG",
+      "endpoint": "BGSTRESU",
+      "ui_type": "string"
+    },
+    {
+      "domain": "BG",
+      "endpoint": "BGSTAT",
+      "ui_type": "string"
+    },
+    {
+      "domain": "BG",
+      "endpoint": "BGREASND",
+      "ui_type": "string"
+    },
+    {
+      "domain": "BG",
+      "endpoint": "BGEXCLFL",
+      "ui_type": "string"
+    },
+    {
+      "domain": "BG",
+      "endpoint": "BGREASEX",
+      "ui_type": "string"
+    },
+    {
+      "domain": "BG",
+      "endpoint": "RPHASE",
+      "ui_type": "string"
+    },
+    {
+      "domain": "BG",
+      "endpoint": "RPPLDY",
+      "ui_type": "string"
+    },
+    {
+      "domain": "BG",
+      "endpoint": "RPPLENDY",
+      "ui_type": "string"
+    },
+    {
+      "domain": "BG",
+      "endpoint": "BGDTC",
+      "ui_type": "timestamp"
+    },
+    {
+      "domain": "BG",
+      "endpoint": "BGENDTC",
+      "ui_type": "timestamp"
+    },
+    {
+      "domain": "BG",
+      "endpoint": "BGDY",
+      "ui_type": "numeric"
+    },
+    {
+      "domain": "BG",
+      "endpoint": "BGENDY",
+      "ui_type": "numeric"
+    },
+    {
+      "domain": "BG",
+      "endpoint": "BGRPDY",
+      "ui_type": "string"
+    },
+    {
+      "domain": "BG",
+      "endpoint": "BGRPENDY",
+      "ui_type": "string"
+    },
+    {
+      "domain": "BG",
+      "endpoint": "VICT3RID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "BW",
+      "endpoint": "STUDYID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "BW",
+      "endpoint": "DOMAIN",
+      "ui_type": "string"
+    },
+    {
+      "domain": "BW",
+      "endpoint": "USUBJID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "BW",
+      "endpoint": "BWSEQ",
+      "ui_type": "numeric"
+    },
+    {
+      "domain": "BW",
+      "endpoint": "BWTESTCD",
+      "ui_type": "string"
+    },
+    {
+      "domain": "BW",
+      "endpoint": "BWTEST",
+      "ui_type": "string"
+    },
+    {
+      "domain": "BW",
+      "endpoint": "BWORRES",
+      "ui_type": "string"
+    },
+    {
+      "domain": "BW",
+      "endpoint": "BWORRESU",
+      "ui_type": "string"
+    },
+    {
+      "domain": "BW",
+      "endpoint": "BWSTRESC",
+      "ui_type": "string"
+    },
+    {
+      "domain": "BW",
+      "endpoint": "BWSTRESN",
+      "ui_type": "numeric"
+    },
+    {
+      "domain": "BW",
+      "endpoint": "BWSTRESU",
+      "ui_type": "string"
+    },
+    {
+      "domain": "BW",
+      "endpoint": "BWSTAT",
+      "ui_type": "string"
+    },
+    {
+      "domain": "BW",
+      "endpoint": "BWREASND",
+      "ui_type": "string"
+    },
+    {
+      "domain": "BW",
+      "endpoint": "BWBLFL",
+      "ui_type": "string"
+    },
+    {
+      "domain": "BW",
+      "endpoint": "BWFAST",
+      "ui_type": "string"
+    },
+    {
+      "domain": "BW",
+      "endpoint": "BWEXCLFL",
+      "ui_type": "string"
+    },
+    {
+      "domain": "BW",
+      "endpoint": "BWREASEX",
+      "ui_type": "string"
+    },
+    {
+      "domain": "BW",
+      "endpoint": "BWUSCHFL",
+      "ui_type": "string"
+    },
+    {
+      "domain": "BW",
+      "endpoint": "VISITDY",
+      "ui_type": "numeric"
+    },
+    {
+      "domain": "BW",
+      "endpoint": "RPHASE",
+      "ui_type": "string"
+    },
+    {
+      "domain": "BW",
+      "endpoint": "RPPLDY",
+      "ui_type": "string"
+    },
+    {
+      "domain": "BW",
+      "endpoint": "BWDTC",
+      "ui_type": "timestamp"
+    },
+    {
+      "domain": "BW",
+      "endpoint": "BWDY",
+      "ui_type": "numeric"
+    },
+    {
+      "domain": "BW",
+      "endpoint": "BWNOMDY",
+      "ui_type": "numeric"
+    },
+    {
+      "domain": "BW",
+      "endpoint": "BWNOMLBL",
+      "ui_type": "string"
+    },
+    {
+      "domain": "BW",
+      "endpoint": "BWRPDY",
+      "ui_type": "string"
+    },
+    {
+      "domain": "BW",
+      "endpoint": "FACTOR_CURATED",
+      "ui_type": "string"
+    },
+    {
+      "domain": "BW",
+      "endpoint": "VICT3RID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "CL",
+      "endpoint": "STUDYID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "CL",
+      "endpoint": "DOMAIN",
+      "ui_type": "string"
+    },
+    {
+      "domain": "CL",
+      "endpoint": "USUBJID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "CL",
+      "endpoint": "POOLID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "CL",
+      "endpoint": "FOCID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "CL",
+      "endpoint": "CLSEQ",
+      "ui_type": "numeric"
+    },
+    {
+      "domain": "CL",
+      "endpoint": "CLGRPID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "CL",
+      "endpoint": "CLSPID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "CL",
+      "endpoint": "CLTESTCD",
+      "ui_type": "string"
+    },
+    {
+      "domain": "CL",
+      "endpoint": "CLTEST",
+      "ui_type": "string"
+    },
+    {
+      "domain": "CL",
+      "endpoint": "CLCAT",
+      "ui_type": "string"
+    },
+    {
+      "domain": "CL",
+      "endpoint": "CLSCAT",
+      "ui_type": "string"
+    },
+    {
+      "domain": "CL",
+      "endpoint": "CLBODSYS",
+      "ui_type": "string"
+    },
+    {
+      "domain": "CL",
+      "endpoint": "CLORRES",
+      "ui_type": "string"
+    },
+    {
+      "domain": "CL",
+      "endpoint": "CLSTRESC",
+      "ui_type": "string"
+    },
+    {
+      "domain": "CL",
+      "endpoint": "CLRESCAT",
+      "ui_type": "string"
+    },
+    {
+      "domain": "CL",
+      "endpoint": "CLSTAT",
+      "ui_type": "string"
+    },
+    {
+      "domain": "CL",
+      "endpoint": "CLREASND",
+      "ui_type": "string"
+    },
+    {
+      "domain": "CL",
+      "endpoint": "CLLOC",
+      "ui_type": "string"
+    },
+    {
+      "domain": "CL",
+      "endpoint": "CLEVAL",
+      "ui_type": "string"
+    },
+    {
+      "domain": "CL",
+      "endpoint": "CLSEV",
+      "ui_type": "string"
+    },
+    {
+      "domain": "CL",
+      "endpoint": "CLEXCLFL",
+      "ui_type": "string"
+    },
+    {
+      "domain": "CL",
+      "endpoint": "CLREASEX",
+      "ui_type": "string"
+    },
+    {
+      "domain": "CL",
+      "endpoint": "CLUSCHFL",
+      "ui_type": "string"
+    },
+    {
+      "domain": "CL",
+      "endpoint": "VISITDY",
+      "ui_type": "numeric"
+    },
+    {
+      "domain": "CL",
+      "endpoint": "RPHASE",
+      "ui_type": "string"
+    },
+    {
+      "domain": "CL",
+      "endpoint": "RPPLDY",
+      "ui_type": "string"
+    },
+    {
+      "domain": "CL",
+      "endpoint": "RPPLENDY",
+      "ui_type": "string"
+    },
+    {
+      "domain": "CL",
+      "endpoint": "CLDTC",
+      "ui_type": "timestamp"
+    },
+    {
+      "domain": "CL",
+      "endpoint": "CLENDTC",
+      "ui_type": "timestamp"
+    },
+    {
+      "domain": "CL",
+      "endpoint": "CLDY",
+      "ui_type": "numeric"
+    },
+    {
+      "domain": "CL",
+      "endpoint": "CLENDY",
+      "ui_type": "numeric"
+    },
+    {
+      "domain": "CL",
+      "endpoint": "CLNOMDY",
+      "ui_type": "numeric"
+    },
+    {
+      "domain": "CL",
+      "endpoint": "CLNOMLBL",
+      "ui_type": "string"
+    },
+    {
+      "domain": "CL",
+      "endpoint": "CLRPDY",
+      "ui_type": "string"
+    },
+    {
+      "domain": "CL",
+      "endpoint": "CLRPENDY",
+      "ui_type": "string"
+    },
+    {
+      "domain": "CL",
+      "endpoint": "CLTPT",
+      "ui_type": "string"
+    },
+    {
+      "domain": "CL",
+      "endpoint": "CLTPTNUM",
+      "ui_type": "numeric"
+    },
+    {
+      "domain": "CL",
+      "endpoint": "CLELTM",
+      "ui_type": "string"
+    },
+    {
+      "domain": "CL",
+      "endpoint": "CLTPTREF",
+      "ui_type": "string"
+    },
+    {
+      "domain": "CL",
+      "endpoint": "CLRFTDTC",
+      "ui_type": "timestamp"
+    },
+    {
+      "domain": "CL",
+      "endpoint": "VICT3RID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "CO",
+      "endpoint": "STUDYID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "CO",
+      "endpoint": "DOMAIN",
+      "ui_type": "string"
+    },
+    {
+      "domain": "CO",
+      "endpoint": "RDOMAIN",
+      "ui_type": "string"
+    },
+    {
+      "domain": "CO",
+      "endpoint": "USUBJID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "CO",
+      "endpoint": "POOLID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "CO",
+      "endpoint": "COSEQ",
+      "ui_type": "numeric"
+    },
+    {
+      "domain": "CO",
+      "endpoint": "IDVAR",
+      "ui_type": "string"
+    },
+    {
+      "domain": "CO",
+      "endpoint": "IDVARVAL",
+      "ui_type": "string"
+    },
+    {
+      "domain": "CO",
+      "endpoint": "COREF",
+      "ui_type": "string"
+    },
+    {
+      "domain": "CO",
+      "endpoint": "COVAL",
+      "ui_type": "string"
+    },
+    {
+      "domain": "CO",
+      "endpoint": "COEVAL",
+      "ui_type": "string"
+    },
+    {
+      "domain": "CO",
+      "endpoint": "RPHASE",
+      "ui_type": "string"
+    },
+    {
+      "domain": "CO",
+      "endpoint": "CODTC",
+      "ui_type": "timestamp"
+    },
+    {
+      "domain": "CO",
+      "endpoint": "CODY",
+      "ui_type": "numeric"
+    },
+    {
+      "domain": "CO",
+      "endpoint": "CORPDY",
+      "ui_type": "string"
+    },
+    {
+      "domain": "CO",
+      "endpoint": "VICT3RID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "CV",
+      "endpoint": "STUDYID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "CV",
+      "endpoint": "DOMAIN",
+      "ui_type": "string"
+    },
+    {
+      "domain": "CV",
+      "endpoint": "USUBJID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "CV",
+      "endpoint": "CVSEQ",
+      "ui_type": "numeric"
+    },
+    {
+      "domain": "CV",
+      "endpoint": "CVGRPID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "CV",
+      "endpoint": "CVSPID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "CV",
+      "endpoint": "CVTESTCD",
+      "ui_type": "string"
+    },
+    {
+      "domain": "CV",
+      "endpoint": "CVTEST",
+      "ui_type": "string"
+    },
+    {
+      "domain": "CV",
+      "endpoint": "CVPOS",
+      "ui_type": "string"
+    },
+    {
+      "domain": "CV",
+      "endpoint": "CVORRES",
+      "ui_type": "string"
+    },
+    {
+      "domain": "CV",
+      "endpoint": "CVORRESU",
+      "ui_type": "string"
+    },
+    {
+      "domain": "CV",
+      "endpoint": "CVSTRESC",
+      "ui_type": "string"
+    },
+    {
+      "domain": "CV",
+      "endpoint": "CVSTRESN",
+      "ui_type": "numeric"
+    },
+    {
+      "domain": "CV",
+      "endpoint": "CVSTRESU",
+      "ui_type": "string"
+    },
+    {
+      "domain": "CV",
+      "endpoint": "CVSTAT",
+      "ui_type": "string"
+    },
+    {
+      "domain": "CV",
+      "endpoint": "CVREASND",
+      "ui_type": "string"
+    },
+    {
+      "domain": "CV",
+      "endpoint": "CVMETHOD",
+      "ui_type": "string"
+    },
+    {
+      "domain": "CV",
+      "endpoint": "CVCSTATE",
+      "ui_type": "string"
+    },
+    {
+      "domain": "CV",
+      "endpoint": "CVBLFL",
+      "ui_type": "string"
+    },
+    {
+      "domain": "CV",
+      "endpoint": "CVDRVFL",
+      "ui_type": "string"
+    },
+    {
+      "domain": "CV",
+      "endpoint": "CVEXCLFL",
+      "ui_type": "string"
+    },
+    {
+      "domain": "CV",
+      "endpoint": "CVREASEX",
+      "ui_type": "string"
+    },
+    {
+      "domain": "CV",
+      "endpoint": "CVUSCHFL",
+      "ui_type": "string"
+    },
+    {
+      "domain": "CV",
+      "endpoint": "CVDTC",
+      "ui_type": "timestamp"
+    },
+    {
+      "domain": "CV",
+      "endpoint": "CVENDTC",
+      "ui_type": "timestamp"
+    },
+    {
+      "domain": "CV",
+      "endpoint": "CVDY",
+      "ui_type": "numeric"
+    },
+    {
+      "domain": "CV",
+      "endpoint": "CVENDY",
+      "ui_type": "numeric"
+    },
+    {
+      "domain": "CV",
+      "endpoint": "CVNOMDY",
+      "ui_type": "numeric"
+    },
+    {
+      "domain": "CV",
+      "endpoint": "CVNOMLBL",
+      "ui_type": "string"
+    },
+    {
+      "domain": "CV",
+      "endpoint": "CVTPT",
+      "ui_type": "string"
+    },
+    {
+      "domain": "CV",
+      "endpoint": "CVTPTNUM",
+      "ui_type": "numeric"
+    },
+    {
+      "domain": "CV",
+      "endpoint": "CVELTM",
+      "ui_type": "string"
+    },
+    {
+      "domain": "CV",
+      "endpoint": "CVTPTREF",
+      "ui_type": "string"
+    },
+    {
+      "domain": "CV",
+      "endpoint": "CVRFTDTC",
+      "ui_type": "timestamp"
+    },
+    {
+      "domain": "CV",
+      "endpoint": "CVEVLINT",
+      "ui_type": "string"
+    },
+    {
+      "domain": "CV",
+      "endpoint": "CVSTINT",
+      "ui_type": "string"
+    },
+    {
+      "domain": "CV",
+      "endpoint": "CVENINT",
+      "ui_type": "string"
+    },
+    {
+      "domain": "CV",
+      "endpoint": "VICT3RID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "DD",
+      "endpoint": "STUDYID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "DD",
+      "endpoint": "DOMAIN",
+      "ui_type": "string"
+    },
+    {
+      "domain": "DD",
+      "endpoint": "USUBJID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "DD",
+      "endpoint": "DDSEQ",
+      "ui_type": "numeric"
+    },
+    {
+      "domain": "DD",
+      "endpoint": "DDTESTCD",
+      "ui_type": "string"
+    },
+    {
+      "domain": "DD",
+      "endpoint": "DDTEST",
+      "ui_type": "string"
+    },
+    {
+      "domain": "DD",
+      "endpoint": "DDORRES",
+      "ui_type": "string"
+    },
+    {
+      "domain": "DD",
+      "endpoint": "DDSTRESC",
+      "ui_type": "string"
+    },
+    {
+      "domain": "DD",
+      "endpoint": "DDRESCAT",
+      "ui_type": "string"
+    },
+    {
+      "domain": "DD",
+      "endpoint": "DDEVAL",
+      "ui_type": "string"
+    },
+    {
+      "domain": "DD",
+      "endpoint": "DDDTC",
+      "ui_type": "timestamp"
+    },
+    {
+      "domain": "DD",
+      "endpoint": "RPHASE",
+      "ui_type": "string"
+    },
+    {
+      "domain": "DD",
+      "endpoint": "DDDY",
+      "ui_type": "numeric"
+    },
+    {
+      "domain": "DD",
+      "endpoint": "DDRPDY",
+      "ui_type": "string"
+    },
+    {
+      "domain": "DD",
+      "endpoint": "VICT3RID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "DM",
+      "endpoint": "STUDYID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "DM",
+      "endpoint": "DOMAIN",
+      "ui_type": "string"
+    },
+    {
+      "domain": "DM",
+      "endpoint": "USUBJID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "DM",
+      "endpoint": "SUBJID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "DM",
+      "endpoint": "RFSTDTC",
+      "ui_type": "timestamp"
+    },
+    {
+      "domain": "DM",
+      "endpoint": "RFENDTC",
+      "ui_type": "timestamp"
+    },
+    {
+      "domain": "DM",
+      "endpoint": "RFXSTDTC",
+      "ui_type": "timestamp"
+    },
+    {
+      "domain": "DM",
+      "endpoint": "RFXENDTC",
+      "ui_type": "timestamp"
+    },
+    {
+      "domain": "DM",
+      "endpoint": "SITEID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "DM",
+      "endpoint": "BRTHDTC",
+      "ui_type": "timestamp"
+    },
+    {
+      "domain": "DM",
+      "endpoint": "AGE",
+      "ui_type": "numeric"
+    },
+    {
+      "domain": "DM",
+      "endpoint": "AGETXT",
+      "ui_type": "string"
+    },
+    {
+      "domain": "DM",
+      "endpoint": "AGEU",
+      "ui_type": "string"
+    },
+    {
+      "domain": "DM",
+      "endpoint": "SEX",
+      "ui_type": "entity"
+    },
+    {
+      "domain": "DM",
+      "endpoint": "SPECIES",
+      "ui_type": "entity"
+    },
+    {
+      "domain": "DM",
+      "endpoint": "STRAIN",
+      "ui_type": "entity"
+    },
+    {
+      "domain": "DM",
+      "endpoint": "SBSTRAIN",
+      "ui_type": "string"
+    },
+    {
+      "domain": "DM",
+      "endpoint": "ARMCD",
+      "ui_type": "string"
+    },
+    {
+      "domain": "DM",
+      "endpoint": "ARM",
+      "ui_type": "string"
+    },
+    {
+      "domain": "DM",
+      "endpoint": "SETCD",
+      "ui_type": "string"
+    },
+    {
+      "domain": "DM",
+      "endpoint": "RPATHCD",
+      "ui_type": "string"
+    },
+    {
+      "domain": "DM",
+      "endpoint": "VICT3RID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "DS",
+      "endpoint": "STUDYID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "DS",
+      "endpoint": "DOMAIN",
+      "ui_type": "string"
+    },
+    {
+      "domain": "DS",
+      "endpoint": "USUBJID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "DS",
+      "endpoint": "DSSEQ",
+      "ui_type": "numeric"
+    },
+    {
+      "domain": "DS",
+      "endpoint": "DSTERM",
+      "ui_type": "string"
+    },
+    {
+      "domain": "DS",
+      "endpoint": "DSDECOD",
+      "ui_type": "string"
+    },
+    {
+      "domain": "DS",
+      "endpoint": "DSUSCHFL",
+      "ui_type": "string"
+    },
+    {
+      "domain": "DS",
+      "endpoint": "VISITDY",
+      "ui_type": "numeric"
+    },
+    {
+      "domain": "DS",
+      "endpoint": "RPHASE",
+      "ui_type": "string"
+    },
+    {
+      "domain": "DS",
+      "endpoint": "RPPLSTDY",
+      "ui_type": "string"
+    },
+    {
+      "domain": "DS",
+      "endpoint": "DSSTDTC",
+      "ui_type": "timestamp"
+    },
+    {
+      "domain": "DS",
+      "endpoint": "DSSTDY",
+      "ui_type": "numeric"
+    },
+    {
+      "domain": "DS",
+      "endpoint": "DSNOMDY",
+      "ui_type": "numeric"
+    },
+    {
+      "domain": "DS",
+      "endpoint": "DSNOMLBL",
+      "ui_type": "string"
+    },
+    {
+      "domain": "DS",
+      "endpoint": "DSRPSTDY",
+      "ui_type": "string"
+    },
+    {
+      "domain": "DS",
+      "endpoint": "VICT3RID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "EG",
+      "endpoint": "STUDYID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "EG",
+      "endpoint": "DOMAIN",
+      "ui_type": "string"
+    },
+    {
+      "domain": "EG",
+      "endpoint": "USUBJID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "EG",
+      "endpoint": "EGSEQ",
+      "ui_type": "numeric"
+    },
+    {
+      "domain": "EG",
+      "endpoint": "EGGRPID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "EG",
+      "endpoint": "EGREFID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "EG",
+      "endpoint": "EGSPID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "EG",
+      "endpoint": "EGTESTCD",
+      "ui_type": "string"
+    },
+    {
+      "domain": "EG",
+      "endpoint": "EGTEST",
+      "ui_type": "string"
+    },
+    {
+      "domain": "EG",
+      "endpoint": "EGCAT",
+      "ui_type": "string"
+    },
+    {
+      "domain": "EG",
+      "endpoint": "EGPOS",
+      "ui_type": "string"
+    },
+    {
+      "domain": "EG",
+      "endpoint": "EGORRES",
+      "ui_type": "string"
+    },
+    {
+      "domain": "EG",
+      "endpoint": "EGORRESU",
+      "ui_type": "string"
+    },
+    {
+      "domain": "EG",
+      "endpoint": "EGSTRESC",
+      "ui_type": "string"
+    },
+    {
+      "domain": "EG",
+      "endpoint": "EGSTRESN",
+      "ui_type": "numeric"
+    },
+    {
+      "domain": "EG",
+      "endpoint": "EGSTRESU",
+      "ui_type": "string"
+    },
+    {
+      "domain": "EG",
+      "endpoint": "EGSTAT",
+      "ui_type": "string"
+    },
+    {
+      "domain": "EG",
+      "endpoint": "EGREASND",
+      "ui_type": "string"
+    },
+    {
+      "domain": "EG",
+      "endpoint": "EGXFN",
+      "ui_type": "string"
+    },
+    {
+      "domain": "EG",
+      "endpoint": "EGNAM",
+      "ui_type": "string"
+    },
+    {
+      "domain": "EG",
+      "endpoint": "EGMETHOD",
+      "ui_type": "string"
+    },
+    {
+      "domain": "EG",
+      "endpoint": "EGLEAD",
+      "ui_type": "string"
+    },
+    {
+      "domain": "EG",
+      "endpoint": "EGCSTATE",
+      "ui_type": "string"
+    },
+    {
+      "domain": "EG",
+      "endpoint": "EGBLFL",
+      "ui_type": "string"
+    },
+    {
+      "domain": "EG",
+      "endpoint": "EGDRVFL",
+      "ui_type": "string"
+    },
+    {
+      "domain": "EG",
+      "endpoint": "EGEVAL",
+      "ui_type": "string"
+    },
+    {
+      "domain": "EG",
+      "endpoint": "EGEXCLFL",
+      "ui_type": "string"
+    },
+    {
+      "domain": "EG",
+      "endpoint": "EGREASEX",
+      "ui_type": "string"
+    },
+    {
+      "domain": "EG",
+      "endpoint": "EGUSCHFL",
+      "ui_type": "string"
+    },
+    {
+      "domain": "EG",
+      "endpoint": "VISITDY",
+      "ui_type": "numeric"
+    },
+    {
+      "domain": "EG",
+      "endpoint": "EGDTC",
+      "ui_type": "timestamp"
+    },
+    {
+      "domain": "EG",
+      "endpoint": "EGENDTC",
+      "ui_type": "timestamp"
+    },
+    {
+      "domain": "EG",
+      "endpoint": "EGDY",
+      "ui_type": "numeric"
+    },
+    {
+      "domain": "EG",
+      "endpoint": "EGENDY",
+      "ui_type": "numeric"
+    },
+    {
+      "domain": "EG",
+      "endpoint": "EGNOMDY",
+      "ui_type": "numeric"
+    },
+    {
+      "domain": "EG",
+      "endpoint": "EGNOMLBL",
+      "ui_type": "string"
+    },
+    {
+      "domain": "EG",
+      "endpoint": "EGTPT",
+      "ui_type": "string"
+    },
+    {
+      "domain": "EG",
+      "endpoint": "EGTPTNUM",
+      "ui_type": "numeric"
+    },
+    {
+      "domain": "EG",
+      "endpoint": "EGELTM",
+      "ui_type": "string"
+    },
+    {
+      "domain": "EG",
+      "endpoint": "EGTPTREF",
+      "ui_type": "string"
+    },
+    {
+      "domain": "EG",
+      "endpoint": "EGRFTDTC",
+      "ui_type": "timestamp"
+    },
+    {
+      "domain": "EG",
+      "endpoint": "EGEVLINT",
+      "ui_type": "string"
+    },
+    {
+      "domain": "EG",
+      "endpoint": "EGSTINT",
+      "ui_type": "string"
+    },
+    {
+      "domain": "EG",
+      "endpoint": "EGENINT",
+      "ui_type": "string"
+    },
+    {
+      "domain": "EG",
+      "endpoint": "FACTOR_CURATED",
+      "ui_type": "string"
+    },
+    {
+      "domain": "EG",
+      "endpoint": "VICT3RID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "EX",
+      "endpoint": "STUDYID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "EX",
+      "endpoint": "DOMAIN",
+      "ui_type": "string"
+    },
+    {
+      "domain": "EX",
+      "endpoint": "USUBJID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "EX",
+      "endpoint": "POOLID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "EX",
+      "endpoint": "FOCID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "EX",
+      "endpoint": "EXSEQ",
+      "ui_type": "numeric"
+    },
+    {
+      "domain": "EX",
+      "endpoint": "EXTRT",
+      "ui_type": "string"
+    },
+    {
+      "domain": "EX",
+      "endpoint": "EXDOSE",
+      "ui_type": "numeric"
+    },
+    {
+      "domain": "EX",
+      "endpoint": "EXDOSTXT",
+      "ui_type": "string"
+    },
+    {
+      "domain": "EX",
+      "endpoint": "EXDOSU",
+      "ui_type": "entity"
+    },
+    {
+      "domain": "EX",
+      "endpoint": "EXDOSFRM",
+      "ui_type": "string"
+    },
+    {
+      "domain": "EX",
+      "endpoint": "EXDOSFRQ",
+      "ui_type": "entity"
+    },
+    {
+      "domain": "EX",
+      "endpoint": "EXROUTE",
+      "ui_type": "entity"
+    },
+    {
+      "domain": "EX",
+      "endpoint": "EXLOT",
+      "ui_type": "string"
+    },
+    {
+      "domain": "EX",
+      "endpoint": "EXLOC",
+      "ui_type": "string"
+    },
+    {
+      "domain": "EX",
+      "endpoint": "EXMETHOD",
+      "ui_type": "string"
+    },
+    {
+      "domain": "EX",
+      "endpoint": "EXTRTV",
+      "ui_type": "string"
+    },
+    {
+      "domain": "EX",
+      "endpoint": "EXVAMT",
+      "ui_type": "numeric"
+    },
+    {
+      "domain": "EX",
+      "endpoint": "EXVAMTU",
+      "ui_type": "string"
+    },
+    {
+      "domain": "EX",
+      "endpoint": "EXADJ",
+      "ui_type": "string"
+    },
+    {
+      "domain": "EX",
+      "endpoint": "RPHASE",
+      "ui_type": "string"
+    },
+    {
+      "domain": "EX",
+      "endpoint": "RPPLSTDY",
+      "ui_type": "string"
+    },
+    {
+      "domain": "EX",
+      "endpoint": "RPPLENDY",
+      "ui_type": "string"
+    },
+    {
+      "domain": "EX",
+      "endpoint": "EXSTDTC",
+      "ui_type": "timestamp"
+    },
+    {
+      "domain": "EX",
+      "endpoint": "EXENDTC",
+      "ui_type": "timestamp"
+    },
+    {
+      "domain": "EX",
+      "endpoint": "EXSTDY",
+      "ui_type": "numeric"
+    },
+    {
+      "domain": "EX",
+      "endpoint": "EXENDY",
+      "ui_type": "numeric"
+    },
+    {
+      "domain": "EX",
+      "endpoint": "EXRPSTDY",
+      "ui_type": "string"
+    },
+    {
+      "domain": "EX",
+      "endpoint": "EXRPENDY",
+      "ui_type": "string"
+    },
+    {
+      "domain": "EX",
+      "endpoint": "EXDUR",
+      "ui_type": "string"
+    },
+    {
+      "domain": "EX",
+      "endpoint": "EXTPT",
+      "ui_type": "string"
+    },
+    {
+      "domain": "EX",
+      "endpoint": "EXTPTNUM",
+      "ui_type": "numeric"
+    },
+    {
+      "domain": "EX",
+      "endpoint": "EXELTM",
+      "ui_type": "string"
+    },
+    {
+      "domain": "EX",
+      "endpoint": "EXTPTREF",
+      "ui_type": "string"
+    },
+    {
+      "domain": "EX",
+      "endpoint": "EXRFTDTC",
+      "ui_type": "timestamp"
+    },
+    {
+      "domain": "EX",
+      "endpoint": "VICT3RID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "FW",
+      "endpoint": "STUDYID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "FW",
+      "endpoint": "DOMAIN",
+      "ui_type": "string"
+    },
+    {
+      "domain": "FW",
+      "endpoint": "USUBJID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "FW",
+      "endpoint": "POOLID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "FW",
+      "endpoint": "FWSEQ",
+      "ui_type": "numeric"
+    },
+    {
+      "domain": "FW",
+      "endpoint": "FWGRPID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "FW",
+      "endpoint": "FWTESTCD",
+      "ui_type": "string"
+    },
+    {
+      "domain": "FW",
+      "endpoint": "FWTEST",
+      "ui_type": "string"
+    },
+    {
+      "domain": "FW",
+      "endpoint": "FWORRES",
+      "ui_type": "string"
+    },
+    {
+      "domain": "FW",
+      "endpoint": "FWORRESU",
+      "ui_type": "string"
+    },
+    {
+      "domain": "FW",
+      "endpoint": "FWSTRESC",
+      "ui_type": "string"
+    },
+    {
+      "domain": "FW",
+      "endpoint": "FWSTRESN",
+      "ui_type": "numeric"
+    },
+    {
+      "domain": "FW",
+      "endpoint": "FWSTRESU",
+      "ui_type": "string"
+    },
+    {
+      "domain": "FW",
+      "endpoint": "FWSTAT",
+      "ui_type": "string"
+    },
+    {
+      "domain": "FW",
+      "endpoint": "FWREASND",
+      "ui_type": "string"
+    },
+    {
+      "domain": "FW",
+      "endpoint": "FWEXCLFL",
+      "ui_type": "string"
+    },
+    {
+      "domain": "FW",
+      "endpoint": "FWREASEX",
+      "ui_type": "string"
+    },
+    {
+      "domain": "FW",
+      "endpoint": "RPHASE",
+      "ui_type": "string"
+    },
+    {
+      "domain": "FW",
+      "endpoint": "RPPLDY",
+      "ui_type": "string"
+    },
+    {
+      "domain": "FW",
+      "endpoint": "RPPLENDY",
+      "ui_type": "string"
+    },
+    {
+      "domain": "FW",
+      "endpoint": "FWDTC",
+      "ui_type": "timestamp"
+    },
+    {
+      "domain": "FW",
+      "endpoint": "FWENDTC",
+      "ui_type": "timestamp"
+    },
+    {
+      "domain": "FW",
+      "endpoint": "FWDY",
+      "ui_type": "numeric"
+    },
+    {
+      "domain": "FW",
+      "endpoint": "FWENDY",
+      "ui_type": "numeric"
+    },
+    {
+      "domain": "FW",
+      "endpoint": "FWRPDY",
+      "ui_type": "string"
+    },
+    {
+      "domain": "FW",
+      "endpoint": "FWRPENDY",
+      "ui_type": "string"
+    },
+    {
+      "domain": "FW",
+      "endpoint": "VICT3RID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "LB",
+      "endpoint": "STUDYID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "LB",
+      "endpoint": "DOMAIN",
+      "ui_type": "string"
+    },
+    {
+      "domain": "LB",
+      "endpoint": "USUBJID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "LB",
+      "endpoint": "POOLID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "LB",
+      "endpoint": "LBSEQ",
+      "ui_type": "numeric"
+    },
+    {
+      "domain": "LB",
+      "endpoint": "LBGRPID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "LB",
+      "endpoint": "LBREFID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "LB",
+      "endpoint": "LBSPID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "LB",
+      "endpoint": "LBTESTCD",
+      "ui_type": "string"
+    },
+    {
+      "domain": "LB",
+      "endpoint": "LBTEST",
+      "ui_type": "string"
+    },
+    {
+      "domain": "LB",
+      "endpoint": "LBCAT",
+      "ui_type": "string"
+    },
+    {
+      "domain": "LB",
+      "endpoint": "LBSCAT",
+      "ui_type": "string"
+    },
+    {
+      "domain": "LB",
+      "endpoint": "LBORRES",
+      "ui_type": "string"
+    },
+    {
+      "domain": "LB",
+      "endpoint": "LBORRES_SI",
+      "ui_type": "string"
+    },
+    {
+      "domain": "LB",
+      "endpoint": "LBORRESU",
+      "ui_type": "string"
+    },
+    {
+      "domain": "LB",
+      "endpoint": "LBORRESU_SI",
+      "ui_type": "string"
+    },
+    {
+      "domain": "LB",
+      "endpoint": "LBORNRLO",
+      "ui_type": "string"
+    },
+    {
+      "domain": "LB",
+      "endpoint": "LBORNRHI",
+      "ui_type": "string"
+    },
+    {
+      "domain": "LB",
+      "endpoint": "LBSTRESC",
+      "ui_type": "string"
+    },
+    {
+      "domain": "LB",
+      "endpoint": "LBSTRESN",
+      "ui_type": "numeric"
+    },
+    {
+      "domain": "LB",
+      "endpoint": "LBSTRESU",
+      "ui_type": "string"
+    },
+    {
+      "domain": "LB",
+      "endpoint": "LBSTNRLO",
+      "ui_type": "numeric"
+    },
+    {
+      "domain": "LB",
+      "endpoint": "LBSTNRHI",
+      "ui_type": "numeric"
+    },
+    {
+      "domain": "LB",
+      "endpoint": "LBSTNRC",
+      "ui_type": "string"
+    },
+    {
+      "domain": "LB",
+      "endpoint": "LBNRIND",
+      "ui_type": "string"
+    },
+    {
+      "domain": "LB",
+      "endpoint": "LBSTAT",
+      "ui_type": "string"
+    },
+    {
+      "domain": "LB",
+      "endpoint": "LBREASND",
+      "ui_type": "string"
+    },
+    {
+      "domain": "LB",
+      "endpoint": "LBNAM",
+      "ui_type": "string"
+    },
+    {
+      "domain": "LB",
+      "endpoint": "LBSPEC",
+      "ui_type": "string"
+    },
+    {
+      "domain": "LB",
+      "endpoint": "LBANTREG",
+      "ui_type": "string"
+    },
+    {
+      "domain": "LB",
+      "endpoint": "LBSPCCND",
+      "ui_type": "string"
+    },
+    {
+      "domain": "LB",
+      "endpoint": "LBSPCUFL",
+      "ui_type": "string"
+    },
+    {
+      "domain": "LB",
+      "endpoint": "LBLOC",
+      "ui_type": "string"
+    },
+    {
+      "domain": "LB",
+      "endpoint": "LBLAT",
+      "ui_type": "string"
+    },
+    {
+      "domain": "LB",
+      "endpoint": "LBDIR",
+      "ui_type": "string"
+    },
+    {
+      "domain": "LB",
+      "endpoint": "LBPORTOT",
+      "ui_type": "string"
+    },
+    {
+      "domain": "LB",
+      "endpoint": "LBMETHOD",
+      "ui_type": "string"
+    },
+    {
+      "domain": "LB",
+      "endpoint": "LBBLFL",
+      "ui_type": "string"
+    },
+    {
+      "domain": "LB",
+      "endpoint": "LBFAST",
+      "ui_type": "string"
+    },
+    {
+      "domain": "LB",
+      "endpoint": "LBDRVFL",
+      "ui_type": "string"
+    },
+    {
+      "domain": "LB",
+      "endpoint": "LBTOX",
+      "ui_type": "string"
+    },
+    {
+      "domain": "LB",
+      "endpoint": "LBTOXGR",
+      "ui_type": "string"
+    },
+    {
+      "domain": "LB",
+      "endpoint": "LBEXCLFL",
+      "ui_type": "string"
+    },
+    {
+      "domain": "LB",
+      "endpoint": "LBREASEX",
+      "ui_type": "string"
+    },
+    {
+      "domain": "LB",
+      "endpoint": "LBUSCHFL",
+      "ui_type": "string"
+    },
+    {
+      "domain": "LB",
+      "endpoint": "VISITDY",
+      "ui_type": "numeric"
+    },
+    {
+      "domain": "LB",
+      "endpoint": "RPHASE",
+      "ui_type": "string"
+    },
+    {
+      "domain": "LB",
+      "endpoint": "RPPLDY",
+      "ui_type": "string"
+    },
+    {
+      "domain": "LB",
+      "endpoint": "RPPLENDY",
+      "ui_type": "string"
+    },
+    {
+      "domain": "LB",
+      "endpoint": "LBDTC",
+      "ui_type": "timestamp"
+    },
+    {
+      "domain": "LB",
+      "endpoint": "LBENDTC",
+      "ui_type": "timestamp"
+    },
+    {
+      "domain": "LB",
+      "endpoint": "LBDY",
+      "ui_type": "numeric"
+    },
+    {
+      "domain": "LB",
+      "endpoint": "LBENDY",
+      "ui_type": "numeric"
+    },
+    {
+      "domain": "LB",
+      "endpoint": "LBNOMDY",
+      "ui_type": "numeric"
+    },
+    {
+      "domain": "LB",
+      "endpoint": "LBNOMLBL",
+      "ui_type": "string"
+    },
+    {
+      "domain": "LB",
+      "endpoint": "LBRPDY",
+      "ui_type": "string"
+    },
+    {
+      "domain": "LB",
+      "endpoint": "LBRPENDY",
+      "ui_type": "string"
+    },
+    {
+      "domain": "LB",
+      "endpoint": "LBTPT",
+      "ui_type": "string"
+    },
+    {
+      "domain": "LB",
+      "endpoint": "LBTPTNUM",
+      "ui_type": "numeric"
+    },
+    {
+      "domain": "LB",
+      "endpoint": "LBELTM",
+      "ui_type": "string"
+    },
+    {
+      "domain": "LB",
+      "endpoint": "LBTPTREF",
+      "ui_type": "string"
+    },
+    {
+      "domain": "LB",
+      "endpoint": "LBRFTDTC",
+      "ui_type": "timestamp"
+    },
+    {
+      "domain": "LB",
+      "endpoint": "FACTOR_CURATED",
+      "ui_type": "string"
+    },
+    {
+      "domain": "LB",
+      "endpoint": "FACTOR_CURATED_SI",
+      "ui_type": "string"
+    },
+    {
+      "domain": "LB",
+      "endpoint": "SOURCE_CURATED_SI",
+      "ui_type": "string"
+    },
+    {
+      "domain": "LB",
+      "endpoint": "VICT3RID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "MA",
+      "endpoint": "STUDYID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "MA",
+      "endpoint": "DOMAIN",
+      "ui_type": "string"
+    },
+    {
+      "domain": "MA",
+      "endpoint": "USUBJID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "MA",
+      "endpoint": "FOCID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "MA",
+      "endpoint": "MASEQ",
+      "ui_type": "numeric"
+    },
+    {
+      "domain": "MA",
+      "endpoint": "MAGRPID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "MA",
+      "endpoint": "MAREFID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "MA",
+      "endpoint": "MASPID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "MA",
+      "endpoint": "MATESTCD",
+      "ui_type": "string"
+    },
+    {
+      "domain": "MA",
+      "endpoint": "MATEST",
+      "ui_type": "string"
+    },
+    {
+      "domain": "MA",
+      "endpoint": "MABODSYS",
+      "ui_type": "string"
+    },
+    {
+      "domain": "MA",
+      "endpoint": "MAORRES",
+      "ui_type": "string"
+    },
+    {
+      "domain": "MA",
+      "endpoint": "MASTRESC",
+      "ui_type": "string"
+    },
+    {
+      "domain": "MA",
+      "endpoint": "MASTAT",
+      "ui_type": "string"
+    },
+    {
+      "domain": "MA",
+      "endpoint": "MAREASND",
+      "ui_type": "string"
+    },
+    {
+      "domain": "MA",
+      "endpoint": "MANAM",
+      "ui_type": "string"
+    },
+    {
+      "domain": "MA",
+      "endpoint": "MASPEC",
+      "ui_type": "string"
+    },
+    {
+      "domain": "MA",
+      "endpoint": "MAANTREG",
+      "ui_type": "string"
+    },
+    {
+      "domain": "MA",
+      "endpoint": "MASPCCND",
+      "ui_type": "string"
+    },
+    {
+      "domain": "MA",
+      "endpoint": "MASPCUFL",
+      "ui_type": "string"
+    },
+    {
+      "domain": "MA",
+      "endpoint": "MALAT",
+      "ui_type": "string"
+    },
+    {
+      "domain": "MA",
+      "endpoint": "MADIR",
+      "ui_type": "string"
+    },
+    {
+      "domain": "MA",
+      "endpoint": "MAPORTOT",
+      "ui_type": "string"
+    },
+    {
+      "domain": "MA",
+      "endpoint": "MAEVAL",
+      "ui_type": "string"
+    },
+    {
+      "domain": "MA",
+      "endpoint": "MASEV",
+      "ui_type": "string"
+    },
+    {
+      "domain": "MA",
+      "endpoint": "MADTHREL",
+      "ui_type": "string"
+    },
+    {
+      "domain": "MA",
+      "endpoint": "RPHASE",
+      "ui_type": "string"
+    },
+    {
+      "domain": "MA",
+      "endpoint": "RPPLDY",
+      "ui_type": "string"
+    },
+    {
+      "domain": "MA",
+      "endpoint": "MADTC",
+      "ui_type": "timestamp"
+    },
+    {
+      "domain": "MA",
+      "endpoint": "MADY",
+      "ui_type": "numeric"
+    },
+    {
+      "domain": "MA",
+      "endpoint": "MARPDY",
+      "ui_type": "string"
+    },
+    {
+      "domain": "MA",
+      "endpoint": "VICT3RID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "MI",
+      "endpoint": "STUDYID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "MI",
+      "endpoint": "DOMAIN",
+      "ui_type": "string"
+    },
+    {
+      "domain": "MI",
+      "endpoint": "USUBJID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "MI",
+      "endpoint": "FOCID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "MI",
+      "endpoint": "MISEQ",
+      "ui_type": "numeric"
+    },
+    {
+      "domain": "MI",
+      "endpoint": "MIGRPID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "MI",
+      "endpoint": "MIREFID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "MI",
+      "endpoint": "MISPID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "MI",
+      "endpoint": "MITESTCD",
+      "ui_type": "string"
+    },
+    {
+      "domain": "MI",
+      "endpoint": "MITEST",
+      "ui_type": "string"
+    },
+    {
+      "domain": "MI",
+      "endpoint": "MIBODSYS",
+      "ui_type": "string"
+    },
+    {
+      "domain": "MI",
+      "endpoint": "MIORRES",
+      "ui_type": "string"
+    },
+    {
+      "domain": "MI",
+      "endpoint": "MISTRESC",
+      "ui_type": "string"
+    },
+    {
+      "domain": "MI",
+      "endpoint": "MIRESCAT",
+      "ui_type": "string"
+    },
+    {
+      "domain": "MI",
+      "endpoint": "MICHRON",
+      "ui_type": "string"
+    },
+    {
+      "domain": "MI",
+      "endpoint": "MIDISTR",
+      "ui_type": "string"
+    },
+    {
+      "domain": "MI",
+      "endpoint": "MISTAT",
+      "ui_type": "string"
+    },
+    {
+      "domain": "MI",
+      "endpoint": "MIREASND",
+      "ui_type": "string"
+    },
+    {
+      "domain": "MI",
+      "endpoint": "MINAM",
+      "ui_type": "string"
+    },
+    {
+      "domain": "MI",
+      "endpoint": "MISPEC",
+      "ui_type": "string"
+    },
+    {
+      "domain": "MI",
+      "endpoint": "MIANTREG",
+      "ui_type": "string"
+    },
+    {
+      "domain": "MI",
+      "endpoint": "MISPCCND",
+      "ui_type": "string"
+    },
+    {
+      "domain": "MI",
+      "endpoint": "MISPCUFL",
+      "ui_type": "string"
+    },
+    {
+      "domain": "MI",
+      "endpoint": "MILAT",
+      "ui_type": "string"
+    },
+    {
+      "domain": "MI",
+      "endpoint": "MIDIR",
+      "ui_type": "string"
+    },
+    {
+      "domain": "MI",
+      "endpoint": "MIMETHOD",
+      "ui_type": "string"
+    },
+    {
+      "domain": "MI",
+      "endpoint": "MIEVAL",
+      "ui_type": "string"
+    },
+    {
+      "domain": "MI",
+      "endpoint": "MISEV",
+      "ui_type": "string"
+    },
+    {
+      "domain": "MI",
+      "endpoint": "MIDTHREL",
+      "ui_type": "string"
+    },
+    {
+      "domain": "MI",
+      "endpoint": "RPHASE",
+      "ui_type": "string"
+    },
+    {
+      "domain": "MI",
+      "endpoint": "MIDTC",
+      "ui_type": "timestamp"
+    },
+    {
+      "domain": "MI",
+      "endpoint": "MIDY",
+      "ui_type": "numeric"
+    },
+    {
+      "domain": "MI",
+      "endpoint": "MIRPDY",
+      "ui_type": "string"
+    },
+    {
+      "domain": "MI",
+      "endpoint": "VICT3RID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "OM",
+      "endpoint": "STUDYID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "OM",
+      "endpoint": "DOMAIN",
+      "ui_type": "string"
+    },
+    {
+      "domain": "OM",
+      "endpoint": "USUBJID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "OM",
+      "endpoint": "OMSEQ",
+      "ui_type": "numeric"
+    },
+    {
+      "domain": "OM",
+      "endpoint": "OMTESTCD",
+      "ui_type": "string"
+    },
+    {
+      "domain": "OM",
+      "endpoint": "OMTEST",
+      "ui_type": "string"
+    },
+    {
+      "domain": "OM",
+      "endpoint": "OMORRES",
+      "ui_type": "string"
+    },
+    {
+      "domain": "OM",
+      "endpoint": "OMORRESU",
+      "ui_type": "string"
+    },
+    {
+      "domain": "OM",
+      "endpoint": "OMSTRESC",
+      "ui_type": "string"
+    },
+    {
+      "domain": "OM",
+      "endpoint": "OMSTRESN",
+      "ui_type": "numeric"
+    },
+    {
+      "domain": "OM",
+      "endpoint": "OMSTRESU",
+      "ui_type": "string"
+    },
+    {
+      "domain": "OM",
+      "endpoint": "OMSTAT",
+      "ui_type": "string"
+    },
+    {
+      "domain": "OM",
+      "endpoint": "OMREASND",
+      "ui_type": "string"
+    },
+    {
+      "domain": "OM",
+      "endpoint": "OMSPEC",
+      "ui_type": "string"
+    },
+    {
+      "domain": "OM",
+      "endpoint": "OMANTREG",
+      "ui_type": "string"
+    },
+    {
+      "domain": "OM",
+      "endpoint": "OMSPCCND",
+      "ui_type": "string"
+    },
+    {
+      "domain": "OM",
+      "endpoint": "OMSPCUFL",
+      "ui_type": "string"
+    },
+    {
+      "domain": "OM",
+      "endpoint": "OMLAT",
+      "ui_type": "string"
+    },
+    {
+      "domain": "OM",
+      "endpoint": "OMDIR",
+      "ui_type": "string"
+    },
+    {
+      "domain": "OM",
+      "endpoint": "OMPORTOT",
+      "ui_type": "string"
+    },
+    {
+      "domain": "OM",
+      "endpoint": "OMEXCLFL",
+      "ui_type": "string"
+    },
+    {
+      "domain": "OM",
+      "endpoint": "OMREASEX",
+      "ui_type": "string"
+    },
+    {
+      "domain": "OM",
+      "endpoint": "RPHASE",
+      "ui_type": "string"
+    },
+    {
+      "domain": "OM",
+      "endpoint": "RPPLDY",
+      "ui_type": "string"
+    },
+    {
+      "domain": "OM",
+      "endpoint": "OMDTC",
+      "ui_type": "timestamp"
+    },
+    {
+      "domain": "OM",
+      "endpoint": "OMDY",
+      "ui_type": "numeric"
+    },
+    {
+      "domain": "OM",
+      "endpoint": "OMNOMDY",
+      "ui_type": "numeric"
+    },
+    {
+      "domain": "OM",
+      "endpoint": "OMNOMLBL",
+      "ui_type": "string"
+    },
+    {
+      "domain": "OM",
+      "endpoint": "OMRPDY",
+      "ui_type": "string"
+    },
+    {
+      "domain": "OM",
+      "endpoint": "FACTOR_CURATED",
+      "ui_type": "string"
+    },
+    {
+      "domain": "OM",
+      "endpoint": "VICT3RID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "PC",
+      "endpoint": "STUDYID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "PC",
+      "endpoint": "DOMAIN",
+      "ui_type": "string"
+    },
+    {
+      "domain": "PC",
+      "endpoint": "USUBJID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "PC",
+      "endpoint": "POOLID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "PC",
+      "endpoint": "PCSEQ",
+      "ui_type": "numeric"
+    },
+    {
+      "domain": "PC",
+      "endpoint": "PCGRPID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "PC",
+      "endpoint": "PCREFID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "PC",
+      "endpoint": "PCSPID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "PC",
+      "endpoint": "PCTESTCD",
+      "ui_type": "string"
+    },
+    {
+      "domain": "PC",
+      "endpoint": "PCTEST",
+      "ui_type": "string"
+    },
+    {
+      "domain": "PC",
+      "endpoint": "PCCAT",
+      "ui_type": "string"
+    },
+    {
+      "domain": "PC",
+      "endpoint": "PCSCAT",
+      "ui_type": "string"
+    },
+    {
+      "domain": "PC",
+      "endpoint": "PCORRES",
+      "ui_type": "string"
+    },
+    {
+      "domain": "PC",
+      "endpoint": "PCORRESU",
+      "ui_type": "string"
+    },
+    {
+      "domain": "PC",
+      "endpoint": "PCSTRESC",
+      "ui_type": "string"
+    },
+    {
+      "domain": "PC",
+      "endpoint": "PCSTRESN",
+      "ui_type": "numeric"
+    },
+    {
+      "domain": "PC",
+      "endpoint": "PCSTRESU",
+      "ui_type": "string"
+    },
+    {
+      "domain": "PC",
+      "endpoint": "PCSTAT",
+      "ui_type": "string"
+    },
+    {
+      "domain": "PC",
+      "endpoint": "PCREASND",
+      "ui_type": "string"
+    },
+    {
+      "domain": "PC",
+      "endpoint": "PCNAM",
+      "ui_type": "string"
+    },
+    {
+      "domain": "PC",
+      "endpoint": "PCSPEC",
+      "ui_type": "string"
+    },
+    {
+      "domain": "PC",
+      "endpoint": "PCSPCCND",
+      "ui_type": "string"
+    },
+    {
+      "domain": "PC",
+      "endpoint": "PCSPCUFL",
+      "ui_type": "string"
+    },
+    {
+      "domain": "PC",
+      "endpoint": "PCMETHOD",
+      "ui_type": "string"
+    },
+    {
+      "domain": "PC",
+      "endpoint": "PCBLFL",
+      "ui_type": "string"
+    },
+    {
+      "domain": "PC",
+      "endpoint": "PCFAST",
+      "ui_type": "string"
+    },
+    {
+      "domain": "PC",
+      "endpoint": "PCDRVFL",
+      "ui_type": "string"
+    },
+    {
+      "domain": "PC",
+      "endpoint": "PCLLOQ",
+      "ui_type": "numeric"
+    },
+    {
+      "domain": "PC",
+      "endpoint": "PCEXCLFL",
+      "ui_type": "string"
+    },
+    {
+      "domain": "PC",
+      "endpoint": "PCREASEX",
+      "ui_type": "string"
+    },
+    {
+      "domain": "PC",
+      "endpoint": "VISITDY",
+      "ui_type": "numeric"
+    },
+    {
+      "domain": "PC",
+      "endpoint": "RPHASE",
+      "ui_type": "string"
+    },
+    {
+      "domain": "PC",
+      "endpoint": "RPPLDY",
+      "ui_type": "string"
+    },
+    {
+      "domain": "PC",
+      "endpoint": "RPPLENDY",
+      "ui_type": "string"
+    },
+    {
+      "domain": "PC",
+      "endpoint": "PCDTC",
+      "ui_type": "timestamp"
+    },
+    {
+      "domain": "PC",
+      "endpoint": "PCENDTC",
+      "ui_type": "timestamp"
+    },
+    {
+      "domain": "PC",
+      "endpoint": "PCDY",
+      "ui_type": "numeric"
+    },
+    {
+      "domain": "PC",
+      "endpoint": "PCENDY",
+      "ui_type": "numeric"
+    },
+    {
+      "domain": "PC",
+      "endpoint": "PCNOMDY",
+      "ui_type": "numeric"
+    },
+    {
+      "domain": "PC",
+      "endpoint": "PCNOMLBL",
+      "ui_type": "string"
+    },
+    {
+      "domain": "PC",
+      "endpoint": "PCRPDY",
+      "ui_type": "string"
+    },
+    {
+      "domain": "PC",
+      "endpoint": "PCRPENDY",
+      "ui_type": "string"
+    },
+    {
+      "domain": "PC",
+      "endpoint": "PCTPT",
+      "ui_type": "string"
+    },
+    {
+      "domain": "PC",
+      "endpoint": "PCTPTNUM",
+      "ui_type": "numeric"
+    },
+    {
+      "domain": "PC",
+      "endpoint": "PCELTM",
+      "ui_type": "string"
+    },
+    {
+      "domain": "PC",
+      "endpoint": "PCTPTREF",
+      "ui_type": "string"
+    },
+    {
+      "domain": "PC",
+      "endpoint": "PCRFTDTC",
+      "ui_type": "timestamp"
+    },
+    {
+      "domain": "PC",
+      "endpoint": "PCEVLINT",
+      "ui_type": "string"
+    },
+    {
+      "domain": "PC",
+      "endpoint": "VICT3RID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "PM",
+      "endpoint": "STUDYID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "PM",
+      "endpoint": "DOMAIN",
+      "ui_type": "string"
+    },
+    {
+      "domain": "PM",
+      "endpoint": "USUBJID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "PM",
+      "endpoint": "PMSEQ",
+      "ui_type": "numeric"
+    },
+    {
+      "domain": "PM",
+      "endpoint": "PMGRPID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "PM",
+      "endpoint": "PMSPID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "PM",
+      "endpoint": "PMTESTCD",
+      "ui_type": "string"
+    },
+    {
+      "domain": "PM",
+      "endpoint": "PMTEST",
+      "ui_type": "string"
+    },
+    {
+      "domain": "PM",
+      "endpoint": "PMORRES",
+      "ui_type": "string"
+    },
+    {
+      "domain": "PM",
+      "endpoint": "PMORRESU",
+      "ui_type": "string"
+    },
+    {
+      "domain": "PM",
+      "endpoint": "PMSTRESC",
+      "ui_type": "string"
+    },
+    {
+      "domain": "PM",
+      "endpoint": "PMSTRESN",
+      "ui_type": "numeric"
+    },
+    {
+      "domain": "PM",
+      "endpoint": "PMSTRESU",
+      "ui_type": "string"
+    },
+    {
+      "domain": "PM",
+      "endpoint": "PMSTAT",
+      "ui_type": "string"
+    },
+    {
+      "domain": "PM",
+      "endpoint": "PMREASND",
+      "ui_type": "string"
+    },
+    {
+      "domain": "PM",
+      "endpoint": "PMLOC",
+      "ui_type": "string"
+    },
+    {
+      "domain": "PM",
+      "endpoint": "PMEVAL",
+      "ui_type": "string"
+    },
+    {
+      "domain": "PM",
+      "endpoint": "PMUSCHFL",
+      "ui_type": "string"
+    },
+    {
+      "domain": "PM",
+      "endpoint": "VISITDY",
+      "ui_type": "numeric"
+    },
+    {
+      "domain": "PM",
+      "endpoint": "PMDY",
+      "ui_type": "numeric"
+    },
+    {
+      "domain": "PM",
+      "endpoint": "PMNOMDY",
+      "ui_type": "numeric"
+    },
+    {
+      "domain": "PM",
+      "endpoint": "PMNOMLBL",
+      "ui_type": "string"
+    },
+    {
+      "domain": "PM",
+      "endpoint": "PMDTC",
+      "ui_type": "timestamp"
+    },
+    {
+      "domain": "PM",
+      "endpoint": "VICT3RID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "POOLDEF",
+      "endpoint": "STUDYID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "POOLDEF",
+      "endpoint": "POOLID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "POOLDEF",
+      "endpoint": "USUBJID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "POOLDEF",
+      "endpoint": "DOMAIN",
+      "ui_type": "string"
+    },
+    {
+      "domain": "POOLDEF",
+      "endpoint": "VICT3RID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "PP",
+      "endpoint": "STUDYID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "PP",
+      "endpoint": "DOMAIN",
+      "ui_type": "string"
+    },
+    {
+      "domain": "PP",
+      "endpoint": "USUBJID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "PP",
+      "endpoint": "POOLID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "PP",
+      "endpoint": "PPSEQ",
+      "ui_type": "numeric"
+    },
+    {
+      "domain": "PP",
+      "endpoint": "PPGRPID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "PP",
+      "endpoint": "PPTESTCD",
+      "ui_type": "string"
+    },
+    {
+      "domain": "PP",
+      "endpoint": "PPTEST",
+      "ui_type": "string"
+    },
+    {
+      "domain": "PP",
+      "endpoint": "PPCAT",
+      "ui_type": "string"
+    },
+    {
+      "domain": "PP",
+      "endpoint": "PPSCAT",
+      "ui_type": "string"
+    },
+    {
+      "domain": "PP",
+      "endpoint": "PPORRES",
+      "ui_type": "string"
+    },
+    {
+      "domain": "PP",
+      "endpoint": "PPORRESU",
+      "ui_type": "string"
+    },
+    {
+      "domain": "PP",
+      "endpoint": "PPSTRESC",
+      "ui_type": "string"
+    },
+    {
+      "domain": "PP",
+      "endpoint": "PPSTRESN",
+      "ui_type": "numeric"
+    },
+    {
+      "domain": "PP",
+      "endpoint": "PPSTRESU",
+      "ui_type": "string"
+    },
+    {
+      "domain": "PP",
+      "endpoint": "PPSTAT",
+      "ui_type": "string"
+    },
+    {
+      "domain": "PP",
+      "endpoint": "PPREASND",
+      "ui_type": "string"
+    },
+    {
+      "domain": "PP",
+      "endpoint": "PPSPEC",
+      "ui_type": "string"
+    },
+    {
+      "domain": "PP",
+      "endpoint": "VISITDY",
+      "ui_type": "numeric"
+    },
+    {
+      "domain": "PP",
+      "endpoint": "RPHASE",
+      "ui_type": "string"
+    },
+    {
+      "domain": "PP",
+      "endpoint": "RPPLDY",
+      "ui_type": "string"
+    },
+    {
+      "domain": "PP",
+      "endpoint": "PPNOMDY",
+      "ui_type": "numeric"
+    },
+    {
+      "domain": "PP",
+      "endpoint": "PPNOMLBL",
+      "ui_type": "string"
+    },
+    {
+      "domain": "PP",
+      "endpoint": "PPRPDY",
+      "ui_type": "string"
+    },
+    {
+      "domain": "PP",
+      "endpoint": "PPTPTREF",
+      "ui_type": "string"
+    },
+    {
+      "domain": "PP",
+      "endpoint": "PPRFTDTC",
+      "ui_type": "timestamp"
+    },
+    {
+      "domain": "PP",
+      "endpoint": "PPSTINT",
+      "ui_type": "string"
+    },
+    {
+      "domain": "PP",
+      "endpoint": "PPENINT",
+      "ui_type": "string"
+    },
+    {
+      "domain": "PP",
+      "endpoint": "VICT3RID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "RE",
+      "endpoint": "STUDYID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "RE",
+      "endpoint": "DOMAIN",
+      "ui_type": "string"
+    },
+    {
+      "domain": "RE",
+      "endpoint": "USUBJID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "RE",
+      "endpoint": "RESEQ",
+      "ui_type": "numeric"
+    },
+    {
+      "domain": "RE",
+      "endpoint": "REGRPID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "RE",
+      "endpoint": "RESPID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "RE",
+      "endpoint": "RETESTCD",
+      "ui_type": "string"
+    },
+    {
+      "domain": "RE",
+      "endpoint": "RETEST",
+      "ui_type": "string"
+    },
+    {
+      "domain": "RE",
+      "endpoint": "REPOS",
+      "ui_type": "string"
+    },
+    {
+      "domain": "RE",
+      "endpoint": "REORRES",
+      "ui_type": "string"
+    },
+    {
+      "domain": "RE",
+      "endpoint": "REORRESU",
+      "ui_type": "string"
+    },
+    {
+      "domain": "RE",
+      "endpoint": "RESTRESC",
+      "ui_type": "string"
+    },
+    {
+      "domain": "RE",
+      "endpoint": "RESTRESN",
+      "ui_type": "numeric"
+    },
+    {
+      "domain": "RE",
+      "endpoint": "RESTRESU",
+      "ui_type": "string"
+    },
+    {
+      "domain": "RE",
+      "endpoint": "RESTAT",
+      "ui_type": "string"
+    },
+    {
+      "domain": "RE",
+      "endpoint": "REREASND",
+      "ui_type": "string"
+    },
+    {
+      "domain": "RE",
+      "endpoint": "REMETHOD",
+      "ui_type": "string"
+    },
+    {
+      "domain": "RE",
+      "endpoint": "RECSTATE",
+      "ui_type": "string"
+    },
+    {
+      "domain": "RE",
+      "endpoint": "REBLFL",
+      "ui_type": "string"
+    },
+    {
+      "domain": "RE",
+      "endpoint": "REDRVFL",
+      "ui_type": "string"
+    },
+    {
+      "domain": "RE",
+      "endpoint": "REEXCLFL",
+      "ui_type": "string"
+    },
+    {
+      "domain": "RE",
+      "endpoint": "REREASEX",
+      "ui_type": "string"
+    },
+    {
+      "domain": "RE",
+      "endpoint": "REUSCHFL",
+      "ui_type": "string"
+    },
+    {
+      "domain": "RE",
+      "endpoint": "REDTC",
+      "ui_type": "timestamp"
+    },
+    {
+      "domain": "RE",
+      "endpoint": "REENDTC",
+      "ui_type": "timestamp"
+    },
+    {
+      "domain": "RE",
+      "endpoint": "REDY",
+      "ui_type": "numeric"
+    },
+    {
+      "domain": "RE",
+      "endpoint": "REENDY",
+      "ui_type": "numeric"
+    },
+    {
+      "domain": "RE",
+      "endpoint": "RENOMDY",
+      "ui_type": "numeric"
+    },
+    {
+      "domain": "RE",
+      "endpoint": "RENOMLBL",
+      "ui_type": "string"
+    },
+    {
+      "domain": "RE",
+      "endpoint": "RETPT",
+      "ui_type": "string"
+    },
+    {
+      "domain": "RE",
+      "endpoint": "RETPTNUM",
+      "ui_type": "numeric"
+    },
+    {
+      "domain": "RE",
+      "endpoint": "REELTM",
+      "ui_type": "string"
+    },
+    {
+      "domain": "RE",
+      "endpoint": "RETPTREF",
+      "ui_type": "string"
+    },
+    {
+      "domain": "RE",
+      "endpoint": "RERFTDTC",
+      "ui_type": "timestamp"
+    },
+    {
+      "domain": "RE",
+      "endpoint": "REEVLINT",
+      "ui_type": "string"
+    },
+    {
+      "domain": "RE",
+      "endpoint": "RESTINT",
+      "ui_type": "string"
+    },
+    {
+      "domain": "RE",
+      "endpoint": "REENINT",
+      "ui_type": "string"
+    },
+    {
+      "domain": "RE",
+      "endpoint": "VICT3RID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "RELREC",
+      "endpoint": "STUDYID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "RELREC",
+      "endpoint": "USUBJID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "RELREC",
+      "endpoint": "DOMAIN",
+      "ui_type": "string"
+    },
+    {
+      "domain": "RELREC",
+      "endpoint": "RDOMAIN",
+      "ui_type": "string"
+    },
+    {
+      "domain": "RELREC",
+      "endpoint": "POOLID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "RELREC",
+      "endpoint": "IDVAR",
+      "ui_type": "string"
+    },
+    {
+      "domain": "RELREC",
+      "endpoint": "IDVARVAL",
+      "ui_type": "string"
+    },
+    {
+      "domain": "RELREC",
+      "endpoint": "RELTYPE",
+      "ui_type": "string"
+    },
+    {
+      "domain": "RELREC",
+      "endpoint": "RELID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "RELREC",
+      "endpoint": "VICT3RID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "SC",
+      "endpoint": "STUDYID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "SC",
+      "endpoint": "DOMAIN",
+      "ui_type": "string"
+    },
+    {
+      "domain": "SC",
+      "endpoint": "USUBJID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "SC",
+      "endpoint": "SCSEQ",
+      "ui_type": "numeric"
+    },
+    {
+      "domain": "SC",
+      "endpoint": "SCGRPID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "SC",
+      "endpoint": "SCTESTCD",
+      "ui_type": "string"
+    },
+    {
+      "domain": "SC",
+      "endpoint": "SCTEST",
+      "ui_type": "string"
+    },
+    {
+      "domain": "SC",
+      "endpoint": "SCORRES",
+      "ui_type": "string"
+    },
+    {
+      "domain": "SC",
+      "endpoint": "SCORRESU",
+      "ui_type": "string"
+    },
+    {
+      "domain": "SC",
+      "endpoint": "SCSTRESC",
+      "ui_type": "string"
+    },
+    {
+      "domain": "SC",
+      "endpoint": "SCSTRESN",
+      "ui_type": "numeric"
+    },
+    {
+      "domain": "SC",
+      "endpoint": "SCSTRESU",
+      "ui_type": "string"
+    },
+    {
+      "domain": "SC",
+      "endpoint": "RPHASE",
+      "ui_type": "string"
+    },
+    {
+      "domain": "SC",
+      "endpoint": "SCDTC",
+      "ui_type": "timestamp"
+    },
+    {
+      "domain": "SC",
+      "endpoint": "SCDY",
+      "ui_type": "numeric"
+    },
+    {
+      "domain": "SC",
+      "endpoint": "SCRPDY",
+      "ui_type": "string"
+    },
+    {
+      "domain": "SC",
+      "endpoint": "VICT3RID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "SE",
+      "endpoint": "STUDYID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "SE",
+      "endpoint": "DOMAIN",
+      "ui_type": "string"
+    },
+    {
+      "domain": "SE",
+      "endpoint": "USUBJID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "SE",
+      "endpoint": "SESEQ",
+      "ui_type": "numeric"
+    },
+    {
+      "domain": "SE",
+      "endpoint": "ETCD",
+      "ui_type": "string"
+    },
+    {
+      "domain": "SE",
+      "endpoint": "ELEMENT",
+      "ui_type": "string"
+    },
+    {
+      "domain": "SE",
+      "endpoint": "SESTDTC",
+      "ui_type": "timestamp"
+    },
+    {
+      "domain": "SE",
+      "endpoint": "SEENDTC",
+      "ui_type": "timestamp"
+    },
+    {
+      "domain": "SE",
+      "endpoint": "SEUPDES",
+      "ui_type": "string"
+    },
+    {
+      "domain": "SE",
+      "endpoint": "VICT3RID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "SUPPCL",
+      "endpoint": "STUDYID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "SUPPCL",
+      "endpoint": "USUBJID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "SUPPCL",
+      "endpoint": "DOMAIN",
+      "ui_type": "string"
+    },
+    {
+      "domain": "SUPPCL",
+      "endpoint": "RDOMAIN",
+      "ui_type": "string"
+    },
+    {
+      "domain": "SUPPCL",
+      "endpoint": "POOLID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "SUPPCL",
+      "endpoint": "IDVAR",
+      "ui_type": "string"
+    },
+    {
+      "domain": "SUPPCL",
+      "endpoint": "IDVARVAL",
+      "ui_type": "string"
+    },
+    {
+      "domain": "SUPPCL",
+      "endpoint": "QNAM",
+      "ui_type": "string"
+    },
+    {
+      "domain": "SUPPCL",
+      "endpoint": "QLABEL",
+      "ui_type": "string"
+    },
+    {
+      "domain": "SUPPCL",
+      "endpoint": "QVAL",
+      "ui_type": "string"
+    },
+    {
+      "domain": "SUPPCL",
+      "endpoint": "QORIG",
+      "ui_type": "string"
+    },
+    {
+      "domain": "SUPPCL",
+      "endpoint": "QEVAL",
+      "ui_type": "string"
+    },
+    {
+      "domain": "SUPPCL",
+      "endpoint": "VICT3RID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "SUPPLB",
+      "endpoint": "STUDYID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "SUPPLB",
+      "endpoint": "USUBJID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "SUPPLB",
+      "endpoint": "DOMAIN",
+      "ui_type": "string"
+    },
+    {
+      "domain": "SUPPLB",
+      "endpoint": "RDOMAIN",
+      "ui_type": "string"
+    },
+    {
+      "domain": "SUPPLB",
+      "endpoint": "POOLID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "SUPPLB",
+      "endpoint": "QVAL",
+      "ui_type": "string"
+    },
+    {
+      "domain": "SUPPLB",
+      "endpoint": "QEVAL",
+      "ui_type": "string"
+    },
+    {
+      "domain": "SUPPLB",
+      "endpoint": "IDVAR",
+      "ui_type": "string"
+    },
+    {
+      "domain": "SUPPLB",
+      "endpoint": "IDVARVAL",
+      "ui_type": "string"
+    },
+    {
+      "domain": "SUPPLB",
+      "endpoint": "QNAM",
+      "ui_type": "string"
+    },
+    {
+      "domain": "SUPPLB",
+      "endpoint": "QLABEL",
+      "ui_type": "string"
+    },
+    {
+      "domain": "SUPPLB",
+      "endpoint": "QORIG",
+      "ui_type": "string"
+    },
+    {
+      "domain": "SUPPLB",
+      "endpoint": "VICT3RID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "SUPPMA",
+      "endpoint": "STUDYID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "SUPPMA",
+      "endpoint": "USUBJID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "SUPPMA",
+      "endpoint": "DOMAIN",
+      "ui_type": "string"
+    },
+    {
+      "domain": "SUPPMA",
+      "endpoint": "RDOMAIN",
+      "ui_type": "string"
+    },
+    {
+      "domain": "SUPPMA",
+      "endpoint": "POOLID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "SUPPMA",
+      "endpoint": "IDVAR",
+      "ui_type": "string"
+    },
+    {
+      "domain": "SUPPMA",
+      "endpoint": "IDVARVAL",
+      "ui_type": "string"
+    },
+    {
+      "domain": "SUPPMA",
+      "endpoint": "QNAM",
+      "ui_type": "string"
+    },
+    {
+      "domain": "SUPPMA",
+      "endpoint": "QLABEL",
+      "ui_type": "string"
+    },
+    {
+      "domain": "SUPPMA",
+      "endpoint": "QVAL",
+      "ui_type": "string"
+    },
+    {
+      "domain": "SUPPMA",
+      "endpoint": "QORIG",
+      "ui_type": "string"
+    },
+    {
+      "domain": "SUPPMA",
+      "endpoint": "QEVAL",
+      "ui_type": "string"
+    },
+    {
+      "domain": "SUPPMA",
+      "endpoint": "VICT3RID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "SUPPMI",
+      "endpoint": "STUDYID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "SUPPMI",
+      "endpoint": "USUBJID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "SUPPMI",
+      "endpoint": "DOMAIN",
+      "ui_type": "string"
+    },
+    {
+      "domain": "SUPPMI",
+      "endpoint": "RDOMAIN",
+      "ui_type": "string"
+    },
+    {
+      "domain": "SUPPMI",
+      "endpoint": "POOLID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "SUPPMI",
+      "endpoint": "IDVAR",
+      "ui_type": "string"
+    },
+    {
+      "domain": "SUPPMI",
+      "endpoint": "IDVARVAL",
+      "ui_type": "string"
+    },
+    {
+      "domain": "SUPPMI",
+      "endpoint": "QNAM",
+      "ui_type": "string"
+    },
+    {
+      "domain": "SUPPMI",
+      "endpoint": "QLABEL",
+      "ui_type": "string"
+    },
+    {
+      "domain": "SUPPMI",
+      "endpoint": "QVAL",
+      "ui_type": "string"
+    },
+    {
+      "domain": "SUPPMI",
+      "endpoint": "QORIG",
+      "ui_type": "string"
+    },
+    {
+      "domain": "SUPPMI",
+      "endpoint": "QEVAL",
+      "ui_type": "string"
+    },
+    {
+      "domain": "SUPPMI",
+      "endpoint": "VICT3RID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "SUPPPC",
+      "endpoint": "STUDYID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "SUPPPC",
+      "endpoint": "USUBJID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "SUPPPC",
+      "endpoint": "DOMAIN",
+      "ui_type": "string"
+    },
+    {
+      "domain": "SUPPPC",
+      "endpoint": "RDOMAIN",
+      "ui_type": "string"
+    },
+    {
+      "domain": "SUPPPC",
+      "endpoint": "POOLID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "SUPPPC",
+      "endpoint": "IDVAR",
+      "ui_type": "string"
+    },
+    {
+      "domain": "SUPPPC",
+      "endpoint": "IDVARVAL",
+      "ui_type": "string"
+    },
+    {
+      "domain": "SUPPPC",
+      "endpoint": "QNAM",
+      "ui_type": "string"
+    },
+    {
+      "domain": "SUPPPC",
+      "endpoint": "QLABEL",
+      "ui_type": "string"
+    },
+    {
+      "domain": "SUPPPC",
+      "endpoint": "QVAL",
+      "ui_type": "string"
+    },
+    {
+      "domain": "SUPPPC",
+      "endpoint": "QORIG",
+      "ui_type": "string"
+    },
+    {
+      "domain": "SUPPPC",
+      "endpoint": "QEVAL",
+      "ui_type": "string"
+    },
+    {
+      "domain": "SUPPPC",
+      "endpoint": "VICT3RID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "TA",
+      "endpoint": "STUDYID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "TA",
+      "endpoint": "DOMAIN",
+      "ui_type": "string"
+    },
+    {
+      "domain": "TA",
+      "endpoint": "ARMCD",
+      "ui_type": "string"
+    },
+    {
+      "domain": "TA",
+      "endpoint": "ARM",
+      "ui_type": "string"
+    },
+    {
+      "domain": "TA",
+      "endpoint": "TAETORD",
+      "ui_type": "numeric"
+    },
+    {
+      "domain": "TA",
+      "endpoint": "ETCD",
+      "ui_type": "string"
+    },
+    {
+      "domain": "TA",
+      "endpoint": "ELEMENT",
+      "ui_type": "string"
+    },
+    {
+      "domain": "TA",
+      "endpoint": "TABRANCH",
+      "ui_type": "string"
+    },
+    {
+      "domain": "TA",
+      "endpoint": "TATRANS",
+      "ui_type": "string"
+    },
+    {
+      "domain": "TA",
+      "endpoint": "EPOCH",
+      "ui_type": "string"
+    },
+    {
+      "domain": "TE",
+      "endpoint": "STUDYID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "TE",
+      "endpoint": "DOMAIN",
+      "ui_type": "string"
+    },
+    {
+      "domain": "TE",
+      "endpoint": "ETCD",
+      "ui_type": "string"
+    },
+    {
+      "domain": "TE",
+      "endpoint": "ELEMENT",
+      "ui_type": "string"
+    },
+    {
+      "domain": "TE",
+      "endpoint": "TESTRL",
+      "ui_type": "string"
+    },
+    {
+      "domain": "TE",
+      "endpoint": "TEENRL",
+      "ui_type": "string"
+    },
+    {
+      "domain": "TE",
+      "endpoint": "TEDUR",
+      "ui_type": "string"
+    },
+    {
+      "domain": "TF",
+      "endpoint": "STUDYID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "TF",
+      "endpoint": "DOMAIN",
+      "ui_type": "string"
+    },
+    {
+      "domain": "TF",
+      "endpoint": "USUBJID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "TF",
+      "endpoint": "TFSEQ",
+      "ui_type": "numeric"
+    },
+    {
+      "domain": "TF",
+      "endpoint": "TFGRPID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "TF",
+      "endpoint": "TFREFID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "TF",
+      "endpoint": "TFSPID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "TF",
+      "endpoint": "TFTESTCD",
+      "ui_type": "string"
+    },
+    {
+      "domain": "TF",
+      "endpoint": "TFTEST",
+      "ui_type": "string"
+    },
+    {
+      "domain": "TF",
+      "endpoint": "TFORRES",
+      "ui_type": "string"
+    },
+    {
+      "domain": "TF",
+      "endpoint": "TFSTRESC",
+      "ui_type": "string"
+    },
+    {
+      "domain": "TF",
+      "endpoint": "TFRESCAT",
+      "ui_type": "string"
+    },
+    {
+      "domain": "TF",
+      "endpoint": "TFNAM",
+      "ui_type": "string"
+    },
+    {
+      "domain": "TF",
+      "endpoint": "TFSPEC",
+      "ui_type": "string"
+    },
+    {
+      "domain": "TF",
+      "endpoint": "TFANTREG",
+      "ui_type": "string"
+    },
+    {
+      "domain": "TF",
+      "endpoint": "TFSPCCND",
+      "ui_type": "string"
+    },
+    {
+      "domain": "TF",
+      "endpoint": "TFLAT",
+      "ui_type": "string"
+    },
+    {
+      "domain": "TF",
+      "endpoint": "TFDIR",
+      "ui_type": "string"
+    },
+    {
+      "domain": "TF",
+      "endpoint": "TFMETHOD",
+      "ui_type": "string"
+    },
+    {
+      "domain": "TF",
+      "endpoint": "TFEVAL",
+      "ui_type": "string"
+    },
+    {
+      "domain": "TF",
+      "endpoint": "TFDTHREL",
+      "ui_type": "string"
+    },
+    {
+      "domain": "TF",
+      "endpoint": "TFDTC",
+      "ui_type": "timestamp"
+    },
+    {
+      "domain": "TF",
+      "endpoint": "TFDY",
+      "ui_type": "numeric"
+    },
+    {
+      "domain": "TF",
+      "endpoint": "TFDETECT",
+      "ui_type": "numeric"
+    },
+    {
+      "domain": "TF",
+      "endpoint": "VICT3RID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "TS",
+      "endpoint": "STUDYID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "TS",
+      "endpoint": "DOMAIN",
+      "ui_type": "string"
+    },
+    {
+      "domain": "TS",
+      "endpoint": "TSSEQ",
+      "ui_type": "numeric"
+    },
+    {
+      "domain": "TS",
+      "endpoint": "TSPARMCD",
+      "ui_type": "entity"
+    },
+    {
+      "domain": "TS",
+      "endpoint": "TSPARM",
+      "ui_type": "entity"
+    },
+    {
+      "domain": "TS",
+      "endpoint": "TSVAL",
+      "ui_type": "string"
+    },
+    {
+      "domain": "TS",
+      "endpoint": "TSGRPID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "TS",
+      "endpoint": "TSVALNF",
+      "ui_type": "string"
+    },
+    {
+      "domain": "TX",
+      "endpoint": "STUDYID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "TX",
+      "endpoint": "DOMAIN",
+      "ui_type": "string"
+    },
+    {
+      "domain": "TX",
+      "endpoint": "SETCD",
+      "ui_type": "string"
+    },
+    {
+      "domain": "TX",
+      "endpoint": "SET",
+      "ui_type": "string"
+    },
+    {
+      "domain": "TX",
+      "endpoint": "TXSEQ",
+      "ui_type": "numeric"
+    },
+    {
+      "domain": "TX",
+      "endpoint": "TXPARMCD",
+      "ui_type": "string"
+    },
+    {
+      "domain": "TX",
+      "endpoint": "TXPARM",
+      "ui_type": "string"
+    },
+    {
+      "domain": "TX",
+      "endpoint": "TXVAL",
+      "ui_type": "string"
+    },
+    {
+      "domain": "VS",
+      "endpoint": "STUDYID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "VS",
+      "endpoint": "DOMAIN",
+      "ui_type": "string"
+    },
+    {
+      "domain": "VS",
+      "endpoint": "USUBJID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "VS",
+      "endpoint": "VSSEQ",
+      "ui_type": "numeric"
+    },
+    {
+      "domain": "VS",
+      "endpoint": "VSGRPID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "VS",
+      "endpoint": "VSSPID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "VS",
+      "endpoint": "VSTESTCD",
+      "ui_type": "string"
+    },
+    {
+      "domain": "VS",
+      "endpoint": "VSTEST",
+      "ui_type": "string"
+    },
+    {
+      "domain": "VS",
+      "endpoint": "VSCAT",
+      "ui_type": "string"
+    },
+    {
+      "domain": "VS",
+      "endpoint": "VSSCAT",
+      "ui_type": "string"
+    },
+    {
+      "domain": "VS",
+      "endpoint": "VSPOS",
+      "ui_type": "string"
+    },
+    {
+      "domain": "VS",
+      "endpoint": "VSORRES",
+      "ui_type": "string"
+    },
+    {
+      "domain": "VS",
+      "endpoint": "VSORRESU",
+      "ui_type": "string"
+    },
+    {
+      "domain": "VS",
+      "endpoint": "VSSTRESC",
+      "ui_type": "string"
+    },
+    {
+      "domain": "VS",
+      "endpoint": "VSSTRESN",
+      "ui_type": "numeric"
+    },
+    {
+      "domain": "VS",
+      "endpoint": "VSSTRESU",
+      "ui_type": "string"
+    },
+    {
+      "domain": "VS",
+      "endpoint": "VSSTAT",
+      "ui_type": "string"
+    },
+    {
+      "domain": "VS",
+      "endpoint": "VSREASND",
+      "ui_type": "string"
+    },
+    {
+      "domain": "VS",
+      "endpoint": "VSLOC",
+      "ui_type": "string"
+    },
+    {
+      "domain": "VS",
+      "endpoint": "VSCSTATE",
+      "ui_type": "string"
+    },
+    {
+      "domain": "VS",
+      "endpoint": "VSDRVFL",
+      "ui_type": "string"
+    },
+    {
+      "domain": "VS",
+      "endpoint": "VSEXCLFL",
+      "ui_type": "string"
+    },
+    {
+      "domain": "VS",
+      "endpoint": "VSREASEX",
+      "ui_type": "string"
+    },
+    {
+      "domain": "VS",
+      "endpoint": "VSUSCHFL",
+      "ui_type": "string"
+    },
+    {
+      "domain": "VS",
+      "endpoint": "VISITDY",
+      "ui_type": "numeric"
+    },
+    {
+      "domain": "VS",
+      "endpoint": "VSENDTC",
+      "ui_type": "timestamp"
+    },
+    {
+      "domain": "VS",
+      "endpoint": "VSDY",
+      "ui_type": "numeric"
+    },
+    {
+      "domain": "VS",
+      "endpoint": "VSENDY",
+      "ui_type": "numeric"
+    },
+    {
+      "domain": "VS",
+      "endpoint": "VSNOMDY",
+      "ui_type": "numeric"
+    },
+    {
+      "domain": "VS",
+      "endpoint": "VSNOMLBL",
+      "ui_type": "string"
+    },
+    {
+      "domain": "VS",
+      "endpoint": "VSTPT",
+      "ui_type": "string"
+    },
+    {
+      "domain": "VS",
+      "endpoint": "VSTPTNUM",
+      "ui_type": "numeric"
+    },
+    {
+      "domain": "VS",
+      "endpoint": "VSELTM",
+      "ui_type": "string"
+    },
+    {
+      "domain": "VS",
+      "endpoint": "VSTPTREF",
+      "ui_type": "string"
+    },
+    {
+      "domain": "VS",
+      "endpoint": "VSRFTDTC",
+      "ui_type": "timestamp"
+    },
+    {
+      "domain": "VS",
+      "endpoint": "VSBLFL",
+      "ui_type": "string"
+    },
+    {
+      "domain": "VS",
+      "endpoint": "VSDTC",
+      "ui_type": "timestamp"
+    },
+    {
+      "domain": "VS",
+      "endpoint": "VICT3RID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "XV",
+      "endpoint": "STUDYID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "XV",
+      "endpoint": "COMPONENT_NAME",
+      "ui_type": "string"
+    },
+    {
+      "domain": "XV",
+      "endpoint": "ATTRIBUTE_NAME",
+      "ui_type": "string"
+    },
+    {
+      "domain": "XV",
+      "endpoint": "ATTRIBUTE_VALUE",
+      "ui_type": "string"
+    },
+    {
+      "domain": "XV",
+      "endpoint": "ATTRIBUTE_UNIT",
+      "ui_type": "string"
+    },
+    {
+      "domain": "WSI",
+      "endpoint": "STUDYID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "WSI",
+      "endpoint": "DOMAIN",
+      "ui_type": "string"
+    },
+    {
+      "domain": "WSI",
+      "endpoint": "USUBJID",
+      "ui_type": "string"
+    },
+    {
+      "domain": "WSI",
+      "endpoint": "WSISEQ",
+      "ui_type": "string"
+    },
+    {
+      "domain": "WSI",
+      "endpoint": "WSISPEC",
+      "ui_type": "string"
+    },
+    {
+      "domain": "WSI",
+      "endpoint": "WSISPEC_ORIG",
+      "ui_type": "string"
+    },
+    {
+      "domain": "WSI",
+      "endpoint": "WSIORRES",
+      "ui_type": "string"
+    },
+    {
+      "domain": "WSI",
+      "endpoint": "WSIORRESN",
+      "ui_type": "string"
+    }
+  ]
+}

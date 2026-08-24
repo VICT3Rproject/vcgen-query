@@ -1,0 +1,32 @@
+# yaml-language-server: $schema=../vcgen.cohort_query.v4.schema.json
+# Common 28-day Wistar Han rat cohort. This selects subjects only.
+
+contract: vcgen.cohort_query.v4
+query_id: rat_28d_cohort
+predicate:
+  group: and
+  children:
+  - field: {kind: derived, name: dose_duration_days, value_type: number}
+    operator: between
+    value: [28, 28]
+  - field: {kind: derived, name: study_start_year, value_type: number}
+    operator: between
+    value: [2019, 2025]
+  - field: {kind: derived, name: species, value_type: string}
+    operator: eq
+    value: RAT
+  - field: {kind: derived, name: sex, value_type: string}
+    operator: in
+    value: [M, F]
+  - field: {kind: derived, name: strain, value_type: string}
+    operator: eq
+    value: WISTAR HAN
+  - field: {kind: derived, name: route, value_type: string}
+    operator: eq
+    value: ORAL GAVAGE
+  - field: {kind: derived, name: dose_frequency, value_type: string}
+    operator: eq
+    value: QD
+  - field: {kind: derived, name: treatment_vehicle, value_type: string}
+    operator: eq
+    value: 0.5% METHOCEL

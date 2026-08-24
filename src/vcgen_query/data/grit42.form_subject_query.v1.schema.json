@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vict3r.org/schemas/grit42.form_subject_query.v1.schema.json",
+  "title": "Accepted Grit42 form subject-query source v1",
+  "type": "object",
+  "required": ["query_type", "form_values"],
+  "properties": {
+    "query_type": {"const": "form"},
+    "form_values": {"$ref": "#/$defs/formValues"},
+    "columns": {},
+    "condition_tree": {},
+    "condition_string": {}
+  },
+  "additionalProperties": true,
+  "$defs": {
+    "inactive": {"enum": [null, "", [], {}]},
+    "stringList": {"anyOf": [{"type": "array", "items": {"type": "string"}}, {"$ref": "#/$defs/inactive"}]},
+    "bound": {"anyOf": [{"type": "number"}, {"type": "string", "pattern": "^[+-]?(?:[0-9]+(?:\\.[0-9]*)?|\\.[0-9]+)$"}, {"$ref": "#/$defs/inactive"}]},
+    "formValues": {
+      "type": "object",
+      "properties": {
+        "splrnam": {"$ref": "#/$defs/stringList"}, "sstyp": {"$ref": "#/$defs/stringList"}, "tstfnam": {"$ref": "#/$defs/stringList"}, "glpfl": {"$ref": "#/$defs/stringList"}, "species": {"$ref": "#/$defs/stringList"}, "sex": {"$ref": "#/$defs/stringList"}, "strain": {"$ref": "#/$defs/stringList"}, "route": {"$ref": "#/$defs/stringList"}, "dose_frequency": {"$ref": "#/$defs/stringList"}, "trtv": {"$ref": "#/$defs/stringList"},
+        "dose_duration_min": {"$ref": "#/$defs/bound"}, "dose_duration_max": {"$ref": "#/$defs/bound"}, "study_start_year_min": {"$ref": "#/$defs/bound"}, "study_start_year_max": {"$ref": "#/$defs/bound"}, "age_init_min": {"$ref": "#/$defs/bound"}, "age_init_max": {"$ref": "#/$defs/bound"}, "bodytemp_init_min": {"$ref": "#/$defs/bound"}, "bodytemp_init_max": {"$ref": "#/$defs/bound"}, "bw_init_min_male": {"$ref": "#/$defs/bound"}, "bw_init_max_male": {"$ref": "#/$defs/bound"}, "bw_init_min_female": {"$ref": "#/$defs/bound"}, "bw_init_max_female": {"$ref": "#/$defs/bound"},
+        "urea_init_min": {"$ref": "#/$defs/bound"}, "urea_init_max": {"$ref": "#/$defs/bound"}, "gamma_init_min": {"$ref": "#/$defs/bound"}, "gamma_init_max": {"$ref": "#/$defs/bound"}, "alanine_init_min": {"$ref": "#/$defs/bound"}, "alanine_init_max": {"$ref": "#/$defs/bound"}, "alkaline_init_min": {"$ref": "#/$defs/bound"}, "alkaline_init_max": {"$ref": "#/$defs/bound"}, "aspartate_init_min": {"$ref": "#/$defs/bound"}, "aspartate_init_max": {"$ref": "#/$defs/bound"}, "glutamate_init_min": {"$ref": "#/$defs/bound"}, "glutamate_init_max": {"$ref": "#/$defs/bound"}, "hematocrit_init_min": {"$ref": "#/$defs/bound"}, "hematocrit_init_max": {"$ref": "#/$defs/bound"}, "hemoglobin_init_min": {"$ref": "#/$defs/bound"}, "hemoglobin_init_max": {"$ref": "#/$defs/bound"}, "leukocytes_init_min": {"$ref": "#/$defs/bound"}, "leukocytes_init_max": {"$ref": "#/$defs/bound"}, "lymphocyte_init_min": {"$ref": "#/$defs/bound"}, "lymphocyte_init_max": {"$ref": "#/$defs/bound"}, "erythrocytes_init_min": {"$ref": "#/$defs/bound"}, "erythrocytes_init_max": {"$ref": "#/$defs/bound"}, "thrombocytes_init_min": {"$ref": "#/$defs/bound"}, "thrombocytes_init_max": {"$ref": "#/$defs/bound"}, "reticulocytes_init_min": {"$ref": "#/$defs/bound"}, "reticulocytes_init_max": {"$ref": "#/$defs/bound"},
+        "ecg_init_min": {"$ref": "#/$defs/bound"}, "ecg_init_max": {"$ref": "#/$defs/bound"}, "lbtest": {"$ref": "#/$defs/stringList"}, "pretestvalues": {"anyOf": [{"type": "array"}, {"type": "object"}, {"$ref": "#/$defs/inactive"}]}, "trtvcat": {"$ref": "#/$defs/stringList"}
+      },
+      "additionalProperties": {"$ref": "#/$defs/inactive"}
+    }
+  }
+}

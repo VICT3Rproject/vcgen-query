@@ -1,0 +1,10 @@
+{
+  "yaml.schemas": {
+    "src/vcgen_query/data/vcgen.cohort_query.v4.schema.json": [
+      "src/vcgen_query/data/examples/all_subjects.yaml",
+      "src/vcgen_query/data/queries/wistar_han_28d_historical.yaml",
+      "src/vcgen_query/data/examples/rat_28d_cohort.yaml",
+      "src/vcgen_query/data/examples/rat_28d_with_observations.yaml"
+    ]
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vict3r.org/schemas/grit42.subject_query_import.v1.schema.json",
+  "title": "Grit42 subject-query import provenance v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contract", "source_contract", "source_payload_sha256"],
+  "properties": {
+    "contract": {"const": "grit42.subject_query_import.v1"},
+    "source_contract": {
+      "enum": [
+        "grit42.form_subject_query.v1",
+        "grit42.advanced_subject_query.v1"
+      ]
+    },
+    "source_payload_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    }
+  }
+}

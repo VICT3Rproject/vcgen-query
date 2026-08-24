@@ -1,0 +1,14 @@
+{
+  "source": "NLM UCUM Web Service 4.1.9",
+  "service": "https://ucum.nlm.nih.gov/ucum-service.html",
+  "values": [0, 1, 2],
+  "conversions": [
+    {"source": "g/L", "target": "g/dL", "expected": [0, 0.1, 0.2]},
+    {"source": "10^9/L", "target": "10^12/L", "expected": [0, 0.001, 0.002]},
+    {"source": "%", "target": "1", "expected": [0, 0.01, 0.02]},
+    {"source": "fL", "target": "L", "expected": [0, 1e-15, 2e-15]},
+    {"source": "fmol", "target": "mol", "expected": [0, 1e-15, 2e-15]},
+    {"source": "ukat/L", "target": "U/L", "expected": [0, 60, 120]},
+    {"source": "Cel", "target": "K", "expected": [273.15, 274.15, 275.15]}
+  ]
+}
