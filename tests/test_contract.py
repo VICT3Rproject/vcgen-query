@@ -82,10 +82,10 @@ def test_manual_conversion_types_are_not_public() -> None:
 
 def test_direct_endpoint_construction_enforces_and_normalizes_parser_invariants() -> None:
     endpoint = EndpointSpec(
-        name="HCT",
+        name="HGB",
         domain="LB",
-        test_codes=("ｈｃｔ", "HCT"),
-        test_names=(" hematocrit ",),
+        test_codes=("ｈｇｂ", "HGB"),
+        test_names=(" hemoglobin ",),
         source_units=("g/L", "G/L"),
         specimens=(" blood ",),
         specimen_match="contains",
@@ -93,8 +93,8 @@ def test_direct_endpoint_construction_enforces_and_normalizes_parser_invariants(
         day_window=DayWindow(1, 28),
     )
 
-    assert endpoint.test_codes == ("HCT",)
-    assert endpoint.test_names == ("HEMATOCRIT",)
+    assert endpoint.test_codes == ("HGB",)
+    assert endpoint.test_names == ("HEMOGLOBIN",)
     assert endpoint.source_units == ("G/L", "g/L")
     assert endpoint.specimens == ("BLOOD",)
     assert endpoint.sexes == ("M",)
@@ -109,10 +109,10 @@ def test_valid_direct_and_parsed_observation_contracts_are_identical() -> None:
     direct = ObservationContract(
         (
             EndpointSpec(
-                "LB_HCT",
+                "LB_HGB",
                 "LB",
-                ("ｈｃｔ",),
-                (" hematocrit ",),
+                ("ｈｇｂ",),
+                (" hemoglobin ",),
                 ("g/L", "g/dL"),
                 (" blood ",),
                 "exact",
@@ -127,10 +127,10 @@ def test_valid_direct_and_parsed_observation_contracts_are_identical() -> None:
             observation_contract={
                 "endpoints": [
                     {
-                        "name": "LB_HCT",
+                        "name": "LB_HGB",
                         "domain": "LB",
-                        "test_codes": ["ｈｃｔ"],
-                        "test_names": [" hematocrit "],
+                        "test_codes": ["ｈｇｂ"],
+                        "test_names": [" hemoglobin "],
                         "source_units": ["g/L", "g/dL"],
                         "specimens": [" blood "],
                         "sexes": ["m"],
@@ -247,7 +247,7 @@ def test_target_unit_compiles_all_exact_source_labels() -> None:
         ("kg", "kg", 1000.0, 0.0),
     ]
     with pytest.raises(QueryError, match="source_units must be non-empty"):
-        EndpointSpec("HCT", "LB", ("HCT",), target_unit="g/dL")
+        EndpointSpec("HGB", "LB", ("HGB",), target_unit="g/dL")
 
 
 @pytest.mark.parametrize(
@@ -522,9 +522,9 @@ def test_observation_fingerprint_includes_compiled_endpoint_conversion() -> None
         "observation_contract": {
             "endpoints": [
                 {
-                    "name": "HCT",
+                    "name": "HGB",
                     "domain": "LB",
-                    "test_codes": ["HCT"],
+                    "test_codes": ["HGB"],
                     "source_units": ["g/L"],
                     "target_unit": "g/dL",
                 }
@@ -588,9 +588,9 @@ def test_observation_fingerprint_is_normalization_stable_and_endpoint_order_sens
     "endpoint",
     [
         {
-            "name": "HCT",
+            "name": "HGB",
             "domain": "LB",
-            "test_codes": ["HCT"],
+            "test_codes": ["HGB"],
             "source_units": ["g/dL"],
             "unit_conversion": {
                 "target_unit": "g/dL",

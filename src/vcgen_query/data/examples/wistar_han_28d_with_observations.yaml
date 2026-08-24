@@ -2,7 +2,7 @@
 # Subject selection plus separate long-format body-weight and haematocrit extraction.
 
 contract: vcgen.cohort_query.v4
-query_id: rat_28d_with_observations
+query_id: wistar_han_28d_with_observations
 predicate:
   group: and
   children:
@@ -27,9 +27,6 @@ predicate:
   - field: {kind: derived, name: dose_frequency, value_type: string}
     operator: eq
     value: QD
-  - field: {kind: derived, name: treatment_vehicle, value_type: string}
-    operator: eq
-    value: 0.5% METHOCEL
 observation_contract:
   endpoints:
   - name: BW
@@ -38,5 +35,8 @@ observation_contract:
   - name: LB_HCT
     domain: LB
     test_codes: [HCT]
-    specimens: [BLOOD]
+    specimens: [BLOOD, WHOLE BLOOD]
+    specimen_match: exact
+    source_units: ["%"]
+    target_unit: "%"
     day_window: {min: 1, max: 28}

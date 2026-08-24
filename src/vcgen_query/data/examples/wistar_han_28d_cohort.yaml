@@ -2,7 +2,7 @@
 # Common 28-day Wistar Han rat cohort. This selects subjects only.
 
 contract: vcgen.cohort_query.v4
-query_id: rat_28d_cohort
+query_id: wistar_han_28d_cohort
 predicate:
   group: and
   children:
@@ -27,6 +27,3 @@ predicate:
   - field: {kind: derived, name: dose_frequency, value_type: string}
     operator: eq
     value: QD
-  - field: {kind: derived, name: treatment_vehicle, value_type: string}
-    operator: eq
-    value: 0.5% METHOCEL

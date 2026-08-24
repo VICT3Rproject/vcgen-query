@@ -83,8 +83,8 @@ def test_normalized_selectors_and_complete_conversion_produce_supported_daily_va
             {
                 "study_id": "S",
                 "subject_id": "1",
-                "test_code": "ｈｃｔ",
-                "test_name": "hematocrit",
+                "test_code": "ｈｇｂ",
+                "test_name": "hemoglobin",
                 "specimen": "blood",
                 "unit": "g/L",
                 "day": 1,
@@ -95,10 +95,10 @@ def test_normalized_selectors_and_complete_conversion_produce_supported_daily_va
     query = _query(
         endpoints=[
             {
-                "name": "LB_HCT",
+                "name": "LB_HGB",
                 "domain": "LB",
-                "test_codes": ["hct"],
-                "test_names": ["HEMATOCRIT"],
+                "test_codes": ["hgb"],
+                "test_names": ["HEMOGLOBIN"],
                 "source_units": ["g/L"],
                 "specimens": ["BLOOD"],
                 "sexes": ["m"],
@@ -113,7 +113,7 @@ def test_normalized_selectors_and_complete_conversion_produce_supported_daily_va
 
     assert len(result.observations) == 1
     assert query.observation_contract.endpoints[0].applies_to_sex("ｍ")
-    assert daily.values.loc[0, "LB_HCT"] == pytest.approx(0.3)
+    assert daily.values.loc[0, "LB_HGB"] == pytest.approx(0.3)
     assert daily.receipt["unsupported_unit_count"] == 0
 
 

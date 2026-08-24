@@ -15,8 +15,8 @@ _DATA = Path(__file__).resolve().parents[1] / "src" / "vcgen_query" / "data"
 def test_bundled_documents_are_v4_only_and_loadable() -> None:
     paths = [
         _DATA / "examples" / "all_subjects.yaml",
-        _DATA / "examples" / "rat_28d_cohort.yaml",
-        _DATA / "examples" / "rat_28d_with_observations.yaml",
+        _DATA / "examples" / "wistar_han_28d_cohort.yaml",
+        _DATA / "examples" / "wistar_han_28d_with_observations.yaml",
         _DATA / "queries" / "wistar_han_28d_historical.yaml",
         _DATA / "queries" / "gurjanov_28d_benchmark_full.yaml",
         _DATA / "queries" / "gurjanov_28d_generation_core.yaml",
@@ -25,6 +25,32 @@ def test_bundled_documents_are_v4_only_and_loadable() -> None:
     for path in paths:
         query = load_query(path)
         assert query.contract == COHORT_QUERY_CONTRACT == "vcgen.cohort_query.v4"
+
+
+def test_wistar_examples_use_supported_broad_filters_and_hct_categories() -> None:
+    cohort = load_query(_DATA / "examples" / "wistar_han_28d_cohort.yaml")
+    observed = load_query(
+        _DATA / "examples" / "wistar_han_28d_with_observations.yaml"
+    )
+
+    for query in (cohort, observed):
+        predicate = query.predicate.to_canonical_dict()
+        derived_names = {
+            child["field"]["name"]
+            for child in predicate["children"]
+            if child["field"]["kind"] == "derived"
+        }
+        assert "treatment_vehicle" not in derived_names
+
+    hct = next(
+        endpoint
+        for endpoint in observed.observation_contract.endpoints
+        if endpoint.name == "LB_HCT"
+    )
+    assert hct.specimens == ("BLOOD", "WHOLE BLOOD")
+    assert hct.specimen_match == "exact"
+    assert hct.source_units == ("%",)
+    assert hct.target_unit == "%"
 
 
 def test_schema_lookup_requires_an_explicit_contract() -> None:

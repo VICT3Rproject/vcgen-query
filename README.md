@@ -23,12 +23,13 @@ Grit42 queries. It does not train models or generate virtual controls.
 ## Install
 
 Until a package is published on PyPI, install it from the public GitHub
-repository:
+repository. Pin the release tag so that a later change to `main` cannot change
+the installed package:
 
 ```bash
-pip install "git+https://github.com/lewis-k-s/vcgen-query.git"
-# or
-uv add "git+https://github.com/lewis-k-s/vcgen-query.git"
+python -m pip install "vcgen-query @ git+https://github.com/lewis-k-s/vcgen-query.git@v0.3.0a0"
+# or, in a uv project
+uv add "vcgen-query @ git+https://github.com/lewis-k-s/vcgen-query.git@v0.3.0a0"
 ```
 
 For development:
@@ -45,15 +46,38 @@ Load a query and execute it against a SEND ZIP archive or an extracted CSV
 directory:
 
 ```python
+from importlib.resources import as_file, files
+
 import vcgen_query as vq
 
-query = vq.load_query("rat_28d.yaml")
+query_resource = files("vcgen_query").joinpath(
+    "data/examples/wistar_han_28d_with_observations.yaml"
+)
+with as_file(query_resource) as query_path:
+    query = vq.load_query(query_path)
+
 result = vq.execute_query("/data/rodent_db_export.zip", query)
 
 result.subjects.head()       # one row per selected animal
 result.observations.head()   # one row per matching source measurement
 result.receipt               # source, query, counts, and warnings
 ```
+
+For a ZIP source, the default extraction directory is `.vcgen_query_cache`
+next to the archive. It can become large when queries use many SEND domains.
+Set an explicit location when the cache must be isolated or stored on another
+volume:
+
+```python
+result = vq.execute_query(
+    "/data/rodent_db_export.zip",
+    query,
+    extract_dir="/scratch/vcgen-query/rodent-export",
+)
+```
+
+The extraction cache is content-aware and is rebuilt when the archive changes.
+It is not a UV package cache and is not part of a wheel or source distribution.
 
 The observations table retains the source result, unit, status, and audit
 fields. It does not combine measurements that occur on the same study day.
@@ -85,7 +109,7 @@ domain.
 
 ```yaml
 contract: vcgen.cohort_query.v4
-query_id: rat_28d
+query_id: wistar_han_28d
 predicate:
   group: and
   children:
@@ -95,6 +119,9 @@ predicate:
     - field: {kind: send_column, domain: DM, column: SPECIES, value_type: string}
       operator: eq
       value: RAT
+    - field: {kind: send_column, domain: DM, column: STRAIN, value_type: string}
+      operator: eq
+      value: WISTAR HAN
     - field: {kind: send_column, domain: DM, column: SEX, value_type: string}
       operator: in
       value: [F, M]
@@ -106,15 +133,34 @@ observation_contract:
     - name: LB_HCT
       domain: LB
       test_codes: [HCT]
-      specimens: [BLOOD]
-      source_units: [g/dL, g/L]
-      target_unit: g/dL
+      specimens: [BLOOD, WHOLE BLOOD]
+      specimen_match: exact
+      source_units: ["%"]
+      target_unit: "%"
       day_window: {min: 1, max: 28}
 ```
 
 Endpoint names are uppercase identifiers chosen by the query author. SEND
 domains, columns, and value types must exist in the Grit42 column catalogue
 included with the package. Day-window limits are inclusive.
+
+### Specimen matching
+
+Endpoint test codes, test names, and specimen values are normalized for case,
+spacing, and Unicode width before comparison. When `specimens` is present,
+`specimen_match` controls the comparison:
+
+| Mode | Behaviour |
+|---|---|
+| `exact` | Accept a specimen that equals one listed value. This is the default. |
+| `contains` | Accept a specimen that contains one listed value as a substring. |
+| `not` | Accept a present specimen that does not equal any listed value. |
+
+A missing specimen does not match any of these modes. Use `contains` only when
+the broader match is intentional. For example, configured `BLOOD` also matches
+`WHOLE BLOOD` and `ARTERIAL BLOOD` in `contains` mode. The bundled HCT example
+therefore uses exact `BLOOD` and `WHOLE BLOOD` values. These are distinct values
+in the [NCI/CDISC SEND Controlled Terminology](https://evs.nci.nih.gov/ftp1/CDISC/SEND/SEND%20Terminology.pdf).
 
 ## How subject filters work
 
@@ -210,12 +256,12 @@ for comparing local subject selection with live Grit42 results.
 | Resource | Use |
 |---|---|
 | [`all_subjects.yaml`](src/vcgen_query/data/examples/all_subjects.yaml) | Select every subject. |
-| [`rat_28d_cohort.yaml`](src/vcgen_query/data/examples/rat_28d_cohort.yaml) | Select a 28-day rat cohort. |
-| [`rat_28d_with_observations.yaml`](src/vcgen_query/data/examples/rat_28d_with_observations.yaml) | Select a cohort and return body weight and haematocrit. |
+| [`wistar_han_28d_cohort.yaml`](src/vcgen_query/data/examples/wistar_han_28d_cohort.yaml) | Select a broad 28-day Wistar Han cohort. |
+| [`wistar_han_28d_with_observations.yaml`](src/vcgen_query/data/examples/wistar_han_28d_with_observations.yaml) | Select the broad cohort and return body weight and haematocrit. |
 | [`wistar_han_28d_historical.yaml`](src/vcgen_query/data/queries/wistar_han_28d_historical.yaml) | Find candidate Wistar Han studies for source acquisition. |
 | [`gurjanov_28d_benchmark_full.yaml`](src/vcgen_query/data/queries/gurjanov_28d_benchmark_full.yaml) | Run the strict 65-endpoint local benchmark. |
 | [`gurjanov_28d_generation_core.yaml`](src/vcgen_query/data/queries/gurjanov_28d_generation_core.yaml) | Return the 48 endpoints used for virtual-control generation. |
-| [`01_bundled_wistar_han_28d_query.ipynb`](notebooks/01_bundled_wistar_han_28d_query.ipynb) | Run the generation query and prepare daily body-weight and terminal laboratory tables. |
+| [`01_gurjanov_28d_generation_core.ipynb`](notebooks/01_gurjanov_28d_generation_core.ipynb) | Run the generation-core query and prepare daily body-weight and terminal laboratory tables. |
 | [`02_editable_cohort_query.ipynb`](notebooks/02_editable_cohort_query.ipynb) | Define and run a small editable query. |
 
 The 28-day filters use the SEND `DOSDUR` study-summary value. The package
@@ -236,6 +282,8 @@ Run checks from the repository root:
 ```bash
 uv run --extra dev ruff check .
 uv run --extra dev python -m pytest -q
+uv build
+uv run python scripts/audit_release_artifacts.py dist/*
 ```
 
 The test suite executes both notebooks against synthetic SEND data.

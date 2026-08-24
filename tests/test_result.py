@@ -120,10 +120,10 @@ def test_direct_node_explanation_rejects_unknown_kind() -> None:
 
 def test_endpoint_facts_derive_consistent_conversion_properties() -> None:
     endpoint = EndpointSpec(
-        "LB_HCT", "LB", ("HCT",), source_units=("g/L",), target_unit="g/dL"
+        "LB_HGB", "LB", ("HGB",), source_units=("g/L",), target_unit="g/dL"
     )
     facts = EndpointFacts(
-        "LB_HCT", "LB", ("m",), endpoint.target_unit, endpoint.compiled_unit_rules
+        "LB_HGB", "LB", ("m",), endpoint.target_unit, endpoint.compiled_unit_rules
     )
 
     assert facts.sex_applicability == ("M",)
@@ -134,7 +134,7 @@ def test_endpoint_facts_derive_consistent_conversion_properties() -> None:
     assert metadata["conversion_rules"][0]["scale"] == pytest.approx(0.1)
     assert metadata["unit_catalogue"]["catalogue_id"] == "vcgen.unit_catalogue.v1"
     with pytest.raises(QueryError, match="target_unit"):
-        EndpointFacts("LB_HCT", "LB", target_unit={})
+        EndpointFacts("LB_HGB", "LB", target_unit={})
 
 
 def test_query_domains_include_predicate_observation_and_baseline_inputs() -> None:

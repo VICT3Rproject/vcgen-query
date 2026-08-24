@@ -30,28 +30,36 @@ def _result(
 def _observation(
     value: float | None,
     unit: str | None,
+    *,
+    endpoint_name: str = "HCT",
     **overrides: object,
 ) -> dict[str, object]:
     return {
         **_KEYS,
-        "endpoint_name": "HCT",
+        "endpoint_name": endpoint_name,
         "numeric_value": value,
         "unit": unit,
         "result_state": "numeric_observed",
         "excluded": False,
-        "measurement_identity": "HCT",
+        "measurement_identity": endpoint_name,
         "source_order": (),
         **overrides,
     }
 
 
-def _hct_facts(source_units: tuple[str, ...], target: str) -> tuple[vq.EndpointFacts, ...]:
+def _facts(
+    endpoint_name: str, source_units: tuple[str, ...], target: str
+) -> tuple[vq.EndpointFacts, ...]:
     endpoint = vq.EndpointSpec(
-        "HCT", "LB", ("HCT",), source_units=source_units, target_unit=target
+        endpoint_name,
+        "LB",
+        (endpoint_name,),
+        source_units=source_units,
+        target_unit=target,
     )
     return (
         vq.EndpointFacts(
-            "HCT",
+            endpoint_name,
             "LB",
             target_unit=endpoint.target_unit,
             compiled_unit_rules=endpoint.compiled_unit_rules,
@@ -61,12 +69,17 @@ def _hct_facts(source_units: tuple[str, ...], target: str) -> tuple[vq.EndpointF
 
 def test_daily_frame_converts_and_collapses_decimal_equivalents() -> None:
     result = _result(
-        [_observation(3, "g/L"), _observation(0.3, "g/dL")], _hct_facts(("g/L", "g/dL"), "g/dL")
+        [
+            _observation(3, "g/L", endpoint_name="HGB"),
+            _observation(0.3, "g/dL", endpoint_name="HGB"),
+        ],
+        _facts("HGB", ("g/L", "g/dL"), "g/dL"),
+        endpoints=("HGB",),
     )
 
     daily = vq.to_daily_frame(result)
 
-    assert daily.values.loc[0, "HCT"] == pytest.approx(0.3)
+    assert daily.values.loc[0, "HGB"] == pytest.approx(0.3)
     assert daily.cell_audit.loc[0, "resolution"] == "equivalent_duplicate_collapsed"
     assert daily.receipt["conversion_count"] == 1
     assert daily.receipt["daily_projection_fingerprint"]
@@ -77,9 +90,15 @@ def test_daily_frame_converts_and_collapses_decimal_equivalents() -> None:
 
 
 def test_equivalent_alias_is_an_audited_identity_conversion() -> None:
-    daily = vq.to_daily_frame(_result([_observation(3, "G")], _hct_facts(("G",), "g")))
+    daily = vq.to_daily_frame(
+        _result(
+            [_observation(3, "G", endpoint_name="MASS")],
+            _facts("MASS", ("G",), "g"),
+            endpoints=("MASS",),
+        )
+    )
 
-    assert daily.values.loc[0, "HCT"] == 3
+    assert daily.values.loc[0, "MASS"] == 3
     assert daily.cell_audit.loc[0, "conversion_status"] == ["identity"]
     rule = daily.cell_audit.loc[0, "conversion_rule"][0]
     assert rule["source_unit"] == "G"
@@ -90,9 +109,15 @@ def test_equivalent_alias_is_an_audited_identity_conversion() -> None:
 
 def test_non_finite_converted_output_raises_structured_unit_error() -> None:
     with pytest.raises(vq.DailyProjectionUnitError) as error:
-        vq.to_daily_frame(_result([_observation(1e308, "kg")], _hct_facts(("kg",), "g")))
+        vq.to_daily_frame(
+            _result(
+                [_observation(1e308, "kg", endpoint_name="MASS")],
+                _facts("MASS", ("kg",), "g"),
+                endpoints=("MASS",),
+            )
+        )
 
-    assert error.value.failures[0]["endpoint_name"] == "HCT"
+    assert error.value.failures[0]["endpoint_name"] == "MASS"
     assert error.value.failures[0]["target_unit"] == "g"
 
 
