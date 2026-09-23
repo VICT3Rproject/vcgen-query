@@ -44,6 +44,9 @@ class SubjectContext:
     sex: str
     study_year: int | None
     study_length_days: int | None
+    planned_dose_duration_days: int | None
+    observed_exposure_span_days: int | None
+    dose_duration_evidence_status: str
     suppliers: frozenset[str]
     study_types: frozenset[str]
     routes: frozenset[str]
@@ -54,6 +57,8 @@ class SubjectContext:
     baseline_body_weight_g: float | None
     age_days: float | None
     first_exposure_day: int | None
+    dose_duration_declaration_incomplete: bool = field(repr=False)
+    exposure_interval_status: str = field(repr=False)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -65,6 +70,9 @@ class SubjectContext:
             "sex": self.sex,
             "study_year": self.study_year,
             "study_length_days": self.study_length_days,
+            "planned_dose_duration_days": self.planned_dose_duration_days,
+            "observed_exposure_span_days": self.observed_exposure_span_days,
+            "dose_duration_evidence_status": self.dose_duration_evidence_status,
             "suppliers": sorted(self.suppliers),
             "study_types": sorted(self.study_types),
             "routes": sorted(self.routes),
@@ -85,6 +93,9 @@ class CohortSelection:
     subjects: tuple[SubjectContext, ...]
     warnings: tuple[str, ...] = ()
     counts: dict[str, int] = field(default_factory=dict)
+    dose_duration_evidence_status_counts: dict[str, int] = field(default_factory=dict)
+    exposure_interval_status_counts: dict[str, int] = field(default_factory=dict)
+    dose_duration_declaration_incomplete_subject_count: int = 0
 
     @property
     def subject_count(self) -> int:
@@ -102,6 +113,13 @@ class CohortSelection:
             "subjects_by_study": dict(sorted(studies.items())),
             "warnings": list(self.warnings),
             "counts": dict(self.counts),
+            "dose_duration_evidence": {
+                "status_counts": dict(self.dose_duration_evidence_status_counts),
+                "exposure_interval_status_counts": dict(self.exposure_interval_status_counts),
+                "incomplete_declaration_subject_count": (
+                    self.dose_duration_declaration_incomplete_subject_count
+                ),
+            },
         }
 
 
@@ -306,6 +324,15 @@ def _load_subject_contexts(
                 sex=str(values.get(SEX) or ""),
                 study_year=study.study_start_year,
                 study_length_days=study.study_length_days,
+                planned_dose_duration_days=_optional_int(
+                    values.get("planned_dose_duration_days")
+                ),
+                observed_exposure_span_days=_optional_int(
+                    values.get("observed_exposure_span_days")
+                ),
+                dose_duration_evidence_status=str(
+                    values.get("dose_duration_evidence_status") or "unresolved"
+                ),
                 suppliers=study.suppliers,
                 study_types=study.study_types,
                 routes=_value_set(values.get("route_values")),
@@ -316,6 +343,12 @@ def _load_subject_contexts(
                 baseline_body_weight_g=_optional_float(values.get("baseline_body_weight_g")),
                 age_days=_optional_float(values.get("age_days")),
                 first_exposure_day=_optional_int(values.get("first_exposure_day")),
+                dose_duration_declaration_incomplete=bool(
+                    values.get("dose_duration_declaration_incomplete")
+                ),
+                exposure_interval_status=str(
+                    values.get("exposure_interval_status") or "unavailable"
+                ),
             )
         )
     return tuple(contexts)
@@ -336,6 +369,11 @@ def _subject_context_query(con: Any) -> QuerySpec:
     frequency_expr = "NULL"
     treatment_expr = "NULL"
     first_exposure_expr = "NULL"
+    planned_dose_duration_expr = "NULL"
+    observed_exposure_span_expr = "NULL"
+    duration_evidence_status_expr = "'unresolved'"
+    declaration_incomplete_expr = "FALSE"
+    exposure_interval_status_expr = "'unavailable'"
     baseline_body_weight_join = ""
     baseline_body_weight_expr = "NULL"
     if has_exposure:
@@ -347,6 +385,11 @@ def _subject_context_query(con: Any) -> QuerySpec:
         frequency_expr = "exposure.dose_frequency_values"
         treatment_expr = "exposure.treatment_values"
         first_exposure_expr = "exposure.first_exposure_day"
+        planned_dose_duration_expr = "exposure.planned_dose_duration_days"
+        observed_exposure_span_expr = "exposure.observed_exposure_span_days"
+        duration_evidence_status_expr = "exposure.dose_duration_evidence_status"
+        declaration_incomplete_expr = "exposure.dose_duration_declaration_incomplete"
+        exposure_interval_status_expr = "exposure.exposure_interval_status"
     if has_baseline_body_weight:
         baseline_body_weight_join = f"""
             LEFT JOIN subject_baseline_body_weight AS baseline_bw
@@ -361,6 +404,11 @@ def _subject_context_query(con: Any) -> QuerySpec:
             subjects.{q(SPECIES)},
             subjects.{q(STRAIN)},
             subjects.{q(SEX)},
+            {planned_dose_duration_expr} AS planned_dose_duration_days,
+            {observed_exposure_span_expr} AS observed_exposure_span_days,
+            {duration_evidence_status_expr} AS dose_duration_evidence_status,
+            {declaration_incomplete_expr} AS dose_duration_declaration_incomplete,
+            {exposure_interval_status_expr} AS exposure_interval_status,
             {route_expr} AS route_values,
             {frequency_expr} AS dose_frequency_values,
             {treatment_expr} AS treatment_values,
@@ -368,7 +416,6 @@ def _subject_context_query(con: Any) -> QuerySpec:
             subjects.age_days,
             {first_exposure_expr} AS first_exposure_day
         FROM {quote_ident(subject_view)} AS subjects
-        INNER JOIN dm USING ({q(STUDY_ID)}, {q(SUBJECT_ID)})
         {exposure_join}
         {baseline_body_weight_join}
         ORDER BY subjects.{q(STUDY_ID)}, subjects.{q(SUBJECT_ID)}

@@ -218,13 +218,34 @@ def parse_result(
         numeric = optional_float(row.get(value_column))
         if numeric is None:
             continue
+        unit = normalize_unit(_first_text(row, (unit_column,)))
+        resolved_unit_column = unit_column
+        if unit is None:
+            # Standardized values frequently omit STRESU when ORRESU already
+            # carries the standard unit (curated identity conversions). Adopt
+            # the original unit label only when the original value is the same
+            # number, so a converted value can never inherit the wrong unit.
+            for fallback_value_column, fallback_unit_column in numeric_candidates:
+                if fallback_unit_column == unit_column:
+                    continue
+                if fallback_value_column not in columns or fallback_unit_column not in columns:
+                    continue
+                fallback_unit = normalize_unit(_first_text(row, (fallback_unit_column,)))
+                if fallback_unit is None:
+                    continue
+                fallback_numeric = optional_float(row.get(fallback_value_column))
+                if fallback_numeric is None or fallback_numeric != numeric:
+                    continue
+                unit = fallback_unit
+                resolved_unit_column = fallback_unit_column
+                break
         return ParsedResult(
             state="numeric_observed",
             numeric_value=float(numeric),
             raw_value=str(row.get(value_column)).strip(),
             value_column=value_column,
-            unit=normalize_unit(_first_text(row, (unit_column,))),
-            unit_column=unit_column if unit_column in columns else None,
+            unit=unit,
+            unit_column=resolved_unit_column if resolved_unit_column in columns else None,
             excluded=excluded,
             exclusion_reason=exclusion_reason,
             failure_reason=failure_reason,

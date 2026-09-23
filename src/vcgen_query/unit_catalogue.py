@@ -13,8 +13,8 @@ from typing import Any
 from .contract_helpers import QueryError
 
 
-CATALOGUE_FILENAME = "unit_catalogue.v1.json"
-CATALOGUE_ID = "vcgen.unit_catalogue.v1"
+CATALOGUE_FILENAME = "unit_catalogue.v2.json"
+CATALOGUE_ID = "vcgen.unit_catalogue.v2"
 
 
 @dataclass(frozen=True)
@@ -114,6 +114,18 @@ def catalogue_identity() -> dict[str, str]:
     }
 
 
+def unit_dimension(code: str) -> str:
+    """Return the dimension for one canonical UCUM code."""
+
+    unit = _CATALOGUE.units.get(code)
+    if unit is None:
+        raise QueryError(
+            f"unit code must be an exact case-sensitive code in {_CATALOGUE.catalogue_id}; "
+            f"got {code!r}."
+        )
+    return unit.dimension
+
+
 def compile_unit_rules(
     source_units: tuple[str, ...], target_unit: str
 ) -> tuple[_CompiledUnitRule, ...]:
@@ -157,6 +169,16 @@ def compile_unit_rules(
     return tuple(sorted(rules, key=lambda item: item.source_unit))
 
 
+def ratio_unit_scale(numerator: str, denominator: str, target: str) -> float:
+    """Resolve a dimensionless ratio scale from canonical unit definitions."""
+    if unit_dimension(numerator) != unit_dimension(denominator) or unit_dimension(target) != "fraction":
+        raise QueryError("ratio units require equal parent dimensions and a fraction target")
+    first, second, output = (_CATALOGUE.units[code] for code in (numerator, denominator, target))
+    if first.offset or second.offset or output.offset:
+        raise QueryError("ratio units cannot have affine offsets")
+    return float(first.scale / second.scale / output.scale)
+
+
 def observation_unit_semantics(endpoints: tuple[Any, ...]) -> dict[str, Any]:
     return {
         **catalogue_identity(),
@@ -174,4 +196,4 @@ def observation_unit_semantics(endpoints: tuple[Any, ...]) -> dict[str, Any]:
     }
 
 
-__all__ = ["CATALOGUE_FILENAME", "CATALOGUE_ID", "catalogue_identity"]
+__all__ = ["CATALOGUE_FILENAME", "CATALOGUE_ID", "catalogue_identity", "unit_dimension"]

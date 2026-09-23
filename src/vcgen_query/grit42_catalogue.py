@@ -17,6 +17,7 @@ GRIT42_CATALOGUE_ID = "grit42-columns-2026-08-22-v1"
 CatalogueValueType: TypeAlias = Literal["string", "number", "datetime"]
 CatalogueUiType: TypeAlias = Literal["string", "numeric", "timestamp", "entity"]
 AdvancedQueryDatetimeSource: TypeAlias = Literal["calendar_date_midnight"]
+CatalogueDomainGrain: TypeAlias = Literal["study", "subject"]
 
 
 @dataclass(frozen=True)
@@ -120,6 +121,15 @@ def grit42_column(domain: str, column: str) -> Grit42Column | None:
     return load_grit42_catalogue().columns.get((domain, column))
 
 
+def grit42_domain_grain(domain: str) -> CatalogueDomainGrain:
+    """Return the declared query grain for one catalogue domain."""
+
+    catalogue = load_grit42_catalogue()
+    if not any(item_domain == domain for item_domain, _ in catalogue.columns):
+        raise RuntimeError(f"grit42 catalogue is missing domain {domain!r}")
+    return "subject" if (domain, "USUBJID") in catalogue.columns else "study"
+
+
 def grit42_catalogue_identity() -> dict[str, str]:
     """Return the stable catalogue identity used for parser validation."""
 
@@ -135,9 +145,11 @@ __all__ = [
     "GRIT42_CATALOGUE_FILENAME",
     "GRIT42_CATALOGUE_ID",
     "AdvancedQueryDatetimeSource",
+    "CatalogueDomainGrain",
     "Grit42Catalogue",
     "Grit42Column",
     "grit42_catalogue_identity",
     "grit42_column",
+    "grit42_domain_grain",
     "load_grit42_catalogue",
 ]

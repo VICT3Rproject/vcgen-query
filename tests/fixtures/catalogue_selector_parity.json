@@ -1,0 +1,1138 @@
+{
+  "BW": {
+    "domain": "BW",
+    "name": "BW",
+    "source_units": [
+      "G",
+      "g"
+    ],
+    "target_unit": "g",
+    "test_codes": [
+      "AA01",
+      "BW"
+    ],
+    "test_names": [
+      "BODY WEIGHT"
+    ]
+  },
+  "BW_TERMINAL": {
+    "domain": "BW",
+    "name": "BW_TERMINAL",
+    "source_units": [
+      "G",
+      "g"
+    ],
+    "target_unit": "g",
+    "test_codes": [
+      "RA13",
+      "TBW1",
+      "TERMBW"
+    ],
+    "test_names": [
+      "TERMINAL BODY WEIGHT"
+    ]
+  },
+  "LB_ALB": {
+    "domain": "LB",
+    "name": "LB_ALB",
+    "source_units": [
+      "mmol/L"
+    ],
+    "specimen_match": "not",
+    "specimens": [
+      "URINE"
+    ],
+    "target_unit": "mmol/L",
+    "test_codes": [
+      "ALB"
+    ]
+  },
+  "LB_ALP": {
+    "domain": "LB",
+    "name": "LB_ALP",
+    "source_units": [
+      "\u00b5kat/L"
+    ],
+    "specimen_match": "not",
+    "specimens": [
+      "URINE"
+    ],
+    "target_unit": "ukat/L",
+    "test_codes": [
+      "ALP",
+      "AP"
+    ],
+    "test_names": [
+      "ALKALINE PHOSPHATASE"
+    ]
+  },
+  "LB_ALT": {
+    "domain": "LB",
+    "name": "LB_ALT",
+    "source_units": [
+      "\u00b5kat/L"
+    ],
+    "specimen_match": "not",
+    "specimens": [
+      "URINE"
+    ],
+    "target_unit": "ukat/L",
+    "test_codes": [
+      "ALAT",
+      "ALT"
+    ],
+    "test_names": [
+      "ALANINE AMINOTRANSFERASE"
+    ]
+  },
+  "LB_APTT": {
+    "domain": "LB",
+    "name": "LB_APTT",
+    "source_units": [
+      "s"
+    ],
+    "specimen_match": "not",
+    "specimens": [
+      "URINE"
+    ],
+    "target_unit": "s",
+    "test_codes": [
+      "APTR",
+      "APTT",
+      "S_APTT"
+    ],
+    "test_names": [
+      "ACTIVATED PARTIAL THROMBOPLASTIN TIME"
+    ]
+  },
+  "LB_AST": {
+    "domain": "LB",
+    "name": "LB_AST",
+    "source_units": [
+      "\u00b5kat/L"
+    ],
+    "specimen_match": "not",
+    "specimens": [
+      "URINE"
+    ],
+    "target_unit": "ukat/L",
+    "test_codes": [
+      "ASAT",
+      "AST"
+    ],
+    "test_names": [
+      "ASPARTATE AMINOTRANSFERASE"
+    ]
+  },
+  "LB_BASO": {
+    "domain": "LB",
+    "name": "LB_BASO",
+    "source_units": [
+      "10^9/L"
+    ],
+    "specimen_match": "not",
+    "specimens": [
+      "URINE"
+    ],
+    "target_unit": "10^9/L",
+    "test_codes": [
+      "BAS",
+      "BASO"
+    ]
+  },
+  "LB_BILI": {
+    "domain": "LB",
+    "name": "LB_BILI",
+    "source_units": [
+      "mmol/L"
+    ],
+    "specimen_match": "not",
+    "specimens": [
+      "URINE"
+    ],
+    "target_unit": "mmol/L",
+    "test_codes": [
+      "BIL",
+      "BILI",
+      "TBIL"
+    ],
+    "test_names": [
+      "BILIRUBIN"
+    ]
+  },
+  "LB_CA": {
+    "domain": "LB",
+    "name": "LB_CA",
+    "source_units": [
+      "mmol/L"
+    ],
+    "specimen_match": "not",
+    "specimens": [
+      "URINE"
+    ],
+    "target_unit": "mmol/L",
+    "test_codes": [
+      "CA"
+    ]
+  },
+  "LB_CHOL": {
+    "domain": "LB",
+    "name": "LB_CHOL",
+    "source_units": [
+      "mmol/L"
+    ],
+    "specimen_match": "not",
+    "specimens": [
+      "URINE"
+    ],
+    "target_unit": "mmol/L",
+    "test_codes": [
+      "CHOL"
+    ]
+  },
+  "LB_CK": {
+    "domain": "LB",
+    "name": "LB_CK",
+    "source_units": [
+      "\u00b5kat/L"
+    ],
+    "specimen_match": "not",
+    "specimens": [
+      "URINE"
+    ],
+    "target_unit": "ukat/L",
+    "test_codes": [
+      "CK"
+    ]
+  },
+  "LB_CL": {
+    "domain": "LB",
+    "name": "LB_CL",
+    "source_units": [
+      "mmol/L"
+    ],
+    "specimen_match": "not",
+    "specimens": [
+      "URINE"
+    ],
+    "target_unit": "mmol/L",
+    "test_codes": [
+      "CL"
+    ]
+  },
+  "LB_CREAT": {
+    "domain": "LB",
+    "name": "LB_CREAT",
+    "source_units": [
+      "mmol/L"
+    ],
+    "specimen_match": "not",
+    "specimens": [
+      "URINE"
+    ],
+    "target_unit": "mmol/L",
+    "test_codes": [
+      "CREA",
+      "CREAT"
+    ],
+    "test_names": [
+      "CREATININE"
+    ]
+  },
+  "LB_EOS": {
+    "domain": "LB",
+    "name": "LB_EOS",
+    "source_units": [
+      "10^9/L"
+    ],
+    "specimen_match": "not",
+    "specimens": [
+      "URINE"
+    ],
+    "target_unit": "10^9/L",
+    "test_codes": [
+      "EOS"
+    ]
+  },
+  "LB_FIBRINO": {
+    "domain": "LB",
+    "name": "LB_FIBRINO",
+    "source_units": [
+      "g/L"
+    ],
+    "specimen_match": "not",
+    "specimens": [
+      "URINE"
+    ],
+    "target_unit": "g/L",
+    "test_codes": [
+      "FIBRINO"
+    ]
+  },
+  "LB_GGT": {
+    "domain": "LB",
+    "name": "LB_GGT",
+    "source_units": [
+      "\u00b5kat/L"
+    ],
+    "specimen_match": "not",
+    "specimens": [
+      "URINE"
+    ],
+    "target_unit": "ukat/L",
+    "test_codes": [
+      "GGT"
+    ]
+  },
+  "LB_GLDH": {
+    "domain": "LB",
+    "name": "LB_GLDH",
+    "source_units": [
+      "\u00b5kat/L"
+    ],
+    "specimen_match": "not",
+    "specimens": [
+      "URINE"
+    ],
+    "target_unit": "ukat/L",
+    "test_codes": [
+      "GLDH"
+    ]
+  },
+  "LB_GLUC": {
+    "domain": "LB",
+    "name": "LB_GLUC",
+    "source_units": [
+      "mmol/L"
+    ],
+    "specimen_match": "not",
+    "specimens": [
+      "URINE"
+    ],
+    "target_unit": "mmol/L",
+    "test_codes": [
+      "GLU",
+      "GLUC"
+    ],
+    "test_names": [
+      "GLUCOSE"
+    ]
+  },
+  "LB_HCT": {
+    "domain": "LB",
+    "name": "LB_HCT",
+    "source_units": [
+      "%"
+    ],
+    "specimen_match": "not",
+    "specimens": [
+      "URINE"
+    ],
+    "target_unit": "%",
+    "test_codes": [
+      "HCT"
+    ]
+  },
+  "LB_HGB": {
+    "domain": "LB",
+    "name": "LB_HGB",
+    "source_units": [
+      "mmol/L"
+    ],
+    "specimen_match": "not",
+    "specimens": [
+      "URINE"
+    ],
+    "target_unit": "mmol/L",
+    "test_codes": [
+      "HGB"
+    ]
+  },
+  "LB_K": {
+    "domain": "LB",
+    "name": "LB_K",
+    "source_units": [
+      "mmol/L"
+    ],
+    "specimen_match": "not",
+    "specimens": [
+      "URINE"
+    ],
+    "target_unit": "mmol/L",
+    "test_codes": [
+      "K"
+    ]
+  },
+  "LB_LYM": {
+    "domain": "LB",
+    "name": "LB_LYM",
+    "source_units": [
+      "10^9/L"
+    ],
+    "specimen_match": "not",
+    "specimens": [
+      "URINE"
+    ],
+    "target_unit": "10^9/L",
+    "test_codes": [
+      "LYM"
+    ]
+  },
+  "LB_MCH": {
+    "domain": "LB",
+    "name": "LB_MCH",
+    "source_units": [
+      "fmol"
+    ],
+    "specimen_match": "not",
+    "specimens": [
+      "URINE"
+    ],
+    "target_unit": "fmol",
+    "test_codes": [
+      "MCH"
+    ]
+  },
+  "LB_MCHC": {
+    "domain": "LB",
+    "name": "LB_MCHC",
+    "source_units": [
+      "mmol/L"
+    ],
+    "specimen_match": "not",
+    "specimens": [
+      "URINE"
+    ],
+    "target_unit": "mmol/L",
+    "test_codes": [
+      "MCHC"
+    ]
+  },
+  "LB_MCV": {
+    "domain": "LB",
+    "name": "LB_MCV",
+    "source_units": [
+      "fL"
+    ],
+    "specimen_match": "not",
+    "specimens": [
+      "URINE"
+    ],
+    "target_unit": "fL",
+    "test_codes": [
+      "MCV"
+    ]
+  },
+  "LB_MONO": {
+    "domain": "LB",
+    "name": "LB_MONO",
+    "source_units": [
+      "10^9/L"
+    ],
+    "specimen_match": "not",
+    "specimens": [
+      "URINE"
+    ],
+    "target_unit": "10^9/L",
+    "test_codes": [
+      "MON",
+      "MONO"
+    ],
+    "test_names": [
+      "MONOCYTES"
+    ]
+  },
+  "LB_NEUT": {
+    "domain": "LB",
+    "name": "LB_NEUT",
+    "source_units": [
+      "10^9/L"
+    ],
+    "specimen_match": "not",
+    "specimens": [
+      "URINE"
+    ],
+    "target_unit": "10^9/L",
+    "test_codes": [
+      "NEU",
+      "NEUT"
+    ]
+  },
+  "LB_PHOS": {
+    "domain": "LB",
+    "name": "LB_PHOS",
+    "source_units": [
+      "mmol/L"
+    ],
+    "specimen_match": "not",
+    "specimens": [
+      "URINE"
+    ],
+    "target_unit": "mmol/L",
+    "test_codes": [
+      "IP",
+      "PHOS"
+    ],
+    "test_names": [
+      "PHOSPHATE"
+    ]
+  },
+  "LB_PLAT": {
+    "domain": "LB",
+    "name": "LB_PLAT",
+    "source_units": [
+      "10^9/L"
+    ],
+    "specimen_match": "not",
+    "specimens": [
+      "URINE"
+    ],
+    "target_unit": "10^9/L",
+    "test_codes": [
+      "PLAT",
+      "PLT"
+    ]
+  },
+  "LB_PROT": {
+    "domain": "LB",
+    "name": "LB_PROT",
+    "source_units": [
+      "g/L"
+    ],
+    "specimen_match": "not",
+    "specimens": [
+      "URINE"
+    ],
+    "target_unit": "g/L",
+    "test_codes": [
+      "PROT"
+    ]
+  },
+  "LB_PROT_URINE": {
+    "domain": "LB",
+    "name": "LB_PROT_URINE",
+    "source_units": [
+      "g/L"
+    ],
+    "specimens": [
+      "URINE"
+    ],
+    "target_unit": "g/L",
+    "test_codes": [
+      "PROT"
+    ]
+  },
+  "LB_PT": {
+    "domain": "LB",
+    "name": "LB_PT",
+    "source_units": [
+      "s"
+    ],
+    "specimen_match": "not",
+    "specimens": [
+      "URINE"
+    ],
+    "target_unit": "s",
+    "test_codes": [
+      "PT",
+      "PTHSPL",
+      "PTRSEC"
+    ],
+    "test_names": [
+      "PROTHROMBIN TIME"
+    ]
+  },
+  "LB_RBC": {
+    "domain": "LB",
+    "name": "LB_RBC",
+    "source_units": [
+      "10^12/L"
+    ],
+    "specimen_match": "not",
+    "specimens": [
+      "URINE"
+    ],
+    "target_unit": "10^12/L",
+    "test_codes": [
+      "RBC"
+    ]
+  },
+  "LB_RETI": {
+    "domain": "LB",
+    "name": "LB_RETI",
+    "source_units": [
+      "10^9/L"
+    ],
+    "specimen_match": "not",
+    "specimens": [
+      "URINE"
+    ],
+    "target_unit": "10^9/L",
+    "test_codes": [
+      "RET",
+      "RETI"
+    ],
+    "test_names": [
+      "RETICULOCYTES"
+    ]
+  },
+  "LB_SODIUM": {
+    "domain": "LB",
+    "name": "LB_SODIUM",
+    "source_units": [
+      "mmol/L"
+    ],
+    "specimen_match": "not",
+    "specimens": [
+      "URINE"
+    ],
+    "target_unit": "mmol/L",
+    "test_codes": [
+      "SODIUM"
+    ]
+  },
+  "LB_TRIG": {
+    "domain": "LB",
+    "name": "LB_TRIG",
+    "source_units": [
+      "mmol/L"
+    ],
+    "specimen_match": "not",
+    "specimens": [
+      "URINE"
+    ],
+    "target_unit": "mmol/L",
+    "test_codes": [
+      "TRIG"
+    ]
+  },
+  "LB_UREA": {
+    "domain": "LB",
+    "name": "LB_UREA",
+    "source_units": [
+      "mmol/L"
+    ],
+    "specimen_match": "not",
+    "specimens": [
+      "URINE"
+    ],
+    "target_unit": "mmol/L",
+    "test_codes": [
+      "UREA"
+    ]
+  },
+  "LB_VOLUME_URINE": {
+    "domain": "LB",
+    "name": "LB_VOLUME_URINE",
+    "source_units": [
+      "L"
+    ],
+    "specimens": [
+      "URINE"
+    ],
+    "target_unit": "L",
+    "test_codes": [
+      "UVOL",
+      "VOLUME"
+    ]
+  },
+  "LB_WBC": {
+    "domain": "LB",
+    "name": "LB_WBC",
+    "source_units": [
+      "10^9/L"
+    ],
+    "specimen_match": "not",
+    "specimens": [
+      "URINE"
+    ],
+    "target_unit": "10^9/L",
+    "test_codes": [
+      "WBC"
+    ]
+  },
+  "OM_OWBW_ADRENAL": {
+    "domain": "OM",
+    "name": "OM_OWBW_ADRENAL",
+    "source_units": [
+      "%"
+    ],
+    "specimens": [
+      "GLAND, ADRENAL"
+    ],
+    "target_unit": "%",
+    "test_codes": [
+      "OWBW"
+    ],
+    "test_names": [
+      "ORGAN TO BODY WEIGHT RATIO"
+    ]
+  },
+  "OM_OWBW_BRAIN": {
+    "domain": "OM",
+    "name": "OM_OWBW_BRAIN",
+    "source_units": [
+      "%"
+    ],
+    "specimens": [
+      "BRAIN"
+    ],
+    "target_unit": "%",
+    "test_codes": [
+      "OWBR",
+      "OWBW"
+    ],
+    "test_names": [
+      "ORGAN TO BODY WEIGHT RATIO"
+    ]
+  },
+  "OM_OWBW_EPIDIDYMIS": {
+    "domain": "OM",
+    "name": "OM_OWBW_EPIDIDYMIS",
+    "sexes": [
+      "M"
+    ],
+    "source_units": [
+      "%"
+    ],
+    "specimens": [
+      "EPIDIDYMIS"
+    ],
+    "target_unit": "%",
+    "test_codes": [
+      "OWBW"
+    ],
+    "test_names": [
+      "ORGAN TO BODY WEIGHT RATIO"
+    ]
+  },
+  "OM_OWBW_HEART": {
+    "domain": "OM",
+    "name": "OM_OWBW_HEART",
+    "source_units": [
+      "%"
+    ],
+    "specimens": [
+      "HEART"
+    ],
+    "target_unit": "%",
+    "test_codes": [
+      "OWBW"
+    ],
+    "test_names": [
+      "ORGAN TO BODY WEIGHT RATIO"
+    ]
+  },
+  "OM_OWBW_KIDNEY": {
+    "domain": "OM",
+    "name": "OM_OWBW_KIDNEY",
+    "source_units": [
+      "%"
+    ],
+    "specimens": [
+      "KIDNEY"
+    ],
+    "target_unit": "%",
+    "test_codes": [
+      "OWBW",
+      "WEIGHT"
+    ],
+    "test_names": [
+      "ORGAN TO BODY WEIGHT RATIO"
+    ]
+  },
+  "OM_OWBW_LIVER": {
+    "domain": "OM",
+    "name": "OM_OWBW_LIVER",
+    "source_units": [
+      "%"
+    ],
+    "specimens": [
+      "LIVER"
+    ],
+    "target_unit": "%",
+    "test_codes": [
+      "OWBW"
+    ],
+    "test_names": [
+      "ORGAN TO BODY WEIGHT RATIO"
+    ]
+  },
+  "OM_OWBW_OVARY": {
+    "domain": "OM",
+    "name": "OM_OWBW_OVARY",
+    "sexes": [
+      "F"
+    ],
+    "source_units": [
+      "%"
+    ],
+    "specimens": [
+      "OVARY"
+    ],
+    "target_unit": "%",
+    "test_codes": [
+      "OWBW"
+    ],
+    "test_names": [
+      "ORGAN TO BODY WEIGHT RATIO"
+    ]
+  },
+  "OM_OWBW_PROSTATE": {
+    "domain": "OM",
+    "name": "OM_OWBW_PROSTATE",
+    "sexes": [
+      "M"
+    ],
+    "source_units": [
+      "%"
+    ],
+    "specimens": [
+      "GLAND, PROSTATE"
+    ],
+    "target_unit": "%",
+    "test_codes": [
+      "OWBW"
+    ],
+    "test_names": [
+      "ORGAN TO BODY WEIGHT RATIO"
+    ]
+  },
+  "OM_OWBW_SEMINAL_VESICLE": {
+    "domain": "OM",
+    "name": "OM_OWBW_SEMINAL_VESICLE",
+    "sexes": [
+      "M"
+    ],
+    "source_units": [
+      "%"
+    ],
+    "specimens": [
+      "GLAND, SEMINAL VESICLE"
+    ],
+    "target_unit": "%",
+    "test_codes": [
+      "OWBW"
+    ],
+    "test_names": [
+      "ORGAN TO BODY WEIGHT RATIO"
+    ]
+  },
+  "OM_OWBW_SPLEEN": {
+    "domain": "OM",
+    "name": "OM_OWBW_SPLEEN",
+    "source_units": [
+      "%"
+    ],
+    "specimens": [
+      "SPLEEN"
+    ],
+    "target_unit": "%",
+    "test_codes": [
+      "OWBW"
+    ],
+    "test_names": [
+      "ORGAN TO BODY WEIGHT RATIO"
+    ]
+  },
+  "OM_OWBW_TESTIS": {
+    "domain": "OM",
+    "name": "OM_OWBW_TESTIS",
+    "sexes": [
+      "M"
+    ],
+    "source_units": [
+      "%"
+    ],
+    "specimens": [
+      "TESTIS"
+    ],
+    "target_unit": "%",
+    "test_codes": [
+      "OWBW"
+    ],
+    "test_names": [
+      "ORGAN TO BODY WEIGHT RATIO"
+    ]
+  },
+  "OM_OWBW_THYMUS": {
+    "domain": "OM",
+    "name": "OM_OWBW_THYMUS",
+    "source_units": [
+      "%"
+    ],
+    "specimens": [
+      "THYMUS"
+    ],
+    "target_unit": "%",
+    "test_codes": [
+      "OWBW"
+    ],
+    "test_names": [
+      "ORGAN TO BODY WEIGHT RATIO"
+    ]
+  },
+  "OM_WEIGHT_ADRENAL": {
+    "domain": "OM",
+    "name": "OM_WEIGHT_ADRENAL",
+    "source_units": [
+      "G",
+      "MG"
+    ],
+    "specimens": [
+      "GLAND, ADRENAL"
+    ],
+    "target_unit": "g",
+    "test_codes": [
+      "WEIGHT"
+    ],
+    "test_names": [
+      "WEIGHT"
+    ]
+  },
+  "OM_WEIGHT_BRAIN": {
+    "domain": "OM",
+    "name": "OM_WEIGHT_BRAIN",
+    "source_units": [
+      "G",
+      "MG"
+    ],
+    "specimens": [
+      "BRAIN"
+    ],
+    "target_unit": "g",
+    "test_codes": [
+      "WEIGHT"
+    ],
+    "test_names": [
+      "WEIGHT"
+    ]
+  },
+  "OM_WEIGHT_EPIDIDYMIS": {
+    "domain": "OM",
+    "name": "OM_WEIGHT_EPIDIDYMIS",
+    "sexes": [
+      "M"
+    ],
+    "source_units": [
+      "G",
+      "MG"
+    ],
+    "specimens": [
+      "EPIDIDYMIS"
+    ],
+    "target_unit": "g",
+    "test_codes": [
+      "WEIGHT"
+    ],
+    "test_names": [
+      "WEIGHT"
+    ]
+  },
+  "OM_WEIGHT_HEART": {
+    "domain": "OM",
+    "name": "OM_WEIGHT_HEART",
+    "source_units": [
+      "G",
+      "MG"
+    ],
+    "specimens": [
+      "HEART"
+    ],
+    "target_unit": "g",
+    "test_codes": [
+      "WEIGHT"
+    ],
+    "test_names": [
+      "WEIGHT"
+    ]
+  },
+  "OM_WEIGHT_KIDNEY": {
+    "domain": "OM",
+    "name": "OM_WEIGHT_KIDNEY",
+    "source_units": [
+      "G",
+      "MG"
+    ],
+    "specimens": [
+      "KIDNEY"
+    ],
+    "target_unit": "g",
+    "test_codes": [
+      "WEIGHT"
+    ],
+    "test_names": [
+      "WEIGHT"
+    ]
+  },
+  "OM_WEIGHT_LIVER": {
+    "domain": "OM",
+    "name": "OM_WEIGHT_LIVER",
+    "source_units": [
+      "G",
+      "MG"
+    ],
+    "specimens": [
+      "LIVER"
+    ],
+    "target_unit": "g",
+    "test_codes": [
+      "WEIGHT"
+    ],
+    "test_names": [
+      "WEIGHT"
+    ]
+  },
+  "OM_WEIGHT_OVARY": {
+    "domain": "OM",
+    "name": "OM_WEIGHT_OVARY",
+    "sexes": [
+      "F"
+    ],
+    "source_units": [
+      "G",
+      "MG"
+    ],
+    "specimens": [
+      "OVARY"
+    ],
+    "target_unit": "g",
+    "test_codes": [
+      "WEIGHT"
+    ],
+    "test_names": [
+      "WEIGHT"
+    ]
+  },
+  "OM_WEIGHT_PROSTATE": {
+    "domain": "OM",
+    "name": "OM_WEIGHT_PROSTATE",
+    "sexes": [
+      "M"
+    ],
+    "source_units": [
+      "G",
+      "MG"
+    ],
+    "specimens": [
+      "GLAND, PROSTATE"
+    ],
+    "target_unit": "g",
+    "test_codes": [
+      "WEIGHT"
+    ],
+    "test_names": [
+      "WEIGHT"
+    ]
+  },
+  "OM_WEIGHT_SEMINAL_VESICLE": {
+    "domain": "OM",
+    "name": "OM_WEIGHT_SEMINAL_VESICLE",
+    "sexes": [
+      "M"
+    ],
+    "source_units": [
+      "G",
+      "MG"
+    ],
+    "specimens": [
+      "GLAND, SEMINAL VESICLE"
+    ],
+    "target_unit": "g",
+    "test_codes": [
+      "WEIGHT"
+    ],
+    "test_names": [
+      "WEIGHT"
+    ]
+  },
+  "OM_WEIGHT_SPLEEN": {
+    "domain": "OM",
+    "name": "OM_WEIGHT_SPLEEN",
+    "source_units": [
+      "G",
+      "MG"
+    ],
+    "specimens": [
+      "SPLEEN"
+    ],
+    "target_unit": "g",
+    "test_codes": [
+      "WEIGHT"
+    ],
+    "test_names": [
+      "WEIGHT"
+    ]
+  },
+  "OM_WEIGHT_TESTIS": {
+    "domain": "OM",
+    "name": "OM_WEIGHT_TESTIS",
+    "sexes": [
+      "M"
+    ],
+    "source_units": [
+      "G",
+      "MG"
+    ],
+    "specimens": [
+      "TESTIS"
+    ],
+    "target_unit": "g",
+    "test_codes": [
+      "WEIGHT"
+    ],
+    "test_names": [
+      "WEIGHT"
+    ]
+  },
+  "OM_WEIGHT_THYMUS": {
+    "domain": "OM",
+    "name": "OM_WEIGHT_THYMUS",
+    "source_units": [
+      "G",
+      "MG"
+    ],
+    "specimens": [
+      "THYMUS"
+    ],
+    "target_unit": "g",
+    "test_codes": [
+      "WEIGHT"
+    ],
+    "test_names": [
+      "WEIGHT"
+    ]
+  },
+  "OM_WEIGHT_UTERUS": {
+    "domain": "OM",
+    "name": "OM_WEIGHT_UTERUS",
+    "sexes": [
+      "F"
+    ],
+    "source_units": [
+      "G",
+      "MG"
+    ],
+    "specimens": [
+      "UTERUS"
+    ],
+    "target_unit": "g",
+    "test_codes": [
+      "WEIGHT"
+    ],
+    "test_names": [
+      "WEIGHT"
+    ]
+  },
+  "PRE_STUDY_BODY_TEMPERATURE_C": {
+    "domain": "VS",
+    "name": "PRE_STUDY_BODY_TEMPERATURE_C",
+    "source_units": [
+      "C"
+    ],
+    "target_unit": "Cel",
+    "test_codes": [
+      "TEMP"
+    ]
+  }
+}

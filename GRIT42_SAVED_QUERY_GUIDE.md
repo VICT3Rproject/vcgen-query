@@ -1,7 +1,8 @@
-# Import a saved Grit42 query
+# Download and use a saved VICT3R query
 
-This guide shows how to retrieve a saved Grit42 subject query, import it into
-`vcgen-query`, and run it against a local SEND source.
+This guide shows how to download a saved subject-query definition from the
+VICT3R (Grit42) API, import it into `vcgen-query`, and run it against a local
+SEND source.
 
 Grit42 supports two saved-query formats:
 
@@ -38,7 +39,7 @@ Do not use the dataset export as the query definition. It contains selected
 SEND records, but it may not contain all filter rules, selected columns, or
 nested groups.
 
-## 2. Retrieve the saved-query JSON
+## 2. Download the saved-query JSON
 
 Read the query through the authenticated API:
 
@@ -54,14 +55,19 @@ an operating-system secret store or an approved secret manager. For local
 maintainer work, `.env` and `.grit42-api-token` are excluded by the repository
 `.gitignore`, but they must still remain machine-local.
 
-This Python example reads the token from `GRIT42_API_KEY`:
+This Python example reads the token from `GRIT42_API_KEY` and writes the
+complete API response to a local JSON file:
 
 ```python
 import json
 import os
+from pathlib import Path
 from urllib.request import Request, urlopen
 
 query_id = 10321464
+raw_dir = Path("tmp/grit42-queries")
+raw_dir.mkdir(parents=True, exist_ok=True)
+raw_path = raw_dir / f"grit42-subject-query-{query_id}.json"
 request = Request(
     f"https://vict3r.upf.edu/api/v1/subject_queries/{query_id}",
     headers={
@@ -70,9 +76,22 @@ request = Request(
     },
 )
 
-with urlopen(request) as response:
+with urlopen(request, timeout=30) as response:
     saved_query = json.load(response)
+
+if not isinstance(saved_query, dict):
+    raise TypeError("The saved-query API response must be a JSON object")
+
+raw_path.write_text(
+    json.dumps(saved_query, indent=2, sort_keys=True) + "\n",
+    encoding="utf-8",
+)
+print(f"Saved query definition to {raw_path}")
 ```
+
+This request downloads the query definition only. It does not download the
+SEND records that match the query. Treat the JSON file as project data. Keep it
+under an ignored local path, and do not commit or share it.
 
 ## 3. Understand the two source formats
 
@@ -134,9 +153,9 @@ Do not rebuild either JSON format by hand. Keep the complete record returned by
 Grit42. The importer validates the fields and stores a hash of that record so
 the query origin can be checked later.
 
-## 4. Import the query
+## 4. Import the downloaded query
 
-Save the API response to a local JSON file, then import it:
+Load the complete JSON file and import it:
 
 ```python
 import json
@@ -144,37 +163,66 @@ from pathlib import Path
 
 import vcgen_query as vq
 
-raw_path = Path("grit42-subject-query-10321464.json")
+raw_path = Path("tmp/grit42-queries/grit42-subject-query-10321464.json")
 saved_query = json.loads(raw_path.read_text(encoding="utf-8"))
 
-query = vq.import_grit42_subject_query(saved_query)
+query = vq.import_grit42_subject_query(saved_query, ["BW", "LB_HCT"])
 
 print(query.query_id)
 print(query.import_provenance.source_contract)
 print(query.import_provenance.source_payload_sha256)
 ```
 
-The imported filter selects subjects. It does not select the measurements used
-by a model. Add an `observation_contract` when the local query must return
-specific endpoints, units, specimens, or study days.
+The VCGen service accepts the resulting `vcgen.cohort_query.v5` document, not
+the raw Grit42 record. Serialize `query.to_canonical_dict()` as JSON or YAML for
+service upload. Keep the same ordered `requested_endpoints` list in the
+parallel service request field.
 
-## 5. Execute and inspect the query
+Use `import_grit42_subject_query()` for the raw VICT3R response. Do not pass
+that response to `load_query()`. `load_query()` reads the local
+`vcgen.cohort_query.v5` format, not a VICT3R API record.
 
-Use the same frozen SEND source when results need to be reproduced or compared:
+The imported filter selects subjects. The second argument is the required,
+ordered set of canonical output endpoint names. Source selectors, units,
+specimen rules, and display facts come from the package endpoint catalogue.
+Predicate endpoint references do not become outputs unless they are also in
+the requested set.
+
+## 5. Run the query against local SEND data
+
+Pass a local SEND ZIP archive or extracted CSV directory to `execute_query()`:
+
+```python
+result = vq.execute_query(
+    "/data/rodent_db_export.zip",
+    query,
+    extract_dir="/scratch/vcgen-query/rodent-export",
+)
+
+subject_keys = result.subjects.loc[:, ["study_id", "subject_id"]]
+print(subject_keys.head())
+print(f"Matched subjects: {len(subject_keys)}")
+print(result.receipt)
+```
+
+Local execution reads the local SEND source. It does not contact the VICT3R
+API. The local result can differ from the current VICT3R result when the local
+source has a different database revision or contains only part of the source
+data.
+
+Use `explain_query()` when you need rule-level match counts or a stable
+membership hash:
 
 ```python
 explanation = vq.explain_query(
-    "/data/frozen-wider-source.zip",
+    "/data/rodent_db_export.zip",
     query,
     include_subject_keys=True,
+    extract_dir="/scratch/vcgen-query/rodent-export",
 )
 
 print(explanation["matched_subject_count"])
 print(explanation["membership_hash"])
-
-result = vq.execute_query("/data/frozen-wider-source.zip", query)
-print(result.subjects.head())
-print(result.receipt)
 ```
 
 `explain_query()` reports how many subjects match each rule or group.

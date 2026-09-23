@@ -2,14 +2,16 @@
 
 from __future__ import annotations
 
-from vcgen_query import execute_query, parse_query
+from vcgen_query import endpoint_catalogue_identity, execute_query, parse_query
 
 
 def _query(predicate: dict[str, object]):
     return parse_query(
         {
-            "contract": "vcgen.cohort_query.v4",
+            "contract": "vcgen.cohort_query.v5",
             "query_id": "synthetic-derived",
+            "requested_endpoints": ["BW"],
+            "endpoint_catalogue": endpoint_catalogue_identity(),
             "predicate": predicate,
         }
     )

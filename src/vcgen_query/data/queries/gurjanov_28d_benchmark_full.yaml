@@ -1,13 +1,13 @@
-# yaml-language-server: $schema=../vcgen.cohort_query.v4.schema.json
-# Strict transferable cohort with the full 65-endpoint local benchmark mapping.
-contract: vcgen.cohort_query.v4
+# yaml-language-server: $schema=../vcgen.cohort_query.v5.schema.json
+# Endpoint source selectors are resolved by the package catalogue.
+contract: vcgen.cohort_query.v5
 query_id: gurjanov_28d_benchmark_full
 predicate:
   group: and
   children:
   - field:
       kind: derived
-      name: dose_duration_days
+      name: planned_dose_duration_days
       value_type: number
     operator: between
     value:
@@ -96,717 +96,87 @@ predicate:
       value_type: string
     operator: not_contains
     value: TK
-observation_contract:
-  endpoints:
-  - name: LB_RBC
-    domain: LB
-    test_codes:
-    - RBC
-    source_units:
-    - 10^12/L
-    target_unit: 10^12/L
-    specimens:
-    - URINE
-    specimen_match: not
-  - name: LB_HGB
-    domain: LB
-    test_codes:
-    - HGB
-    source_units:
-    - mmol/L
-    target_unit: mmol/L
-    specimens:
-    - URINE
-    specimen_match: not
-  - name: LB_HCT
-    domain: LB
-    test_codes:
-    - HCT
-    source_units:
-    - '%'
-    target_unit: '%'
-    specimens:
-    - URINE
-    specimen_match: not
-  - name: LB_MCH
-    domain: LB
-    test_codes:
-    - MCH
-    source_units:
-    - fmol
-    target_unit: fmol
-    specimens:
-    - URINE
-    specimen_match: not
-  - name: LB_MCHC
-    domain: LB
-    test_codes:
-    - MCHC
-    source_units:
-    - mmol/L
-    target_unit: mmol/L
-    specimens:
-    - URINE
-    specimen_match: not
-  - name: LB_MCV
-    domain: LB
-    test_codes:
-    - MCV
-    source_units:
-    - fL
-    target_unit: fL
-    specimens:
-    - URINE
-    specimen_match: not
-  - name: LB_RETI
-    domain: LB
-    test_codes:
-    - RET
-    - RETI
-    test_names:
-    - RETICULOCYTES
-    source_units:
-    - 10^9/L
-    target_unit: 10^9/L
-    specimens:
-    - URINE
-    specimen_match: not
-  - name: LB_PLAT
-    domain: LB
-    test_codes:
-    - PLAT
-    - PLT
-    source_units:
-    - 10^9/L
-    target_unit: 10^9/L
-    specimens:
-    - URINE
-    specimen_match: not
-  - name: LB_WBC
-    domain: LB
-    test_codes:
-    - WBC
-    source_units:
-    - 10^9/L
-    target_unit: 10^9/L
-    specimens:
-    - URINE
-    specimen_match: not
-  - name: LB_LYM
-    domain: LB
-    test_codes:
-    - LYM
-    source_units:
-    - 10^9/L
-    target_unit: 10^9/L
-    specimens:
-    - URINE
-    specimen_match: not
-  - name: LB_NEUT
-    domain: LB
-    test_codes:
-    - NEU
-    - NEUT
-    source_units:
-    - 10^9/L
-    target_unit: 10^9/L
-    specimens:
-    - URINE
-    specimen_match: not
-  - name: LB_BASO
-    domain: LB
-    test_codes:
-    - BAS
-    - BASO
-    source_units:
-    - 10^9/L
-    target_unit: 10^9/L
-    specimens:
-    - URINE
-    specimen_match: not
-  - name: LB_EOS
-    domain: LB
-    test_codes:
-    - EOS
-    source_units:
-    - 10^9/L
-    target_unit: 10^9/L
-    specimens:
-    - URINE
-    specimen_match: not
-  - name: LB_MONO
-    domain: LB
-    test_codes:
-    - MON
-    - MONO
-    test_names:
-    - MONOCYTES
-    source_units:
-    - 10^9/L
-    target_unit: 10^9/L
-    specimens:
-    - URINE
-    specimen_match: not
-  - name: LB_ALT
-    domain: LB
-    test_codes:
-    - ALAT
-    - ALT
-    test_names:
-    - ALANINE AMINOTRANSFERASE
-    source_units:
-    - µkat/L
-    target_unit: ukat/L
-    specimens:
-    - URINE
-    specimen_match: not
-  - name: LB_AST
-    domain: LB
-    test_codes:
-    - ASAT
-    - AST
-    test_names:
-    - ASPARTATE AMINOTRANSFERASE
-    source_units:
-    - µkat/L
-    target_unit: ukat/L
-    specimens:
-    - URINE
-    specimen_match: not
-  - name: LB_ALP
-    domain: LB
-    test_codes:
-    - ALP
-    - AP
-    test_names:
-    - ALKALINE PHOSPHATASE
-    source_units:
-    - µkat/L
-    target_unit: ukat/L
-    specimens:
-    - URINE
-    specimen_match: not
-  - name: LB_GLDH
-    domain: LB
-    test_codes:
-    - GLDH
-    source_units:
-    - µkat/L
-    target_unit: ukat/L
-    specimens:
-    - URINE
-    specimen_match: not
-  - name: LB_GGT
-    domain: LB
-    test_codes:
-    - GGT
-    source_units:
-    - µkat/L
-    target_unit: ukat/L
-    specimens:
-    - URINE
-    specimen_match: not
-  - name: LB_CK
-    domain: LB
-    test_codes:
-    - CK
-    source_units:
-    - µkat/L
-    target_unit: ukat/L
-    specimens:
-    - URINE
-    specimen_match: not
-  - name: LB_GLUC
-    domain: LB
-    test_codes:
-    - GLU
-    - GLUC
-    test_names:
-    - GLUCOSE
-    source_units:
-    - mmol/L
-    target_unit: mmol/L
-    specimens:
-    - URINE
-    specimen_match: not
-  - name: LB_CHOL
-    domain: LB
-    test_codes:
-    - CHOL
-    source_units:
-    - mmol/L
-    target_unit: mmol/L
-    specimens:
-    - URINE
-    specimen_match: not
-  - name: LB_TRIG
-    domain: LB
-    test_codes:
-    - TRIG
-    source_units:
-    - mmol/L
-    target_unit: mmol/L
-    specimens:
-    - URINE
-    specimen_match: not
-  - name: LB_CREAT
-    domain: LB
-    test_codes:
-    - CREA
-    - CREAT
-    test_names:
-    - CREATININE
-    source_units:
-    - mmol/L
-    target_unit: mmol/L
-    specimens:
-    - URINE
-    specimen_match: not
-  - name: LB_UREA
-    domain: LB
-    test_codes:
-    - UREA
-    source_units:
-    - mmol/L
-    target_unit: mmol/L
-    specimens:
-    - URINE
-    specimen_match: not
-  - name: LB_PROT
-    domain: LB
-    test_codes:
-    - PROT
-    source_units:
-    - g/L
-    target_unit: g/L
-    specimens:
-    - URINE
-    specimen_match: not
-  - name: LB_ALB
-    domain: LB
-    test_codes:
-    - ALB
-    source_units:
-    - mmol/L
-    target_unit: mmol/L
-    specimens:
-    - URINE
-    specimen_match: not
-  - name: LB_SODIUM
-    domain: LB
-    test_codes:
-    - SODIUM
-    source_units:
-    - mmol/L
-    target_unit: mmol/L
-    specimens:
-    - URINE
-    specimen_match: not
-  - name: LB_K
-    domain: LB
-    test_codes:
-    - K
-    source_units:
-    - mmol/L
-    target_unit: mmol/L
-    specimens:
-    - URINE
-    specimen_match: not
-  - name: LB_CL
-    domain: LB
-    test_codes:
-    - CL
-    source_units:
-    - mmol/L
-    target_unit: mmol/L
-    specimens:
-    - URINE
-    specimen_match: not
-  - name: LB_CA
-    domain: LB
-    test_codes:
-    - CA
-    source_units:
-    - mmol/L
-    target_unit: mmol/L
-    specimens:
-    - URINE
-    specimen_match: not
-  - name: LB_PHOS
-    domain: LB
-    test_codes:
-    - IP
-    - PHOS
-    test_names:
-    - PHOSPHATE
-    source_units:
-    - mmol/L
-    target_unit: mmol/L
-    specimens:
-    - URINE
-    specimen_match: not
-  - name: BW
-    domain: BW
-    test_codes:
-    - AA01
-    - BW
-    test_names:
-    - BODY WEIGHT
-    source_units:
-    - g
-    - G
-    target_unit: g
-  - name: BW_TERMINAL
-    domain: BW
-    test_codes:
-    - RA13
-    - TBW1
-    - TERMBW
-    test_names:
-    - TERMINAL BODY WEIGHT
-    source_units:
-    - g
-    - G
-    target_unit: g
-  - name: OM_WEIGHT_BRAIN
-    domain: OM
-    test_codes:
-    - WEIGHT
-    test_names:
-    - WEIGHT
-    specimens:
-    - BRAIN
-  - name: OM_WEIGHT_HEART
-    domain: OM
-    test_codes:
-    - WEIGHT
-    test_names:
-    - WEIGHT
-    specimens:
-    - HEART
-  - name: OM_WEIGHT_LIVER
-    domain: OM
-    test_codes:
-    - WEIGHT
-    test_names:
-    - WEIGHT
-    specimens:
-    - LIVER
-  - name: OM_WEIGHT_KIDNEY
-    domain: OM
-    test_codes:
-    - WEIGHT
-    test_names:
-    - WEIGHT
-    specimens:
-    - KIDNEY
-  - name: OM_WEIGHT_TESTIS
-    domain: OM
-    test_codes:
-    - WEIGHT
-    test_names:
-    - WEIGHT
-    specimens:
-    - TESTIS
-    sexes:
-    - M
-  - name: OM_WEIGHT_EPIDIDYMIS
-    domain: OM
-    test_codes:
-    - WEIGHT
-    test_names:
-    - WEIGHT
-    specimens:
-    - EPIDIDYMIS
-    sexes:
-    - M
-  - name: OM_WEIGHT_PROSTATE
-    domain: OM
-    test_codes:
-    - WEIGHT
-    test_names:
-    - WEIGHT
-    specimens:
-    - GLAND, PROSTATE
-    sexes:
-    - M
-  - name: OM_WEIGHT_SEMINAL_VESICLE
-    domain: OM
-    test_codes:
-    - WEIGHT
-    test_names:
-    - WEIGHT
-    specimens:
-    - GLAND, SEMINAL VESICLE
-    sexes:
-    - M
-  - name: OM_WEIGHT_ADRENAL
-    domain: OM
-    test_codes:
-    - WEIGHT
-    test_names:
-    - WEIGHT
-    specimens:
-    - GLAND, ADRENAL
-  - name: OM_WEIGHT_SPLEEN
-    domain: OM
-    test_codes:
-    - WEIGHT
-    test_names:
-    - WEIGHT
-    specimens:
-    - SPLEEN
-  - name: OM_WEIGHT_THYMUS
-    domain: OM
-    test_codes:
-    - WEIGHT
-    test_names:
-    - WEIGHT
-    specimens:
-    - THYMUS
-  - name: OM_WEIGHT_OVARY
-    domain: OM
-    test_codes:
-    - WEIGHT
-    test_names:
-    - WEIGHT
-    specimens:
-    - OVARY
-    sexes:
-    - F
-  - name: OM_WEIGHT_UTERUS
-    domain: OM
-    test_codes:
-    - WEIGHT
-    test_names:
-    - WEIGHT
-    specimens:
-    - UTERUS
-    sexes:
-    - F
-  - name: LB_APTT
-    domain: LB
-    test_codes:
-    - APTR
-    - APTT
-    - S_APTT
-    test_names:
-    - ACTIVATED PARTIAL THROMBOPLASTIN TIME
-    source_units:
-    - s
-    target_unit: s
-    specimens:
-    - URINE
-    specimen_match: not
-  - name: LB_BILI
-    domain: LB
-    test_codes:
-    - BIL
-    - BILI
-    - TBIL
-    test_names:
-    - BILIRUBIN
-    source_units:
-    - mmol/L
-    target_unit: mmol/L
-    specimens:
-    - URINE
-    specimen_match: not
-  - name: LB_FIBRINO
-    domain: LB
-    test_codes:
-    - FIBRINO
-    source_units:
-    - g/L
-    target_unit: g/L
-    specimens:
-    - URINE
-    specimen_match: not
-  - name: LB_PT
-    domain: LB
-    test_codes:
-    - PT
-    - PTHSPL
-    - PTRSEC
-    test_names:
-    - PROTHROMBIN TIME
-    source_units:
-    - s
-    target_unit: s
-    specimens:
-    - URINE
-    specimen_match: not
-  - name: OM_OWBW_BRAIN
-    domain: OM
-    test_codes:
-    - OWBR
-    - OWBW
-    test_names:
-    - ORGAN TO BODY WEIGHT RATIO
-    source_units:
-    - '%'
-    target_unit: '%'
-    specimens:
-    - BRAIN
-  - name: OM_OWBW_HEART
-    domain: OM
-    test_codes:
-    - OWBW
-    test_names:
-    - ORGAN TO BODY WEIGHT RATIO
-    source_units:
-    - '%'
-    target_unit: '%'
-    specimens:
-    - HEART
-  - name: OM_OWBW_LIVER
-    domain: OM
-    test_codes:
-    - OWBW
-    test_names:
-    - ORGAN TO BODY WEIGHT RATIO
-    source_units:
-    - '%'
-    target_unit: '%'
-    specimens:
-    - LIVER
-  - name: OM_OWBW_KIDNEY
-    domain: OM
-    test_codes:
-    - OWBW
-    - WEIGHT
-    test_names:
-    - ORGAN TO BODY WEIGHT RATIO
-    source_units:
-    - '%'
-    target_unit: '%'
-    specimens:
-    - KIDNEY
-  - name: OM_OWBW_TESTIS
-    domain: OM
-    test_codes:
-    - OWBW
-    test_names:
-    - ORGAN TO BODY WEIGHT RATIO
-    source_units:
-    - '%'
-    target_unit: '%'
-    specimens:
-    - TESTIS
-    sexes:
-    - M
-  - name: OM_OWBW_EPIDIDYMIS
-    domain: OM
-    test_codes:
-    - OWBW
-    test_names:
-    - ORGAN TO BODY WEIGHT RATIO
-    source_units:
-    - '%'
-    target_unit: '%'
-    specimens:
-    - EPIDIDYMIS
-    sexes:
-    - M
-  - name: OM_OWBW_PROSTATE
-    domain: OM
-    test_codes:
-    - OWBW
-    test_names:
-    - ORGAN TO BODY WEIGHT RATIO
-    source_units:
-    - '%'
-    target_unit: '%'
-    specimens:
-    - GLAND, PROSTATE
-    sexes:
-    - M
-  - name: OM_OWBW_SEMINAL_VESICLE
-    domain: OM
-    test_codes:
-    - OWBW
-    test_names:
-    - ORGAN TO BODY WEIGHT RATIO
-    source_units:
-    - '%'
-    target_unit: '%'
-    specimens:
-    - GLAND, SEMINAL VESICLE
-    sexes:
-    - M
-  - name: OM_OWBW_ADRENAL
-    domain: OM
-    test_codes:
-    - OWBW
-    test_names:
-    - ORGAN TO BODY WEIGHT RATIO
-    source_units:
-    - '%'
-    target_unit: '%'
-    specimens:
-    - GLAND, ADRENAL
-  - name: OM_OWBW_SPLEEN
-    domain: OM
-    test_codes:
-    - OWBW
-    test_names:
-    - ORGAN TO BODY WEIGHT RATIO
-    source_units:
-    - '%'
-    target_unit: '%'
-    specimens:
-    - SPLEEN
-  - name: OM_OWBW_THYMUS
-    domain: OM
-    test_codes:
-    - OWBW
-    test_names:
-    - ORGAN TO BODY WEIGHT RATIO
-    source_units:
-    - '%'
-    target_unit: '%'
-    specimens:
-    - THYMUS
-  - name: OM_OWBW_OVARY
-    domain: OM
-    test_codes:
-    - OWBW
-    test_names:
-    - ORGAN TO BODY WEIGHT RATIO
-    source_units:
-    - '%'
-    target_unit: '%'
-    specimens:
-    - OVARY
-    sexes:
-    - F
-  - name: LB_VOLUME_URINE
-    domain: LB
-    test_codes:
-    - UVOL
-    - VOLUME
-    source_units:
-    - L
-    target_unit: L
-    specimens:
-    - URINE
-  - name: LB_PROT_URINE
-    domain: LB
-    test_codes:
-    - PROT
-    source_units:
-    - g/L
-    target_unit: g/L
-    specimens:
-    - URINE
 assumptions:
 - EXDOSE = 0 identifies control subjects in this archive.
-- QD repeat-dose studies from 2017 through 2022 form the full train and evaluation eligibility window
-  for legacy studies initiated in 2021 or 2022; study-level splitting controls leakage.
-- A non-missing DM.ARM without recovery, RP, off-dose, or TK labels identifies the primary analysis arm.
+- QD repeat-dose studies from 2017 through 2022 form the full train and evaluation
+  eligibility window for legacy studies initiated in 2021 or 2022; study-level splitting
+  controls leakage.
+- A non-missing DM.ARM without recovery, RP, off-dose, or TK labels identifies the
+  primary analysis arm.
 warnings:
-- This multi-sponsor archive is not the Bayer Wuppertal HCD repository used by Gurjanov et al.
-- Facility, breeder, vehicle, housing, and target initial-body-weight matching remain target-study filters;
-  vehicle is missing or redacted for most eligible subjects.
-- The 65-endpoint benchmark is the full current local mapping, not every endpoint reported in the Bayer
-  supplementary material.
+- This multi-sponsor archive is not the Bayer Wuppertal HCD repository used by Gurjanov
+  et al.
+- Facility, breeder, vehicle, housing, and target initial-body-weight matching remain
+  target-study filters; vehicle is missing or redacted for most eligible subjects.
+- The 65-endpoint benchmark is the full current local mapping, not every endpoint
+  reported in the Bayer supplementary material.
+requested_endpoints:
+- LB_RBC
+- LB_HGB
+- LB_HCT
+- LB_MCH
+- LB_MCHC
+- LB_MCV
+- LB_RETI
+- LB_PLAT
+- LB_WBC
+- LB_LYM
+- LB_NEUT
+- LB_BASO
+- LB_EOS
+- LB_MONO
+- LB_ALT
+- LB_AST
+- LB_ALP
+- LB_GLDH
+- LB_GGT
+- LB_CK
+- LB_GLUC
+- LB_CHOL
+- LB_TRIG
+- LB_CREAT
+- LB_UREA
+- LB_PROT
+- LB_ALB
+- LB_SODIUM
+- LB_K
+- LB_CL
+- LB_CA
+- LB_PHOS
+- BW
+- BW_TERMINAL
+- OM_WEIGHT_BRAIN
+- OM_WEIGHT_HEART
+- OM_WEIGHT_LIVER
+- OM_WEIGHT_KIDNEY
+- OM_WEIGHT_TESTIS
+- OM_WEIGHT_EPIDIDYMIS
+- OM_WEIGHT_PROSTATE
+- OM_WEIGHT_SEMINAL_VESICLE
+- OM_WEIGHT_ADRENAL
+- OM_WEIGHT_SPLEEN
+- OM_WEIGHT_THYMUS
+- OM_WEIGHT_OVARY
+- OM_WEIGHT_UTERUS
+- LB_APTT
+- LB_BILI
+- LB_FIBRINO
+- LB_PT
+- OM_OWBW_BRAIN
+- OM_OWBW_HEART
+- OM_OWBW_LIVER
+- OM_OWBW_KIDNEY
+- OM_OWBW_TESTIS
+- OM_OWBW_EPIDIDYMIS
+- OM_OWBW_PROSTATE
+- OM_OWBW_SEMINAL_VESICLE
+- OM_OWBW_ADRENAL
+- OM_OWBW_SPLEEN
+- OM_OWBW_THYMUS
+- OM_OWBW_OVARY
+- LB_VOLUME_URINE
+- LB_PROT_URINE
+endpoint_catalogue:
+  contract: vcgen.canonical_endpoint_catalogue.v4
+  catalogue_id: grit42-canonical-endpoints-2026-09-17-v4
+  sha256: 8ef29868c68b1b02f7dba9aa7790b70c046d4898aa04b3f3e784ea67ec7152e4

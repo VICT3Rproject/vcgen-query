@@ -10,7 +10,8 @@ from its own install path, so callers pass explicit paths instead.
 from __future__ import annotations
 
 # Canonical TS parameter codes backing study-level cohort selectors.
-STUDY_LENGTH_PARAMETER_CODE = "DOSDUR"
+STUDY_LENGTH_PARAMETER_CODE = "SLENGTH"
+DOSE_DURATION_PARAMETER_CODE = "DOSDUR"
 SUPPLIER_PARAMETER_CODE = "SPLRNAM"
 STUDY_TYPE_PARAMETER_CODE = "SSTYP"
 TEST_FACILITY_PARAMETER_CODE = "TSTFNAM"

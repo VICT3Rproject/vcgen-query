@@ -68,7 +68,8 @@ def endpoint_matches_row(
         return False
     if endpoint.source_units:
         parsed_unit = parse_result(endpoint.domain, row, columns).unit
-        if parsed_unit not in set(endpoint.source_units):
+        allowed_units = {unit.upper() for unit in endpoint.source_units}
+        if parsed_unit is None or parsed_unit.upper() not in allowed_units:
             return False
     if endpoint.specimens:
         specimen = _row_specimen(endpoint.domain, row)
@@ -82,6 +83,19 @@ def endpoint_matches_row(
         ):
             return False
         if endpoint.specimen_match == "not" and specimen in allowed:
+            return False
+    if endpoint.methods:
+        method = _row_method(endpoint.domain, row)
+        if not method:
+            return False
+        allowed_methods = set(endpoint.methods)
+        if endpoint.method_match == "exact" and method not in allowed_methods:
+            return False
+        if endpoint.method_match == "contains" and not any(
+            item in method for item in endpoint.methods
+        ):
+            return False
+        if endpoint.method_match == "not" and method in allowed_methods:
             return False
     return True
 
@@ -131,6 +145,14 @@ def _row_specimen(domain: str, row: dict[str, Any]) -> str:
         "CAT",
         "SCAT",
     ):
+        if column in row and row.get(column) not in (None, ""):
+            return normalize_value(row.get(column))
+    return ""
+
+
+def _row_method(domain: str, row: dict[str, Any]) -> str:
+    domain = domain.upper()
+    for column in (f"{domain}METHOD", "METHOD"):
         if column in row and row.get(column) not in (None, ""):
             return normalize_value(row.get(column))
     return ""

@@ -23,7 +23,7 @@ SCHEMA_RESOURCES = {
     GRIT42_ADVANCED_SUBJECT_QUERY_CONTRACT: "data/grit42.advanced_subject_query.v1.schema.json",
     GRIT42_SUBJECT_QUERY_IMPORT_CONTRACT: "data/grit42.subject_query_import.v1.schema.json",
     SUBJECT_PREDICATE_CONTRACT: "data/vcgen.subject_predicate.v1.schema.json",
-    COHORT_QUERY_CONTRACT: "data/vcgen.cohort_query.v4.schema.json",
+    COHORT_QUERY_CONTRACT: "data/vcgen.cohort_query.v5.schema.json",
 }
 
 

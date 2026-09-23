@@ -1,5 +1,5 @@
 {
-  "catalogue_id": "vcgen.unit_catalogue.v1",
+  "catalogue_id": "vcgen.unit_catalogue.v2",
   "ucum_version": "2.2",
   "units": [
     {"code": "1", "dimension": "fraction", "scale": "1", "offset": "0"},
@@ -32,6 +32,7 @@
   ],
   "aliases": [
     {"label": "G", "code": "g"},
+    {"label": "MG", "code": "mg"},
     {"label": "µkat/L", "code": "ukat/L"},
     {"label": "μkat/L", "code": "ukat/L"},
     {"label": "°C", "code": "Cel"},

@@ -1,0 +1,2446 @@
+{
+  "contract": "vcgen.canonical_endpoint_catalogue.v4",
+  "catalogue_id": "grit42-canonical-endpoints-2026-09-17-v4",
+  "captured_on": "2026-09-17",
+  "grit42_column_catalogue_id": "grit42-columns-2026-08-22-v1",
+  "source": {
+    "kind": "validated_v4_parity_migration",
+    "note": "Selectors were migrated without changing accepted rows or canonical values. Canonical units and primitive or derived methodology are package-owned and must not be repeated in model protocols."
+  },
+  "endpoints": [
+    {
+      "name": "LB_RBC",
+      "source_domain": "LB",
+      "test_code_aliases": [
+        "RBC"
+      ],
+      "test_name_aliases": [],
+      "specimen_rule": {
+        "match": "not",
+        "values": [
+          "URINE"
+        ]
+      },
+      "source_units": [
+        "10^12/L"
+      ],
+      "target_unit": "10^12/L",
+      "method_rule": {
+        "match": "any",
+        "values": []
+      },
+      "sexes": [],
+      "display_label": "Lb Rbc",
+      "provenance": {
+        "source": "vcgen v4 selector parity migration",
+        "source_query_id": "gurjanov_28d_benchmark_full",
+        "grit42_column_catalogue_id": "grit42-columns-2026-08-22-v1",
+        "captured_on": "2026-09-14",
+        "derivation_source": "vcgen protocol-v2 parity migration"
+      },
+      "derivation": {
+        "kind": "primitive"
+      }
+    },
+    {
+      "name": "LB_HGB",
+      "source_domain": "LB",
+      "test_code_aliases": [
+        "HGB"
+      ],
+      "test_name_aliases": [],
+      "specimen_rule": {
+        "match": "not",
+        "values": [
+          "URINE"
+        ]
+      },
+      "source_units": [
+        "mmol/L"
+      ],
+      "target_unit": "mmol/L",
+      "method_rule": {
+        "match": "any",
+        "values": []
+      },
+      "sexes": [],
+      "display_label": "Lb Hgb",
+      "provenance": {
+        "source": "vcgen v4 selector parity migration",
+        "source_query_id": "gurjanov_28d_benchmark_full",
+        "grit42_column_catalogue_id": "grit42-columns-2026-08-22-v1",
+        "captured_on": "2026-09-14",
+        "derivation_source": "vcgen protocol-v2 parity migration"
+      },
+      "derivation": {
+        "kind": "primitive"
+      }
+    },
+    {
+      "name": "LB_HCT",
+      "source_domain": "LB",
+      "test_code_aliases": [
+        "HCT"
+      ],
+      "test_name_aliases": [],
+      "specimen_rule": {
+        "match": "not",
+        "values": [
+          "URINE"
+        ]
+      },
+      "source_units": [
+        "%"
+      ],
+      "target_unit": "%",
+      "method_rule": {
+        "match": "any",
+        "values": []
+      },
+      "sexes": [],
+      "display_label": "Hematocrit",
+      "provenance": {
+        "source": "vcgen v4 selector parity migration",
+        "source_query_id": "gurjanov_28d_benchmark_full",
+        "grit42_column_catalogue_id": "grit42-columns-2026-08-22-v1",
+        "captured_on": "2026-09-14",
+        "derivation_source": "vcgen protocol-v2 parity migration"
+      },
+      "derivation": {
+        "kind": "primitive"
+      }
+    },
+    {
+      "name": "LB_MCH",
+      "source_domain": "LB",
+      "test_code_aliases": [
+        "MCH"
+      ],
+      "test_name_aliases": [],
+      "specimen_rule": {
+        "match": "not",
+        "values": [
+          "URINE"
+        ]
+      },
+      "source_units": [
+        "fmol"
+      ],
+      "target_unit": "fmol",
+      "method_rule": {
+        "match": "any",
+        "values": []
+      },
+      "sexes": [],
+      "display_label": "Lb Mch",
+      "provenance": {
+        "source": "vcgen v4 selector parity migration",
+        "source_query_id": "gurjanov_28d_benchmark_full",
+        "grit42_column_catalogue_id": "grit42-columns-2026-08-22-v1",
+        "captured_on": "2026-09-14",
+        "derivation_source": "vcgen protocol-v2 parity migration"
+      },
+      "derivation": {
+        "kind": "primitive"
+      }
+    },
+    {
+      "name": "LB_MCHC",
+      "source_domain": "LB",
+      "test_code_aliases": [
+        "MCHC"
+      ],
+      "test_name_aliases": [],
+      "specimen_rule": {
+        "match": "not",
+        "values": [
+          "URINE"
+        ]
+      },
+      "source_units": [
+        "mmol/L"
+      ],
+      "target_unit": "mmol/L",
+      "method_rule": {
+        "match": "any",
+        "values": []
+      },
+      "sexes": [],
+      "display_label": "Lb Mchc",
+      "provenance": {
+        "source": "vcgen v4 selector parity migration",
+        "source_query_id": "gurjanov_28d_benchmark_full",
+        "grit42_column_catalogue_id": "grit42-columns-2026-08-22-v1",
+        "captured_on": "2026-09-14",
+        "derivation_source": "vcgen protocol-v2 parity migration"
+      },
+      "derivation": {
+        "kind": "primitive"
+      }
+    },
+    {
+      "name": "LB_MCV",
+      "source_domain": "LB",
+      "test_code_aliases": [
+        "MCV"
+      ],
+      "test_name_aliases": [],
+      "specimen_rule": {
+        "match": "not",
+        "values": [
+          "URINE"
+        ]
+      },
+      "source_units": [
+        "fL"
+      ],
+      "target_unit": "fL",
+      "method_rule": {
+        "match": "any",
+        "values": []
+      },
+      "sexes": [],
+      "display_label": "Lb Mcv",
+      "provenance": {
+        "source": "vcgen v4 selector parity migration",
+        "source_query_id": "gurjanov_28d_benchmark_full",
+        "grit42_column_catalogue_id": "grit42-columns-2026-08-22-v1",
+        "captured_on": "2026-09-14",
+        "derivation_source": "vcgen protocol-v2 parity migration"
+      },
+      "derivation": {
+        "kind": "primitive"
+      }
+    },
+    {
+      "name": "LB_RETI",
+      "source_domain": "LB",
+      "test_code_aliases": [
+        "RET",
+        "RETI"
+      ],
+      "test_name_aliases": [
+        "RETICULOCYTES"
+      ],
+      "specimen_rule": {
+        "match": "not",
+        "values": [
+          "URINE"
+        ]
+      },
+      "source_units": [
+        "10^9/L"
+      ],
+      "target_unit": "10^9/L",
+      "method_rule": {
+        "match": "any",
+        "values": []
+      },
+      "sexes": [],
+      "display_label": "Lb Reti",
+      "provenance": {
+        "source": "vcgen v4 selector parity migration",
+        "source_query_id": "gurjanov_28d_benchmark_full",
+        "grit42_column_catalogue_id": "grit42-columns-2026-08-22-v1",
+        "captured_on": "2026-09-14",
+        "derivation_source": "vcgen protocol-v2 parity migration"
+      },
+      "derivation": {
+        "kind": "primitive"
+      }
+    },
+    {
+      "name": "LB_PLAT",
+      "source_domain": "LB",
+      "test_code_aliases": [
+        "PLAT",
+        "PLT"
+      ],
+      "test_name_aliases": [],
+      "specimen_rule": {
+        "match": "not",
+        "values": [
+          "URINE"
+        ]
+      },
+      "source_units": [
+        "10^9/L"
+      ],
+      "target_unit": "10^9/L",
+      "method_rule": {
+        "match": "any",
+        "values": []
+      },
+      "sexes": [],
+      "display_label": "Lb Plat",
+      "provenance": {
+        "source": "vcgen v4 selector parity migration",
+        "source_query_id": "gurjanov_28d_benchmark_full",
+        "grit42_column_catalogue_id": "grit42-columns-2026-08-22-v1",
+        "captured_on": "2026-09-14",
+        "derivation_source": "vcgen protocol-v2 parity migration"
+      },
+      "derivation": {
+        "kind": "primitive"
+      }
+    },
+    {
+      "name": "LB_WBC",
+      "source_domain": "LB",
+      "test_code_aliases": [
+        "WBC"
+      ],
+      "test_name_aliases": [],
+      "specimen_rule": {
+        "match": "not",
+        "values": [
+          "URINE"
+        ]
+      },
+      "source_units": [
+        "10^9/L"
+      ],
+      "target_unit": "10^9/L",
+      "method_rule": {
+        "match": "any",
+        "values": []
+      },
+      "sexes": [],
+      "display_label": "Lb Wbc",
+      "provenance": {
+        "source": "vcgen v4 selector parity migration",
+        "source_query_id": "gurjanov_28d_benchmark_full",
+        "grit42_column_catalogue_id": "grit42-columns-2026-08-22-v1",
+        "captured_on": "2026-09-14",
+        "derivation_source": "vcgen protocol-v2 parity migration"
+      },
+      "derivation": {
+        "kind": "primitive"
+      }
+    },
+    {
+      "name": "LB_LYM",
+      "source_domain": "LB",
+      "test_code_aliases": [
+        "LYM"
+      ],
+      "test_name_aliases": [],
+      "specimen_rule": {
+        "match": "not",
+        "values": [
+          "URINE"
+        ]
+      },
+      "source_units": [
+        "10^9/L"
+      ],
+      "target_unit": "10^9/L",
+      "method_rule": {
+        "match": "any",
+        "values": []
+      },
+      "sexes": [],
+      "display_label": "Lb Lym",
+      "provenance": {
+        "source": "vcgen v4 selector parity migration",
+        "source_query_id": "gurjanov_28d_benchmark_full",
+        "grit42_column_catalogue_id": "grit42-columns-2026-08-22-v1",
+        "captured_on": "2026-09-14",
+        "derivation_source": "vcgen protocol-v2 parity migration"
+      },
+      "derivation": {
+        "kind": "primitive"
+      }
+    },
+    {
+      "name": "LB_NEUT",
+      "source_domain": "LB",
+      "test_code_aliases": [
+        "NEU",
+        "NEUT"
+      ],
+      "test_name_aliases": [],
+      "specimen_rule": {
+        "match": "not",
+        "values": [
+          "URINE"
+        ]
+      },
+      "source_units": [
+        "10^9/L"
+      ],
+      "target_unit": "10^9/L",
+      "method_rule": {
+        "match": "any",
+        "values": []
+      },
+      "sexes": [],
+      "display_label": "Lb Neut",
+      "provenance": {
+        "source": "vcgen v4 selector parity migration",
+        "source_query_id": "gurjanov_28d_benchmark_full",
+        "grit42_column_catalogue_id": "grit42-columns-2026-08-22-v1",
+        "captured_on": "2026-09-14",
+        "derivation_source": "vcgen protocol-v2 parity migration"
+      },
+      "derivation": {
+        "kind": "primitive"
+      }
+    },
+    {
+      "name": "LB_BASO",
+      "source_domain": "LB",
+      "test_code_aliases": [
+        "BAS",
+        "BASO"
+      ],
+      "test_name_aliases": [],
+      "specimen_rule": {
+        "match": "not",
+        "values": [
+          "URINE"
+        ]
+      },
+      "source_units": [
+        "10^9/L"
+      ],
+      "target_unit": "10^9/L",
+      "method_rule": {
+        "match": "any",
+        "values": []
+      },
+      "sexes": [],
+      "display_label": "Lb Baso",
+      "provenance": {
+        "source": "vcgen v4 selector parity migration",
+        "source_query_id": "gurjanov_28d_benchmark_full",
+        "grit42_column_catalogue_id": "grit42-columns-2026-08-22-v1",
+        "captured_on": "2026-09-14",
+        "derivation_source": "vcgen protocol-v2 parity migration"
+      },
+      "derivation": {
+        "kind": "primitive"
+      }
+    },
+    {
+      "name": "LB_EOS",
+      "source_domain": "LB",
+      "test_code_aliases": [
+        "EOS"
+      ],
+      "test_name_aliases": [],
+      "specimen_rule": {
+        "match": "not",
+        "values": [
+          "URINE"
+        ]
+      },
+      "source_units": [
+        "10^9/L"
+      ],
+      "target_unit": "10^9/L",
+      "method_rule": {
+        "match": "any",
+        "values": []
+      },
+      "sexes": [],
+      "display_label": "Lb Eos",
+      "provenance": {
+        "source": "vcgen v4 selector parity migration",
+        "source_query_id": "gurjanov_28d_benchmark_full",
+        "grit42_column_catalogue_id": "grit42-columns-2026-08-22-v1",
+        "captured_on": "2026-09-14",
+        "derivation_source": "vcgen protocol-v2 parity migration"
+      },
+      "derivation": {
+        "kind": "primitive"
+      }
+    },
+    {
+      "name": "LB_MONO",
+      "source_domain": "LB",
+      "test_code_aliases": [
+        "MON",
+        "MONO"
+      ],
+      "test_name_aliases": [
+        "MONOCYTES"
+      ],
+      "specimen_rule": {
+        "match": "not",
+        "values": [
+          "URINE"
+        ]
+      },
+      "source_units": [
+        "10^9/L"
+      ],
+      "target_unit": "10^9/L",
+      "method_rule": {
+        "match": "any",
+        "values": []
+      },
+      "sexes": [],
+      "display_label": "Lb Mono",
+      "provenance": {
+        "source": "vcgen v4 selector parity migration",
+        "source_query_id": "gurjanov_28d_benchmark_full",
+        "grit42_column_catalogue_id": "grit42-columns-2026-08-22-v1",
+        "captured_on": "2026-09-14",
+        "derivation_source": "vcgen protocol-v2 parity migration"
+      },
+      "derivation": {
+        "kind": "primitive"
+      }
+    },
+    {
+      "name": "LB_ALT",
+      "source_domain": "LB",
+      "test_code_aliases": [
+        "ALAT",
+        "ALT"
+      ],
+      "test_name_aliases": [
+        "ALANINE AMINOTRANSFERASE"
+      ],
+      "specimen_rule": {
+        "match": "not",
+        "values": [
+          "URINE"
+        ]
+      },
+      "source_units": [
+        "µkat/L"
+      ],
+      "target_unit": "ukat/L",
+      "method_rule": {
+        "match": "any",
+        "values": []
+      },
+      "sexes": [],
+      "display_label": "Lb Alt",
+      "provenance": {
+        "source": "vcgen v4 selector parity migration",
+        "source_query_id": "gurjanov_28d_benchmark_full",
+        "grit42_column_catalogue_id": "grit42-columns-2026-08-22-v1",
+        "captured_on": "2026-09-14",
+        "derivation_source": "vcgen protocol-v2 parity migration"
+      },
+      "derivation": {
+        "kind": "primitive"
+      }
+    },
+    {
+      "name": "LB_AST",
+      "source_domain": "LB",
+      "test_code_aliases": [
+        "ASAT",
+        "AST"
+      ],
+      "test_name_aliases": [
+        "ASPARTATE AMINOTRANSFERASE"
+      ],
+      "specimen_rule": {
+        "match": "not",
+        "values": [
+          "URINE"
+        ]
+      },
+      "source_units": [
+        "µkat/L"
+      ],
+      "target_unit": "ukat/L",
+      "method_rule": {
+        "match": "any",
+        "values": []
+      },
+      "sexes": [],
+      "display_label": "Lb Ast",
+      "provenance": {
+        "source": "vcgen v4 selector parity migration",
+        "source_query_id": "gurjanov_28d_benchmark_full",
+        "grit42_column_catalogue_id": "grit42-columns-2026-08-22-v1",
+        "captured_on": "2026-09-14",
+        "derivation_source": "vcgen protocol-v2 parity migration"
+      },
+      "derivation": {
+        "kind": "primitive"
+      }
+    },
+    {
+      "name": "LB_ALP",
+      "source_domain": "LB",
+      "test_code_aliases": [
+        "ALP",
+        "AP"
+      ],
+      "test_name_aliases": [
+        "ALKALINE PHOSPHATASE"
+      ],
+      "specimen_rule": {
+        "match": "not",
+        "values": [
+          "URINE"
+        ]
+      },
+      "source_units": [
+        "µkat/L"
+      ],
+      "target_unit": "ukat/L",
+      "method_rule": {
+        "match": "any",
+        "values": []
+      },
+      "sexes": [],
+      "display_label": "Lb Alp",
+      "provenance": {
+        "source": "vcgen v4 selector parity migration",
+        "source_query_id": "gurjanov_28d_benchmark_full",
+        "grit42_column_catalogue_id": "grit42-columns-2026-08-22-v1",
+        "captured_on": "2026-09-14",
+        "derivation_source": "vcgen protocol-v2 parity migration"
+      },
+      "derivation": {
+        "kind": "primitive"
+      }
+    },
+    {
+      "name": "LB_GLDH",
+      "source_domain": "LB",
+      "test_code_aliases": [
+        "GLDH"
+      ],
+      "test_name_aliases": [],
+      "specimen_rule": {
+        "match": "not",
+        "values": [
+          "URINE"
+        ]
+      },
+      "source_units": [
+        "µkat/L"
+      ],
+      "target_unit": "ukat/L",
+      "method_rule": {
+        "match": "any",
+        "values": []
+      },
+      "sexes": [],
+      "display_label": "Lb Gldh",
+      "provenance": {
+        "source": "vcgen v4 selector parity migration",
+        "source_query_id": "gurjanov_28d_benchmark_full",
+        "grit42_column_catalogue_id": "grit42-columns-2026-08-22-v1",
+        "captured_on": "2026-09-14",
+        "derivation_source": "vcgen protocol-v2 parity migration"
+      },
+      "derivation": {
+        "kind": "primitive"
+      }
+    },
+    {
+      "name": "LB_GGT",
+      "source_domain": "LB",
+      "test_code_aliases": [
+        "GGT"
+      ],
+      "test_name_aliases": [],
+      "specimen_rule": {
+        "match": "not",
+        "values": [
+          "URINE"
+        ]
+      },
+      "source_units": [
+        "µkat/L"
+      ],
+      "target_unit": "ukat/L",
+      "method_rule": {
+        "match": "any",
+        "values": []
+      },
+      "sexes": [],
+      "display_label": "Lb Ggt",
+      "provenance": {
+        "source": "vcgen v4 selector parity migration",
+        "source_query_id": "gurjanov_28d_benchmark_full",
+        "grit42_column_catalogue_id": "grit42-columns-2026-08-22-v1",
+        "captured_on": "2026-09-14",
+        "derivation_source": "vcgen protocol-v2 parity migration"
+      },
+      "derivation": {
+        "kind": "primitive"
+      }
+    },
+    {
+      "name": "LB_CK",
+      "source_domain": "LB",
+      "test_code_aliases": [
+        "CK"
+      ],
+      "test_name_aliases": [],
+      "specimen_rule": {
+        "match": "not",
+        "values": [
+          "URINE"
+        ]
+      },
+      "source_units": [
+        "µkat/L"
+      ],
+      "target_unit": "ukat/L",
+      "method_rule": {
+        "match": "any",
+        "values": []
+      },
+      "sexes": [],
+      "display_label": "Lb Ck",
+      "provenance": {
+        "source": "vcgen v4 selector parity migration",
+        "source_query_id": "gurjanov_28d_benchmark_full",
+        "grit42_column_catalogue_id": "grit42-columns-2026-08-22-v1",
+        "captured_on": "2026-09-14",
+        "derivation_source": "vcgen protocol-v2 parity migration"
+      },
+      "derivation": {
+        "kind": "primitive"
+      }
+    },
+    {
+      "name": "LB_GLUC",
+      "source_domain": "LB",
+      "test_code_aliases": [
+        "GLU",
+        "GLUC"
+      ],
+      "test_name_aliases": [
+        "GLUCOSE"
+      ],
+      "specimen_rule": {
+        "match": "not",
+        "values": [
+          "URINE"
+        ]
+      },
+      "source_units": [
+        "mmol/L"
+      ],
+      "target_unit": "mmol/L",
+      "method_rule": {
+        "match": "any",
+        "values": []
+      },
+      "sexes": [],
+      "display_label": "Lb Gluc",
+      "provenance": {
+        "source": "vcgen v4 selector parity migration",
+        "source_query_id": "gurjanov_28d_benchmark_full",
+        "grit42_column_catalogue_id": "grit42-columns-2026-08-22-v1",
+        "captured_on": "2026-09-14",
+        "derivation_source": "vcgen protocol-v2 parity migration"
+      },
+      "derivation": {
+        "kind": "primitive"
+      }
+    },
+    {
+      "name": "LB_CHOL",
+      "source_domain": "LB",
+      "test_code_aliases": [
+        "CHOL"
+      ],
+      "test_name_aliases": [],
+      "specimen_rule": {
+        "match": "not",
+        "values": [
+          "URINE"
+        ]
+      },
+      "source_units": [
+        "mmol/L"
+      ],
+      "target_unit": "mmol/L",
+      "method_rule": {
+        "match": "any",
+        "values": []
+      },
+      "sexes": [],
+      "display_label": "Lb Chol",
+      "provenance": {
+        "source": "vcgen v4 selector parity migration",
+        "source_query_id": "gurjanov_28d_benchmark_full",
+        "grit42_column_catalogue_id": "grit42-columns-2026-08-22-v1",
+        "captured_on": "2026-09-14",
+        "derivation_source": "vcgen protocol-v2 parity migration"
+      },
+      "derivation": {
+        "kind": "primitive"
+      }
+    },
+    {
+      "name": "LB_TRIG",
+      "source_domain": "LB",
+      "test_code_aliases": [
+        "TRIG"
+      ],
+      "test_name_aliases": [],
+      "specimen_rule": {
+        "match": "not",
+        "values": [
+          "URINE"
+        ]
+      },
+      "source_units": [
+        "mmol/L"
+      ],
+      "target_unit": "mmol/L",
+      "method_rule": {
+        "match": "any",
+        "values": []
+      },
+      "sexes": [],
+      "display_label": "Lb Trig",
+      "provenance": {
+        "source": "vcgen v4 selector parity migration",
+        "source_query_id": "gurjanov_28d_benchmark_full",
+        "grit42_column_catalogue_id": "grit42-columns-2026-08-22-v1",
+        "captured_on": "2026-09-14",
+        "derivation_source": "vcgen protocol-v2 parity migration"
+      },
+      "derivation": {
+        "kind": "primitive"
+      }
+    },
+    {
+      "name": "LB_CREAT",
+      "source_domain": "LB",
+      "test_code_aliases": [
+        "CREA",
+        "CREAT"
+      ],
+      "test_name_aliases": [
+        "CREATININE"
+      ],
+      "specimen_rule": {
+        "match": "not",
+        "values": [
+          "URINE"
+        ]
+      },
+      "source_units": [
+        "mmol/L"
+      ],
+      "target_unit": "mmol/L",
+      "method_rule": {
+        "match": "any",
+        "values": []
+      },
+      "sexes": [],
+      "display_label": "Lb Creat",
+      "provenance": {
+        "source": "vcgen v4 selector parity migration",
+        "source_query_id": "gurjanov_28d_benchmark_full",
+        "grit42_column_catalogue_id": "grit42-columns-2026-08-22-v1",
+        "captured_on": "2026-09-14",
+        "derivation_source": "vcgen protocol-v2 parity migration"
+      },
+      "derivation": {
+        "kind": "primitive"
+      }
+    },
+    {
+      "name": "LB_UREA",
+      "source_domain": "LB",
+      "test_code_aliases": [
+        "UREA"
+      ],
+      "test_name_aliases": [],
+      "specimen_rule": {
+        "match": "not",
+        "values": [
+          "URINE"
+        ]
+      },
+      "source_units": [
+        "mmol/L"
+      ],
+      "target_unit": "mmol/L",
+      "method_rule": {
+        "match": "any",
+        "values": []
+      },
+      "sexes": [],
+      "display_label": "Lb Urea",
+      "provenance": {
+        "source": "vcgen v4 selector parity migration",
+        "source_query_id": "gurjanov_28d_benchmark_full",
+        "grit42_column_catalogue_id": "grit42-columns-2026-08-22-v1",
+        "captured_on": "2026-09-14",
+        "derivation_source": "vcgen protocol-v2 parity migration"
+      },
+      "derivation": {
+        "kind": "primitive"
+      }
+    },
+    {
+      "name": "LB_PROT",
+      "source_domain": "LB",
+      "test_code_aliases": [
+        "PROT"
+      ],
+      "test_name_aliases": [],
+      "specimen_rule": {
+        "match": "not",
+        "values": [
+          "URINE"
+        ]
+      },
+      "source_units": [
+        "g/L"
+      ],
+      "target_unit": "g/L",
+      "method_rule": {
+        "match": "any",
+        "values": []
+      },
+      "sexes": [],
+      "display_label": "Lb Prot",
+      "provenance": {
+        "source": "vcgen v4 selector parity migration",
+        "source_query_id": "gurjanov_28d_benchmark_full",
+        "grit42_column_catalogue_id": "grit42-columns-2026-08-22-v1",
+        "captured_on": "2026-09-14",
+        "derivation_source": "vcgen protocol-v2 parity migration"
+      },
+      "derivation": {
+        "kind": "primitive"
+      }
+    },
+    {
+      "name": "LB_ALB",
+      "source_domain": "LB",
+      "test_code_aliases": [
+        "ALB"
+      ],
+      "test_name_aliases": [],
+      "specimen_rule": {
+        "match": "not",
+        "values": [
+          "URINE"
+        ]
+      },
+      "source_units": [
+        "mmol/L"
+      ],
+      "target_unit": "mmol/L",
+      "method_rule": {
+        "match": "any",
+        "values": []
+      },
+      "sexes": [],
+      "display_label": "Lb Alb",
+      "provenance": {
+        "source": "vcgen v4 selector parity migration",
+        "source_query_id": "gurjanov_28d_benchmark_full",
+        "grit42_column_catalogue_id": "grit42-columns-2026-08-22-v1",
+        "captured_on": "2026-09-14",
+        "derivation_source": "vcgen protocol-v2 parity migration"
+      },
+      "derivation": {
+        "kind": "primitive"
+      }
+    },
+    {
+      "name": "LB_SODIUM",
+      "source_domain": "LB",
+      "test_code_aliases": [
+        "SODIUM"
+      ],
+      "test_name_aliases": [],
+      "specimen_rule": {
+        "match": "not",
+        "values": [
+          "URINE"
+        ]
+      },
+      "source_units": [
+        "mmol/L"
+      ],
+      "target_unit": "mmol/L",
+      "method_rule": {
+        "match": "any",
+        "values": []
+      },
+      "sexes": [],
+      "display_label": "Lb Sodium",
+      "provenance": {
+        "source": "vcgen v4 selector parity migration",
+        "source_query_id": "gurjanov_28d_benchmark_full",
+        "grit42_column_catalogue_id": "grit42-columns-2026-08-22-v1",
+        "captured_on": "2026-09-14",
+        "derivation_source": "vcgen protocol-v2 parity migration"
+      },
+      "derivation": {
+        "kind": "primitive"
+      }
+    },
+    {
+      "name": "LB_K",
+      "source_domain": "LB",
+      "test_code_aliases": [
+        "K"
+      ],
+      "test_name_aliases": [],
+      "specimen_rule": {
+        "match": "not",
+        "values": [
+          "URINE"
+        ]
+      },
+      "source_units": [
+        "mmol/L"
+      ],
+      "target_unit": "mmol/L",
+      "method_rule": {
+        "match": "any",
+        "values": []
+      },
+      "sexes": [],
+      "display_label": "Lb K",
+      "provenance": {
+        "source": "vcgen v4 selector parity migration",
+        "source_query_id": "gurjanov_28d_benchmark_full",
+        "grit42_column_catalogue_id": "grit42-columns-2026-08-22-v1",
+        "captured_on": "2026-09-14",
+        "derivation_source": "vcgen protocol-v2 parity migration"
+      },
+      "derivation": {
+        "kind": "primitive"
+      }
+    },
+    {
+      "name": "LB_CL",
+      "source_domain": "LB",
+      "test_code_aliases": [
+        "CL"
+      ],
+      "test_name_aliases": [],
+      "specimen_rule": {
+        "match": "not",
+        "values": [
+          "URINE"
+        ]
+      },
+      "source_units": [
+        "mmol/L"
+      ],
+      "target_unit": "mmol/L",
+      "method_rule": {
+        "match": "any",
+        "values": []
+      },
+      "sexes": [],
+      "display_label": "Lb Cl",
+      "provenance": {
+        "source": "vcgen v4 selector parity migration",
+        "source_query_id": "gurjanov_28d_benchmark_full",
+        "grit42_column_catalogue_id": "grit42-columns-2026-08-22-v1",
+        "captured_on": "2026-09-14",
+        "derivation_source": "vcgen protocol-v2 parity migration"
+      },
+      "derivation": {
+        "kind": "primitive"
+      }
+    },
+    {
+      "name": "LB_CA",
+      "source_domain": "LB",
+      "test_code_aliases": [
+        "CA"
+      ],
+      "test_name_aliases": [],
+      "specimen_rule": {
+        "match": "not",
+        "values": [
+          "URINE"
+        ]
+      },
+      "source_units": [
+        "mmol/L"
+      ],
+      "target_unit": "mmol/L",
+      "method_rule": {
+        "match": "any",
+        "values": []
+      },
+      "sexes": [],
+      "display_label": "Lb Ca",
+      "provenance": {
+        "source": "vcgen v4 selector parity migration",
+        "source_query_id": "gurjanov_28d_benchmark_full",
+        "grit42_column_catalogue_id": "grit42-columns-2026-08-22-v1",
+        "captured_on": "2026-09-14",
+        "derivation_source": "vcgen protocol-v2 parity migration"
+      },
+      "derivation": {
+        "kind": "primitive"
+      }
+    },
+    {
+      "name": "LB_PHOS",
+      "source_domain": "LB",
+      "test_code_aliases": [
+        "IP",
+        "PHOS"
+      ],
+      "test_name_aliases": [
+        "PHOSPHATE"
+      ],
+      "specimen_rule": {
+        "match": "not",
+        "values": [
+          "URINE"
+        ]
+      },
+      "source_units": [
+        "mmol/L"
+      ],
+      "target_unit": "mmol/L",
+      "method_rule": {
+        "match": "any",
+        "values": []
+      },
+      "sexes": [],
+      "display_label": "Lb Phos",
+      "provenance": {
+        "source": "vcgen v4 selector parity migration",
+        "source_query_id": "gurjanov_28d_benchmark_full",
+        "grit42_column_catalogue_id": "grit42-columns-2026-08-22-v1",
+        "captured_on": "2026-09-14",
+        "derivation_source": "vcgen protocol-v2 parity migration"
+      },
+      "derivation": {
+        "kind": "primitive"
+      }
+    },
+    {
+      "name": "BW",
+      "source_domain": "BW",
+      "test_code_aliases": [
+        "AA01",
+        "BW"
+      ],
+      "test_name_aliases": [
+        "BODY WEIGHT"
+      ],
+      "specimen_rule": {
+        "match": "any",
+        "values": []
+      },
+      "source_units": [
+        "g",
+        "G"
+      ],
+      "target_unit": "g",
+      "method_rule": {
+        "match": "any",
+        "values": []
+      },
+      "sexes": [],
+      "display_label": "Body weight",
+      "provenance": {
+        "source": "vcgen v4 selector parity migration",
+        "source_query_id": "gurjanov_28d_benchmark_full",
+        "grit42_column_catalogue_id": "grit42-columns-2026-08-22-v1",
+        "captured_on": "2026-09-14",
+        "derivation_source": "vcgen protocol-v2 parity migration"
+      },
+      "derivation": {
+        "kind": "primitive"
+      }
+    },
+    {
+      "name": "BW_TERMINAL",
+      "source_domain": "BW",
+      "test_code_aliases": [
+        "RA13",
+        "TBW1",
+        "TERMBW"
+      ],
+      "test_name_aliases": [
+        "TERMINAL BODY WEIGHT"
+      ],
+      "specimen_rule": {
+        "match": "any",
+        "values": []
+      },
+      "source_units": [
+        "g",
+        "G"
+      ],
+      "target_unit": "g",
+      "method_rule": {
+        "match": "any",
+        "values": []
+      },
+      "sexes": [],
+      "display_label": "Terminal body weight",
+      "provenance": {
+        "source": "vcgen v4 selector parity migration",
+        "source_query_id": "gurjanov_28d_benchmark_full",
+        "grit42_column_catalogue_id": "grit42-columns-2026-08-22-v1",
+        "captured_on": "2026-09-14",
+        "derivation_source": "vcgen protocol-v2 parity migration"
+      },
+      "derivation": {
+        "kind": "primitive"
+      }
+    },
+    {
+      "name": "OM_WEIGHT_BRAIN",
+      "source_domain": "OM",
+      "test_code_aliases": [
+        "WEIGHT"
+      ],
+      "test_name_aliases": [
+        "WEIGHT"
+      ],
+      "specimen_rule": {
+        "match": "exact",
+        "values": [
+          "BRAIN"
+        ]
+      },
+      "source_units": [
+        "G",
+        "MG"
+      ],
+      "target_unit": "g",
+      "method_rule": {
+        "match": "any",
+        "values": []
+      },
+      "sexes": [],
+      "display_label": "Om Weight Brain",
+      "provenance": {
+        "source": "vcgen v4 selector parity migration",
+        "source_query_id": "gurjanov_28d_benchmark_full",
+        "grit42_column_catalogue_id": "grit42-columns-2026-08-22-v1",
+        "captured_on": "2026-09-14",
+        "derivation_source": "vcgen protocol-v2 parity migration"
+      },
+      "derivation": {
+        "kind": "primitive"
+      }
+    },
+    {
+      "name": "OM_WEIGHT_HEART",
+      "source_domain": "OM",
+      "test_code_aliases": [
+        "WEIGHT"
+      ],
+      "test_name_aliases": [
+        "WEIGHT"
+      ],
+      "specimen_rule": {
+        "match": "exact",
+        "values": [
+          "HEART"
+        ]
+      },
+      "source_units": [
+        "G",
+        "MG"
+      ],
+      "target_unit": "g",
+      "method_rule": {
+        "match": "any",
+        "values": []
+      },
+      "sexes": [],
+      "display_label": "Om Weight Heart",
+      "provenance": {
+        "source": "vcgen v4 selector parity migration",
+        "source_query_id": "gurjanov_28d_benchmark_full",
+        "grit42_column_catalogue_id": "grit42-columns-2026-08-22-v1",
+        "captured_on": "2026-09-14",
+        "derivation_source": "vcgen protocol-v2 parity migration"
+      },
+      "derivation": {
+        "kind": "primitive"
+      }
+    },
+    {
+      "name": "OM_WEIGHT_LIVER",
+      "source_domain": "OM",
+      "test_code_aliases": [
+        "WEIGHT"
+      ],
+      "test_name_aliases": [
+        "WEIGHT"
+      ],
+      "specimen_rule": {
+        "match": "exact",
+        "values": [
+          "LIVER"
+        ]
+      },
+      "source_units": [
+        "G",
+        "MG"
+      ],
+      "target_unit": "g",
+      "method_rule": {
+        "match": "any",
+        "values": []
+      },
+      "sexes": [],
+      "display_label": "Om Weight Liver",
+      "provenance": {
+        "source": "vcgen v4 selector parity migration",
+        "source_query_id": "gurjanov_28d_benchmark_full",
+        "grit42_column_catalogue_id": "grit42-columns-2026-08-22-v1",
+        "captured_on": "2026-09-14",
+        "derivation_source": "vcgen protocol-v2 parity migration"
+      },
+      "derivation": {
+        "kind": "primitive"
+      }
+    },
+    {
+      "name": "OM_WEIGHT_KIDNEY",
+      "source_domain": "OM",
+      "test_code_aliases": [
+        "WEIGHT"
+      ],
+      "test_name_aliases": [
+        "WEIGHT"
+      ],
+      "specimen_rule": {
+        "match": "exact",
+        "values": [
+          "KIDNEY"
+        ]
+      },
+      "source_units": [
+        "G",
+        "MG"
+      ],
+      "target_unit": "g",
+      "method_rule": {
+        "match": "any",
+        "values": []
+      },
+      "sexes": [],
+      "display_label": "Om Weight Kidney",
+      "provenance": {
+        "source": "vcgen v4 selector parity migration",
+        "source_query_id": "gurjanov_28d_benchmark_full",
+        "grit42_column_catalogue_id": "grit42-columns-2026-08-22-v1",
+        "captured_on": "2026-09-14",
+        "derivation_source": "vcgen protocol-v2 parity migration"
+      },
+      "derivation": {
+        "kind": "primitive"
+      }
+    },
+    {
+      "name": "OM_WEIGHT_TESTIS",
+      "source_domain": "OM",
+      "test_code_aliases": [
+        "WEIGHT"
+      ],
+      "test_name_aliases": [
+        "WEIGHT"
+      ],
+      "specimen_rule": {
+        "match": "exact",
+        "values": [
+          "TESTIS"
+        ]
+      },
+      "source_units": [
+        "G",
+        "MG"
+      ],
+      "target_unit": "g",
+      "method_rule": {
+        "match": "any",
+        "values": []
+      },
+      "sexes": [
+        "M"
+      ],
+      "display_label": "Om Weight Testis",
+      "provenance": {
+        "source": "vcgen v4 selector parity migration",
+        "source_query_id": "gurjanov_28d_benchmark_full",
+        "grit42_column_catalogue_id": "grit42-columns-2026-08-22-v1",
+        "captured_on": "2026-09-14",
+        "derivation_source": "vcgen protocol-v2 parity migration"
+      },
+      "derivation": {
+        "kind": "primitive"
+      }
+    },
+    {
+      "name": "OM_WEIGHT_EPIDIDYMIS",
+      "source_domain": "OM",
+      "test_code_aliases": [
+        "WEIGHT"
+      ],
+      "test_name_aliases": [
+        "WEIGHT"
+      ],
+      "specimen_rule": {
+        "match": "exact",
+        "values": [
+          "EPIDIDYMIS"
+        ]
+      },
+      "source_units": [
+        "G",
+        "MG"
+      ],
+      "target_unit": "g",
+      "method_rule": {
+        "match": "any",
+        "values": []
+      },
+      "sexes": [
+        "M"
+      ],
+      "display_label": "Om Weight Epididymis",
+      "provenance": {
+        "source": "vcgen v4 selector parity migration",
+        "source_query_id": "gurjanov_28d_benchmark_full",
+        "grit42_column_catalogue_id": "grit42-columns-2026-08-22-v1",
+        "captured_on": "2026-09-14",
+        "derivation_source": "vcgen protocol-v2 parity migration"
+      },
+      "derivation": {
+        "kind": "primitive"
+      }
+    },
+    {
+      "name": "OM_WEIGHT_PROSTATE",
+      "source_domain": "OM",
+      "test_code_aliases": [
+        "WEIGHT"
+      ],
+      "test_name_aliases": [
+        "WEIGHT"
+      ],
+      "specimen_rule": {
+        "match": "exact",
+        "values": [
+          "GLAND, PROSTATE"
+        ]
+      },
+      "source_units": [
+        "G",
+        "MG"
+      ],
+      "target_unit": "g",
+      "method_rule": {
+        "match": "any",
+        "values": []
+      },
+      "sexes": [
+        "M"
+      ],
+      "display_label": "Om Weight Prostate",
+      "provenance": {
+        "source": "vcgen v4 selector parity migration",
+        "source_query_id": "gurjanov_28d_benchmark_full",
+        "grit42_column_catalogue_id": "grit42-columns-2026-08-22-v1",
+        "captured_on": "2026-09-14",
+        "derivation_source": "vcgen protocol-v2 parity migration"
+      },
+      "derivation": {
+        "kind": "primitive"
+      }
+    },
+    {
+      "name": "OM_WEIGHT_SEMINAL_VESICLE",
+      "source_domain": "OM",
+      "test_code_aliases": [
+        "WEIGHT"
+      ],
+      "test_name_aliases": [
+        "WEIGHT"
+      ],
+      "specimen_rule": {
+        "match": "exact",
+        "values": [
+          "GLAND, SEMINAL VESICLE"
+        ]
+      },
+      "source_units": [
+        "G",
+        "MG"
+      ],
+      "target_unit": "g",
+      "method_rule": {
+        "match": "any",
+        "values": []
+      },
+      "sexes": [
+        "M"
+      ],
+      "display_label": "Om Weight Seminal Vesicle",
+      "provenance": {
+        "source": "vcgen v4 selector parity migration",
+        "source_query_id": "gurjanov_28d_benchmark_full",
+        "grit42_column_catalogue_id": "grit42-columns-2026-08-22-v1",
+        "captured_on": "2026-09-14",
+        "derivation_source": "vcgen protocol-v2 parity migration"
+      },
+      "derivation": {
+        "kind": "primitive"
+      }
+    },
+    {
+      "name": "OM_WEIGHT_ADRENAL",
+      "source_domain": "OM",
+      "test_code_aliases": [
+        "WEIGHT"
+      ],
+      "test_name_aliases": [
+        "WEIGHT"
+      ],
+      "specimen_rule": {
+        "match": "exact",
+        "values": [
+          "GLAND, ADRENAL"
+        ]
+      },
+      "source_units": [
+        "G",
+        "MG"
+      ],
+      "target_unit": "g",
+      "method_rule": {
+        "match": "any",
+        "values": []
+      },
+      "sexes": [],
+      "display_label": "Om Weight Adrenal",
+      "provenance": {
+        "source": "vcgen v4 selector parity migration",
+        "source_query_id": "gurjanov_28d_benchmark_full",
+        "grit42_column_catalogue_id": "grit42-columns-2026-08-22-v1",
+        "captured_on": "2026-09-14",
+        "derivation_source": "vcgen protocol-v2 parity migration"
+      },
+      "derivation": {
+        "kind": "primitive"
+      }
+    },
+    {
+      "name": "OM_WEIGHT_SPLEEN",
+      "source_domain": "OM",
+      "test_code_aliases": [
+        "WEIGHT"
+      ],
+      "test_name_aliases": [
+        "WEIGHT"
+      ],
+      "specimen_rule": {
+        "match": "exact",
+        "values": [
+          "SPLEEN"
+        ]
+      },
+      "source_units": [
+        "G",
+        "MG"
+      ],
+      "target_unit": "g",
+      "method_rule": {
+        "match": "any",
+        "values": []
+      },
+      "sexes": [],
+      "display_label": "Om Weight Spleen",
+      "provenance": {
+        "source": "vcgen v4 selector parity migration",
+        "source_query_id": "gurjanov_28d_benchmark_full",
+        "grit42_column_catalogue_id": "grit42-columns-2026-08-22-v1",
+        "captured_on": "2026-09-14",
+        "derivation_source": "vcgen protocol-v2 parity migration"
+      },
+      "derivation": {
+        "kind": "primitive"
+      }
+    },
+    {
+      "name": "OM_WEIGHT_THYMUS",
+      "source_domain": "OM",
+      "test_code_aliases": [
+        "WEIGHT"
+      ],
+      "test_name_aliases": [
+        "WEIGHT"
+      ],
+      "specimen_rule": {
+        "match": "exact",
+        "values": [
+          "THYMUS"
+        ]
+      },
+      "source_units": [
+        "G",
+        "MG"
+      ],
+      "target_unit": "g",
+      "method_rule": {
+        "match": "any",
+        "values": []
+      },
+      "sexes": [],
+      "display_label": "Om Weight Thymus",
+      "provenance": {
+        "source": "vcgen v4 selector parity migration",
+        "source_query_id": "gurjanov_28d_benchmark_full",
+        "grit42_column_catalogue_id": "grit42-columns-2026-08-22-v1",
+        "captured_on": "2026-09-14",
+        "derivation_source": "vcgen protocol-v2 parity migration"
+      },
+      "derivation": {
+        "kind": "primitive"
+      }
+    },
+    {
+      "name": "OM_WEIGHT_OVARY",
+      "source_domain": "OM",
+      "test_code_aliases": [
+        "WEIGHT"
+      ],
+      "test_name_aliases": [
+        "WEIGHT"
+      ],
+      "specimen_rule": {
+        "match": "exact",
+        "values": [
+          "OVARY"
+        ]
+      },
+      "source_units": [
+        "G",
+        "MG"
+      ],
+      "target_unit": "g",
+      "method_rule": {
+        "match": "any",
+        "values": []
+      },
+      "sexes": [
+        "F"
+      ],
+      "display_label": "Om Weight Ovary",
+      "provenance": {
+        "source": "vcgen v4 selector parity migration",
+        "source_query_id": "gurjanov_28d_benchmark_full",
+        "grit42_column_catalogue_id": "grit42-columns-2026-08-22-v1",
+        "captured_on": "2026-09-14",
+        "derivation_source": "vcgen protocol-v2 parity migration"
+      },
+      "derivation": {
+        "kind": "primitive"
+      }
+    },
+    {
+      "name": "OM_WEIGHT_UTERUS",
+      "source_domain": "OM",
+      "test_code_aliases": [
+        "WEIGHT"
+      ],
+      "test_name_aliases": [
+        "WEIGHT"
+      ],
+      "specimen_rule": {
+        "match": "exact",
+        "values": [
+          "UTERUS"
+        ]
+      },
+      "source_units": [
+        "G",
+        "MG"
+      ],
+      "target_unit": "g",
+      "method_rule": {
+        "match": "any",
+        "values": []
+      },
+      "sexes": [
+        "F"
+      ],
+      "display_label": "Om Weight Uterus",
+      "provenance": {
+        "source": "vcgen v4 selector parity migration",
+        "source_query_id": "gurjanov_28d_benchmark_full",
+        "grit42_column_catalogue_id": "grit42-columns-2026-08-22-v1",
+        "captured_on": "2026-09-14",
+        "derivation_source": "vcgen protocol-v2 parity migration"
+      },
+      "derivation": {
+        "kind": "primitive"
+      }
+    },
+    {
+      "name": "LB_APTT",
+      "source_domain": "LB",
+      "test_code_aliases": [
+        "APTR",
+        "APTT",
+        "S_APTT"
+      ],
+      "test_name_aliases": [
+        "ACTIVATED PARTIAL THROMBOPLASTIN TIME"
+      ],
+      "specimen_rule": {
+        "match": "not",
+        "values": [
+          "URINE"
+        ]
+      },
+      "source_units": [
+        "s"
+      ],
+      "target_unit": "s",
+      "method_rule": {
+        "match": "any",
+        "values": []
+      },
+      "sexes": [],
+      "display_label": "Lb Aptt",
+      "provenance": {
+        "source": "vcgen v4 selector parity migration",
+        "source_query_id": "gurjanov_28d_benchmark_full",
+        "grit42_column_catalogue_id": "grit42-columns-2026-08-22-v1",
+        "captured_on": "2026-09-14",
+        "derivation_source": "vcgen protocol-v2 parity migration"
+      },
+      "derivation": {
+        "kind": "primitive"
+      }
+    },
+    {
+      "name": "LB_BILI",
+      "source_domain": "LB",
+      "test_code_aliases": [
+        "BIL",
+        "BILI",
+        "TBIL"
+      ],
+      "test_name_aliases": [
+        "BILIRUBIN"
+      ],
+      "specimen_rule": {
+        "match": "not",
+        "values": [
+          "URINE"
+        ]
+      },
+      "source_units": [
+        "mmol/L"
+      ],
+      "target_unit": "mmol/L",
+      "method_rule": {
+        "match": "any",
+        "values": []
+      },
+      "sexes": [],
+      "display_label": "Lb Bili",
+      "provenance": {
+        "source": "vcgen v4 selector parity migration",
+        "source_query_id": "gurjanov_28d_benchmark_full",
+        "grit42_column_catalogue_id": "grit42-columns-2026-08-22-v1",
+        "captured_on": "2026-09-14",
+        "derivation_source": "vcgen protocol-v2 parity migration"
+      },
+      "derivation": {
+        "kind": "primitive"
+      }
+    },
+    {
+      "name": "LB_FIBRINO",
+      "source_domain": "LB",
+      "test_code_aliases": [
+        "FIBRINO"
+      ],
+      "test_name_aliases": [],
+      "specimen_rule": {
+        "match": "not",
+        "values": [
+          "URINE"
+        ]
+      },
+      "source_units": [
+        "g/L"
+      ],
+      "target_unit": "g/L",
+      "method_rule": {
+        "match": "any",
+        "values": []
+      },
+      "sexes": [],
+      "display_label": "Lb Fibrino",
+      "provenance": {
+        "source": "vcgen v4 selector parity migration",
+        "source_query_id": "gurjanov_28d_benchmark_full",
+        "grit42_column_catalogue_id": "grit42-columns-2026-08-22-v1",
+        "captured_on": "2026-09-14",
+        "derivation_source": "vcgen protocol-v2 parity migration"
+      },
+      "derivation": {
+        "kind": "primitive"
+      }
+    },
+    {
+      "name": "LB_PT",
+      "source_domain": "LB",
+      "test_code_aliases": [
+        "PT",
+        "PTHSPL",
+        "PTRSEC"
+      ],
+      "test_name_aliases": [
+        "PROTHROMBIN TIME"
+      ],
+      "specimen_rule": {
+        "match": "not",
+        "values": [
+          "URINE"
+        ]
+      },
+      "source_units": [
+        "s"
+      ],
+      "target_unit": "s",
+      "method_rule": {
+        "match": "any",
+        "values": []
+      },
+      "sexes": [],
+      "display_label": "Lb Pt",
+      "provenance": {
+        "source": "vcgen v4 selector parity migration",
+        "source_query_id": "gurjanov_28d_benchmark_full",
+        "grit42_column_catalogue_id": "grit42-columns-2026-08-22-v1",
+        "captured_on": "2026-09-14",
+        "derivation_source": "vcgen protocol-v2 parity migration"
+      },
+      "derivation": {
+        "kind": "primitive"
+      }
+    },
+    {
+      "name": "OM_OWBW_BRAIN",
+      "source_domain": "OM",
+      "test_code_aliases": [
+        "OWBR",
+        "OWBW"
+      ],
+      "test_name_aliases": [
+        "ORGAN TO BODY WEIGHT RATIO"
+      ],
+      "specimen_rule": {
+        "match": "exact",
+        "values": [
+          "BRAIN"
+        ]
+      },
+      "source_units": [
+        "%"
+      ],
+      "target_unit": "%",
+      "method_rule": {
+        "match": "any",
+        "values": []
+      },
+      "sexes": [],
+      "display_label": "Om Owbw Brain",
+      "provenance": {
+        "source": "vcgen v4 selector parity migration",
+        "source_query_id": "gurjanov_28d_benchmark_full",
+        "grit42_column_catalogue_id": "grit42-columns-2026-08-22-v1",
+        "captured_on": "2026-09-14",
+        "derivation_source": "vcgen protocol-v2 parity migration"
+      },
+      "derivation": {
+        "kind": "ratio",
+        "parents": [
+          "OM_WEIGHT_BRAIN",
+          "BW_TERMINAL"
+        ],
+        "scale": 100.0
+      }
+    },
+    {
+      "name": "OM_OWBW_HEART",
+      "source_domain": "OM",
+      "test_code_aliases": [
+        "OWBW"
+      ],
+      "test_name_aliases": [
+        "ORGAN TO BODY WEIGHT RATIO"
+      ],
+      "specimen_rule": {
+        "match": "exact",
+        "values": [
+          "HEART"
+        ]
+      },
+      "source_units": [
+        "%"
+      ],
+      "target_unit": "%",
+      "method_rule": {
+        "match": "any",
+        "values": []
+      },
+      "sexes": [],
+      "display_label": "Om Owbw Heart",
+      "provenance": {
+        "source": "vcgen v4 selector parity migration",
+        "source_query_id": "gurjanov_28d_benchmark_full",
+        "grit42_column_catalogue_id": "grit42-columns-2026-08-22-v1",
+        "captured_on": "2026-09-14",
+        "derivation_source": "vcgen protocol-v2 parity migration"
+      },
+      "derivation": {
+        "kind": "ratio",
+        "parents": [
+          "OM_WEIGHT_HEART",
+          "BW_TERMINAL"
+        ],
+        "scale": 100.0
+      }
+    },
+    {
+      "name": "OM_OWBW_LIVER",
+      "source_domain": "OM",
+      "test_code_aliases": [
+        "OWBW"
+      ],
+      "test_name_aliases": [
+        "ORGAN TO BODY WEIGHT RATIO"
+      ],
+      "specimen_rule": {
+        "match": "exact",
+        "values": [
+          "LIVER"
+        ]
+      },
+      "source_units": [
+        "%"
+      ],
+      "target_unit": "%",
+      "method_rule": {
+        "match": "any",
+        "values": []
+      },
+      "sexes": [],
+      "display_label": "Om Owbw Liver",
+      "provenance": {
+        "source": "vcgen v4 selector parity migration",
+        "source_query_id": "gurjanov_28d_benchmark_full",
+        "grit42_column_catalogue_id": "grit42-columns-2026-08-22-v1",
+        "captured_on": "2026-09-14",
+        "derivation_source": "vcgen protocol-v2 parity migration"
+      },
+      "derivation": {
+        "kind": "ratio",
+        "parents": [
+          "OM_WEIGHT_LIVER",
+          "BW_TERMINAL"
+        ],
+        "scale": 100.0
+      }
+    },
+    {
+      "name": "OM_OWBW_KIDNEY",
+      "source_domain": "OM",
+      "test_code_aliases": [
+        "OWBW",
+        "WEIGHT"
+      ],
+      "test_name_aliases": [
+        "ORGAN TO BODY WEIGHT RATIO"
+      ],
+      "specimen_rule": {
+        "match": "exact",
+        "values": [
+          "KIDNEY"
+        ]
+      },
+      "source_units": [
+        "%"
+      ],
+      "target_unit": "%",
+      "method_rule": {
+        "match": "any",
+        "values": []
+      },
+      "sexes": [],
+      "display_label": "Om Owbw Kidney",
+      "provenance": {
+        "source": "vcgen v4 selector parity migration",
+        "source_query_id": "gurjanov_28d_benchmark_full",
+        "grit42_column_catalogue_id": "grit42-columns-2026-08-22-v1",
+        "captured_on": "2026-09-14",
+        "derivation_source": "vcgen protocol-v2 parity migration"
+      },
+      "derivation": {
+        "kind": "ratio",
+        "parents": [
+          "OM_WEIGHT_KIDNEY",
+          "BW_TERMINAL"
+        ],
+        "scale": 100.0
+      }
+    },
+    {
+      "name": "OM_OWBW_TESTIS",
+      "source_domain": "OM",
+      "test_code_aliases": [
+        "OWBW"
+      ],
+      "test_name_aliases": [
+        "ORGAN TO BODY WEIGHT RATIO"
+      ],
+      "specimen_rule": {
+        "match": "exact",
+        "values": [
+          "TESTIS"
+        ]
+      },
+      "source_units": [
+        "%"
+      ],
+      "target_unit": "%",
+      "method_rule": {
+        "match": "any",
+        "values": []
+      },
+      "sexes": [
+        "M"
+      ],
+      "display_label": "Om Owbw Testis",
+      "provenance": {
+        "source": "vcgen v4 selector parity migration",
+        "source_query_id": "gurjanov_28d_benchmark_full",
+        "grit42_column_catalogue_id": "grit42-columns-2026-08-22-v1",
+        "captured_on": "2026-09-14",
+        "derivation_source": "vcgen protocol-v2 parity migration"
+      },
+      "derivation": {
+        "kind": "ratio",
+        "parents": [
+          "OM_WEIGHT_TESTIS",
+          "BW_TERMINAL"
+        ],
+        "scale": 100.0
+      }
+    },
+    {
+      "name": "OM_OWBW_EPIDIDYMIS",
+      "source_domain": "OM",
+      "test_code_aliases": [
+        "OWBW"
+      ],
+      "test_name_aliases": [
+        "ORGAN TO BODY WEIGHT RATIO"
+      ],
+      "specimen_rule": {
+        "match": "exact",
+        "values": [
+          "EPIDIDYMIS"
+        ]
+      },
+      "source_units": [
+        "%"
+      ],
+      "target_unit": "%",
+      "method_rule": {
+        "match": "any",
+        "values": []
+      },
+      "sexes": [
+        "M"
+      ],
+      "display_label": "Om Owbw Epididymis",
+      "provenance": {
+        "source": "vcgen v4 selector parity migration",
+        "source_query_id": "gurjanov_28d_benchmark_full",
+        "grit42_column_catalogue_id": "grit42-columns-2026-08-22-v1",
+        "captured_on": "2026-09-14",
+        "derivation_source": "vcgen protocol-v2 parity migration"
+      },
+      "derivation": {
+        "kind": "ratio",
+        "parents": [
+          "OM_WEIGHT_EPIDIDYMIS",
+          "BW_TERMINAL"
+        ],
+        "scale": 100.0
+      }
+    },
+    {
+      "name": "OM_OWBW_PROSTATE",
+      "source_domain": "OM",
+      "test_code_aliases": [
+        "OWBW"
+      ],
+      "test_name_aliases": [
+        "ORGAN TO BODY WEIGHT RATIO"
+      ],
+      "specimen_rule": {
+        "match": "exact",
+        "values": [
+          "GLAND, PROSTATE"
+        ]
+      },
+      "source_units": [
+        "%"
+      ],
+      "target_unit": "%",
+      "method_rule": {
+        "match": "any",
+        "values": []
+      },
+      "sexes": [
+        "M"
+      ],
+      "display_label": "Om Owbw Prostate",
+      "provenance": {
+        "source": "vcgen v4 selector parity migration",
+        "source_query_id": "gurjanov_28d_benchmark_full",
+        "grit42_column_catalogue_id": "grit42-columns-2026-08-22-v1",
+        "captured_on": "2026-09-14",
+        "derivation_source": "vcgen protocol-v2 parity migration"
+      },
+      "derivation": {
+        "kind": "ratio",
+        "parents": [
+          "OM_WEIGHT_PROSTATE",
+          "BW_TERMINAL"
+        ],
+        "scale": 100.0
+      }
+    },
+    {
+      "name": "OM_OWBW_SEMINAL_VESICLE",
+      "source_domain": "OM",
+      "test_code_aliases": [
+        "OWBW"
+      ],
+      "test_name_aliases": [
+        "ORGAN TO BODY WEIGHT RATIO"
+      ],
+      "specimen_rule": {
+        "match": "exact",
+        "values": [
+          "GLAND, SEMINAL VESICLE"
+        ]
+      },
+      "source_units": [
+        "%"
+      ],
+      "target_unit": "%",
+      "method_rule": {
+        "match": "any",
+        "values": []
+      },
+      "sexes": [
+        "M"
+      ],
+      "display_label": "Om Owbw Seminal Vesicle",
+      "provenance": {
+        "source": "vcgen v4 selector parity migration",
+        "source_query_id": "gurjanov_28d_benchmark_full",
+        "grit42_column_catalogue_id": "grit42-columns-2026-08-22-v1",
+        "captured_on": "2026-09-14",
+        "derivation_source": "vcgen protocol-v2 parity migration"
+      },
+      "derivation": {
+        "kind": "ratio",
+        "parents": [
+          "OM_WEIGHT_SEMINAL_VESICLE",
+          "BW_TERMINAL"
+        ],
+        "scale": 100.0
+      }
+    },
+    {
+      "name": "OM_OWBW_ADRENAL",
+      "source_domain": "OM",
+      "test_code_aliases": [
+        "OWBW"
+      ],
+      "test_name_aliases": [
+        "ORGAN TO BODY WEIGHT RATIO"
+      ],
+      "specimen_rule": {
+        "match": "exact",
+        "values": [
+          "GLAND, ADRENAL"
+        ]
+      },
+      "source_units": [
+        "%"
+      ],
+      "target_unit": "%",
+      "method_rule": {
+        "match": "any",
+        "values": []
+      },
+      "sexes": [],
+      "display_label": "Om Owbw Adrenal",
+      "provenance": {
+        "source": "vcgen v4 selector parity migration",
+        "source_query_id": "gurjanov_28d_benchmark_full",
+        "grit42_column_catalogue_id": "grit42-columns-2026-08-22-v1",
+        "captured_on": "2026-09-14",
+        "derivation_source": "vcgen protocol-v2 parity migration"
+      },
+      "derivation": {
+        "kind": "ratio",
+        "parents": [
+          "OM_WEIGHT_ADRENAL",
+          "BW_TERMINAL"
+        ],
+        "scale": 100.0
+      }
+    },
+    {
+      "name": "OM_OWBW_SPLEEN",
+      "source_domain": "OM",
+      "test_code_aliases": [
+        "OWBW"
+      ],
+      "test_name_aliases": [
+        "ORGAN TO BODY WEIGHT RATIO"
+      ],
+      "specimen_rule": {
+        "match": "exact",
+        "values": [
+          "SPLEEN"
+        ]
+      },
+      "source_units": [
+        "%"
+      ],
+      "target_unit": "%",
+      "method_rule": {
+        "match": "any",
+        "values": []
+      },
+      "sexes": [],
+      "display_label": "Om Owbw Spleen",
+      "provenance": {
+        "source": "vcgen v4 selector parity migration",
+        "source_query_id": "gurjanov_28d_benchmark_full",
+        "grit42_column_catalogue_id": "grit42-columns-2026-08-22-v1",
+        "captured_on": "2026-09-14",
+        "derivation_source": "vcgen protocol-v2 parity migration"
+      },
+      "derivation": {
+        "kind": "ratio",
+        "parents": [
+          "OM_WEIGHT_SPLEEN",
+          "BW_TERMINAL"
+        ],
+        "scale": 100.0
+      }
+    },
+    {
+      "name": "OM_OWBW_THYMUS",
+      "source_domain": "OM",
+      "test_code_aliases": [
+        "OWBW"
+      ],
+      "test_name_aliases": [
+        "ORGAN TO BODY WEIGHT RATIO"
+      ],
+      "specimen_rule": {
+        "match": "exact",
+        "values": [
+          "THYMUS"
+        ]
+      },
+      "source_units": [
+        "%"
+      ],
+      "target_unit": "%",
+      "method_rule": {
+        "match": "any",
+        "values": []
+      },
+      "sexes": [],
+      "display_label": "Om Owbw Thymus",
+      "provenance": {
+        "source": "vcgen v4 selector parity migration",
+        "source_query_id": "gurjanov_28d_benchmark_full",
+        "grit42_column_catalogue_id": "grit42-columns-2026-08-22-v1",
+        "captured_on": "2026-09-14",
+        "derivation_source": "vcgen protocol-v2 parity migration"
+      },
+      "derivation": {
+        "kind": "ratio",
+        "parents": [
+          "OM_WEIGHT_THYMUS",
+          "BW_TERMINAL"
+        ],
+        "scale": 100.0
+      }
+    },
+    {
+      "name": "OM_OWBW_OVARY",
+      "source_domain": "OM",
+      "test_code_aliases": [
+        "OWBW"
+      ],
+      "test_name_aliases": [
+        "ORGAN TO BODY WEIGHT RATIO"
+      ],
+      "specimen_rule": {
+        "match": "exact",
+        "values": [
+          "OVARY"
+        ]
+      },
+      "source_units": [
+        "%"
+      ],
+      "target_unit": "%",
+      "method_rule": {
+        "match": "any",
+        "values": []
+      },
+      "sexes": [
+        "F"
+      ],
+      "display_label": "Om Owbw Ovary",
+      "provenance": {
+        "source": "vcgen v4 selector parity migration",
+        "source_query_id": "gurjanov_28d_benchmark_full",
+        "grit42_column_catalogue_id": "grit42-columns-2026-08-22-v1",
+        "captured_on": "2026-09-14",
+        "derivation_source": "vcgen protocol-v2 parity migration"
+      },
+      "derivation": {
+        "kind": "ratio",
+        "parents": [
+          "OM_WEIGHT_OVARY",
+          "BW_TERMINAL"
+        ],
+        "scale": 100.0
+      }
+    },
+    {
+      "name": "LB_VOLUME_URINE",
+      "source_domain": "LB",
+      "test_code_aliases": [
+        "UVOL",
+        "VOLUME"
+      ],
+      "test_name_aliases": [],
+      "specimen_rule": {
+        "match": "exact",
+        "values": [
+          "URINE"
+        ]
+      },
+      "source_units": [
+        "L"
+      ],
+      "target_unit": "L",
+      "method_rule": {
+        "match": "any",
+        "values": []
+      },
+      "sexes": [],
+      "display_label": "Lb Volume Urine",
+      "provenance": {
+        "source": "vcgen v4 selector parity migration",
+        "source_query_id": "gurjanov_28d_benchmark_full",
+        "grit42_column_catalogue_id": "grit42-columns-2026-08-22-v1",
+        "captured_on": "2026-09-14",
+        "derivation_source": "vcgen protocol-v2 parity migration"
+      },
+      "derivation": {
+        "kind": "primitive"
+      }
+    },
+    {
+      "name": "LB_PROT_URINE",
+      "source_domain": "LB",
+      "test_code_aliases": [
+        "PROT"
+      ],
+      "test_name_aliases": [],
+      "specimen_rule": {
+        "match": "exact",
+        "values": [
+          "URINE"
+        ]
+      },
+      "source_units": [
+        "g/L"
+      ],
+      "target_unit": "g/L",
+      "method_rule": {
+        "match": "any",
+        "values": []
+      },
+      "sexes": [],
+      "display_label": "Lb Prot Urine",
+      "provenance": {
+        "source": "vcgen v4 selector parity migration",
+        "source_query_id": "gurjanov_28d_benchmark_full",
+        "grit42_column_catalogue_id": "grit42-columns-2026-08-22-v1",
+        "captured_on": "2026-09-14",
+        "derivation_source": "vcgen protocol-v2 parity migration"
+      },
+      "derivation": {
+        "kind": "primitive"
+      }
+    },
+    {
+      "name": "PRE_STUDY_BODY_TEMPERATURE_C",
+      "source_domain": "VS",
+      "test_code_aliases": [
+        "TEMP"
+      ],
+      "test_name_aliases": [],
+      "specimen_rule": {
+        "match": "any",
+        "values": []
+      },
+      "source_units": [
+        "C"
+      ],
+      "target_unit": "Cel",
+      "method_rule": {
+        "match": "any",
+        "values": []
+      },
+      "sexes": [],
+      "display_label": "Pre-study body temperature",
+      "provenance": {
+        "source": "Grit42 form selector mapping",
+        "source_query_id": "pre-study-body-temperature",
+        "grit42_column_catalogue_id": "grit42-columns-2026-08-22-v1",
+        "captured_on": "2026-09-14",
+        "derivation_source": "vcgen protocol-v2 parity migration"
+      },
+      "derivation": {
+        "kind": "primitive"
+      }
+    }
+  ]
+}

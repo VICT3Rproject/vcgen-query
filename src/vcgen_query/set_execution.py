@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections import Counter
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
@@ -30,14 +31,33 @@ from .contract import (
     ValueType,
 )
 from .duckdb import q, quote_ident, table_columns
-from .grit42_catalogue import AdvancedQueryDatetimeSource, grit42_column
+from .contract_helpers import SourceDataError
+from .grit42_catalogue import (
+    AdvancedQueryDatetimeSource,
+    grit42_column,
+    grit42_domain_grain,
+)
 from .identities import GRIT42_ADVANCED_SUBJECT_QUERY_CONTRACT
 from .send_columns import STUDY_ID, SUBJECT_ID
+from .source_validation import validate_active_source
 
 _DATE_DATETIME = r"\d{4}-\d{2}-\d{2}"
 _TIME_DATETIME = r"\d{2}:\d{2}:\d{2}(?:\.\d{1,6})?"
 _NAIVE_DATETIME = rf"(?:{_DATE_DATETIME}|{_DATE_DATETIME}T{_TIME_DATETIME})"
 _AWARE_DATETIME = rf"{_DATE_DATETIME}T{_TIME_DATETIME}(?:Z|[+-]\d{{2}}:\d{{2}})"
+_DOSE_DURATION_EVIDENCE_STATUSES = (
+    "declared_only",
+    "corroborated",
+    "shorter_than_planned",
+    "ambiguous",
+    "unresolved",
+)
+_EXPOSURE_INTERVAL_STATUSES = (
+    "complete_contiguous",
+    "gapped",
+    "incomplete",
+    "unavailable",
+)
 _DERIVED: dict[str, tuple[str, str, bool, bool]] = {
     "age_days": ("subject_demographics", "age_days", True, False),
     "baseline_body_weight_g": (
@@ -46,11 +66,11 @@ _DERIVED: dict[str, tuple[str, str, bool, bool]] = {
         True,
         False,
     ),
-    "dose_duration_days": (
-        "study_design_summary",
-        "dose_duration_day_values",
-        False,
+    "planned_dose_duration_days": (
+        "subject_exposure_summary",
+        "planned_dose_duration_days",
         True,
+        False,
     ),
     "supplier": ("study_design_summary", "supplier_values", False, True),
     "study_type": ("study_design_summary", "study_type_values", False, True),
@@ -62,9 +82,114 @@ _DERIVED: dict[str, tuple[str, str, bool, bool]] = {
     "route": ("subject_exposure_summary", "route_values", True, True),
     "dose_frequency": ("subject_exposure_summary", "dose_frequency_values", True, True),
     "treatment_vehicle": ("subject_exposure_summary", "treatment_values", True, True),
+    "disposition_categories": (
+        "subject_disposition_summary",
+        "disposition_category_values",
+        True,
+        True,
+    ),
+    "terminal_sacrifice_offset_days": (
+        "subject_disposition_summary",
+        "terminal_sacrifice_offset_day_values",
+        True,
+        True,
+    ),
 }
 
 NodeKind: TypeAlias = Literal["universe", "group", "rule"]
+ExecutionScope: TypeAlias = Literal["source_row", "subject_set"]
+IdentityScope: TypeAlias = Literal["study", "subject"]
+
+
+@dataclass(frozen=True)
+class RuleExecutionPlan:
+    """One predicate rule with its resolved row and identity scopes."""
+
+    node: PredicateRule
+    path: str
+    execution_scope: ExecutionScope
+    identity_scope: IdentityScope
+    source_domain: str | None = None
+
+
+@dataclass(frozen=True)
+class GroupExecutionPlan:
+    """One unchanged predicate group with typed child execution scopes."""
+
+    node: PredicateGroup
+    path: str
+    children: tuple[ResolvedExecutionNode, ...]
+    execution_scope: ExecutionScope
+    negation_scope: ExecutionScope | None
+
+
+ResolvedExecutionNode: TypeAlias = RuleExecutionPlan | GroupExecutionPlan
+
+
+@dataclass(frozen=True)
+class PredicateExecutionPlan:
+    """Resolved predicate execution without Boolean rewriting or flattening."""
+
+    root: ResolvedExecutionNode | None
+
+
+def resolve_execution_plan(query: Query) -> PredicateExecutionPlan:
+    """Resolve execution scope while preserving every predicate group boundary."""
+
+    def resolve(node: Predicate, path: str) -> ResolvedExecutionNode:
+        if isinstance(node, PredicateRule):
+            if isinstance(node.field, SendColumnField):
+                domain = node.field.domain
+                return RuleExecutionPlan(
+                    node=node,
+                    path=path,
+                    execution_scope="source_row",
+                    identity_scope=grit42_domain_grain(domain),
+                    source_domain=domain,
+                )
+            identity_scope: IdentityScope = (
+                "study"
+                if isinstance(node.field, DerivedField)
+                and not _DERIVED.get(node.field.name, ("", "", True, False))[2]
+                else "subject"
+            )
+            return RuleExecutionPlan(
+                node=node,
+                path=path,
+                execution_scope="subject_set",
+                identity_scope=identity_scope,
+            )
+
+        children = tuple(
+            resolve(child, f"{path}.children[{index}]")
+            for index, child in enumerate(node.children)
+        )
+        row_domains = {
+            child.source_domain
+            for child in children
+            if isinstance(child, RuleExecutionPlan)
+            and child.execution_scope == "source_row"
+        }
+        fully_row_scoped = len(row_domains) == 1 and all(
+            isinstance(child, RuleExecutionPlan)
+            and child.execution_scope == "source_row"
+            for child in children
+        )
+        return GroupExecutionPlan(
+            node=node,
+            path=path,
+            children=children,
+            execution_scope="source_row" if fully_row_scoped else "subject_set",
+            negation_scope=(
+                "source_row" if fully_row_scoped else "subject_set"
+            )
+            if node.negated
+            else None,
+        )
+
+    return PredicateExecutionPlan(
+        root=None if query.predicate is None else resolve(query.predicate, "predicate")
+    )
 
 
 @dataclass(frozen=True)
@@ -116,13 +241,14 @@ def membership_hash(keys: Sequence[tuple[str, str]]) -> str:
 
 
 def evaluate_predicate(con: Any, query: Query) -> PredicateEvaluation:
+    validate_active_source(con, query)
     columns = table_columns(con, "dm")
     _required(columns, STUDY_ID, "DM")
     _required(columns, SUBJECT_ID, "DM")
     compiler = _Compiler(con, query)
     compiler.create_universe()
-    predicate = query.predicate
-    if predicate is None:
+    plan = resolve_execution_plan(query)
+    if plan.root is None:
         keys = compiler.rows(compiler.universe)
         return PredicateEvaluation(
             keys,
@@ -138,7 +264,7 @@ def evaluate_predicate(con: Any, query: Query) -> PredicateEvaluation:
             ),
             assumptions=("missing predicate selects the complete DM subject universe",),
         )
-    membership = compiler.compile(predicate, "predicate")
+    membership = compiler.compile(plan.root)
     return PredicateEvaluation(
         compiler.rows(membership),
         compiler.rows(compiler.universe),
@@ -148,17 +274,80 @@ def evaluate_predicate(con: Any, query: Query) -> PredicateEvaluation:
     )
 
 
-def selection_for_keys(con: Any, keys: Sequence[tuple[str, str]]) -> CohortSelection:
+def selection_for_keys(
+    con: Any,
+    keys: Sequence[tuple[str, str]],
+    *,
+    universe_keys: Sequence[tuple[str, str]],
+) -> CohortSelection:
     contexts = _load_subject_contexts(con, _load_study_contexts(con))
-    selected = set(keys)
-    subjects = tuple(x for x in contexts if (x.study_id, x.subject_id) in selected)
+    contexts_by_key = {}
+    for context in contexts:
+        key = (context.study_id, context.subject_id)
+        if key in contexts_by_key:
+            raise SourceDataError("subject context assembly produced duplicate subject keys")
+        contexts_by_key[key] = context
+
+    expected_universe = set(universe_keys)
+    actual_universe = set(contexts_by_key)
+    if actual_universe != expected_universe:
+        raise SourceDataError(
+            "subject context keys do not match the DM universe: "
+            f"missing={len(expected_universe - actual_universe)}, "
+            f"extra={len(actual_universe - expected_universe)}"
+        )
+
+    requested = tuple(keys)
+    if len(requested) != len(set(requested)):
+        raise SourceDataError("predicate evaluation produced duplicate subject keys")
+    missing = set(requested) - actual_universe
+    if missing:
+        raise SourceDataError(
+            f"predicate membership contains {len(missing)} subject key(s) outside the DM universe"
+        )
+    subjects = tuple(contexts_by_key[key] for key in requested)
+    evidence_statuses = Counter(subject.dose_duration_evidence_status for subject in subjects)
+    exposure_statuses = Counter(subject.exposure_interval_status for subject in subjects)
+    incomplete_declarations = sum(
+        subject.dose_duration_declaration_incomplete for subject in subjects
+    )
+    warnings: list[str] = []
+    if incomplete_declarations:
+        warnings.append(
+            f"{incomplete_declarations} matched subject(s) have non-empty DOSDUR values "
+            "that could not be normalized; planned duration resolution used only "
+            "normalized declarations"
+        )
+    for status in ("ambiguous", "unresolved"):
+        count = evidence_statuses.get(status, 0)
+        if count:
+            warnings.append(
+                f"{count} matched subject(s) have {status} planned dose-duration evidence"
+            )
+    for status in ("gapped", "incomplete"):
+        count = exposure_statuses.get(status, 0)
+        if count:
+            warnings.append(
+                f"{count} matched subject(s) have {status} EX interval evidence; "
+                "observed exposure span was not resolved"
+            )
     return CohortSelection(
         subjects=subjects,
+        warnings=tuple(warnings),
         counts={
-            "candidate_subject_count": len(contexts),
+            "candidate_subject_count": len(contexts_by_key),
             "matched_subject_count": len(subjects),
             "matched_study_count": len({x.study_id for x in subjects}),
         },
+        dose_duration_evidence_status_counts={
+            status: evidence_statuses.get(status, 0)
+            for status in _DOSE_DURATION_EVIDENCE_STATUSES
+        },
+        exposure_interval_status_counts={
+            status: exposure_statuses.get(status, 0)
+            for status in _EXPOSURE_INTERVAL_STATUSES
+        },
+        dose_duration_declaration_incomplete_subject_count=incomplete_declarations,
     )
 
 
@@ -180,56 +369,40 @@ class _Compiler:
         self.assumptions = [
             "direct SEND rules from the same domain and group are evaluated against one source row",
             "nested groups, derived rules, pre-study endpoint rules, and different SEND domains lift independently to subject-key sets",
-            "relations lacking USUBJID propagate matching STUDYID rows to every DM subject",
-            "relations declaring USUBJID remain subject-grain even when blank, so malformed subject rows fail closed",
-            "missing or blank DM subject keys reject execution",
+            "catalogue-declared study-grain domains propagate matching STUDYID rows to every DM subject",
+            "catalogue-declared subject-grain domains require valid STUDYID and USUBJID values",
+            "missing, malformed, or duplicate DM subject keys reject execution",
             "NOT on a fully row-scoped group is evaluated before subject lifting; other NOT groups use the complete DM-universe complement",
         ]
 
     def create_universe(self) -> None:
-        invalid_count = self.con.execute(
-            f"SELECT count(*) FROM dm WHERE {q(STUDY_ID)} IS NULL "
-            f"OR {q(SUBJECT_ID)} IS NULL "
-            f"OR trim(cast({q(STUDY_ID)} AS VARCHAR)) = '' "
-            f"OR trim(cast({q(SUBJECT_ID)} AS VARCHAR)) = ''"
-        ).fetchone()[0]
-        if invalid_count:
-            raise ValueError(
-                "DM subject universe contains null, empty, or whitespace-only "
-                "STUDYID/USUBJID values"
-            )
         self.con.execute(
             f"CREATE OR REPLACE TEMP TABLE {quote_ident(self.universe)} AS "
-            f"SELECT DISTINCT cast({q(STUDY_ID)} AS VARCHAR) study_id, "
+            f"SELECT cast({q(STUDY_ID)} AS VARCHAR) study_id, "
             f"cast({q(SUBJECT_ID)} AS VARCHAR) subject_id FROM dm"
         )
 
-    def compile(self, node: Predicate, path: str) -> str:
-        return self.group(node, path) if isinstance(node, PredicateGroup) else self.rule(node, path)
+    def compile(self, plan: ResolvedExecutionNode) -> str:
+        return self.group(plan) if isinstance(plan, GroupExecutionPlan) else self.rule(plan)
 
-    def group(self, node: PredicateGroup, path: str) -> str:
+    def group(self, plan: GroupExecutionPlan) -> str:
+        node = plan.node
+        path = plan.path
         group = node.group
-        children = node.children
-        indexed_children = [
-            (child, f"{path}.children[{index}]") for index, child in enumerate(children)
-        ]
-        source_rules: dict[str, list[tuple[PredicateRule, str]]] = {}
-        for child, child_path in indexed_children:
-            domain = self.direct_source_domain(child)
-            if domain is not None:
-                source_rules.setdefault(domain, []).append((child, child_path))
+        source_rules: dict[str, list[RuleExecutionPlan]] = {}
+        for child in plan.children:
+            if isinstance(child, RuleExecutionPlan) and child.source_domain is not None:
+                source_rules.setdefault(child.source_domain, []).append(child)
 
         negated = node.negated
-        fully_row_scoped = len(source_rules) == 1 and all(
-            self.direct_source_domain(child) is not None for child, _ in indexed_children
-        )
+        fully_row_scoped = plan.execution_scope == "source_row"
 
         relations = []
         compiled_domains: set[str] = set()
-        for child, child_path in indexed_children:
-            domain = self.direct_source_domain(child)
+        for child in plan.children:
+            domain = child.source_domain if isinstance(child, RuleExecutionPlan) else None
             if domain is None:
-                relations.append(self.compile(child, child_path))
+                relations.append(self.compile(child))
                 continue
             if domain in compiled_domains:
                 continue
@@ -245,7 +418,7 @@ class _Compiler:
                     )
                 )
             elif len(domain_rules) == 1:
-                relations.append(self.rule(child, child_path))
+                relations.append(self.rule(child))
             else:
                 relations.append(self.source_group(domain_rules, group, path))
 
@@ -254,9 +427,6 @@ class _Compiler:
         )
         if negated and not fully_row_scoped:
             statement = f"SELECT study_id, subject_id FROM {quote_ident(self.universe)} EXCEPT ({statement})"
-        negation_scope = None
-        if negated:
-            negation_scope = "source_row" if fully_row_scoped else "subject_set"
         relation = self.new_relation()
         self.con.execute(f"CREATE OR REPLACE TEMP TABLE {quote_ident(relation)} AS {statement}")
         keys = self.rows(relation)
@@ -269,7 +439,7 @@ class _Compiler:
                 {
                     "group": group,
                     "negated": negated,
-                    "negation_scope": negation_scope,
+                    "negation_scope": plan.negation_scope,
                     "scope": "subject_set",
                     "row_scoped_domains": [
                         {"domain": domain, "rule_count": len(rules)}
@@ -280,30 +450,29 @@ class _Compiler:
         )
         return relation
 
-    @staticmethod
-    def direct_source_domain(node: Predicate) -> str | None:
-        if not isinstance(node, PredicateRule) or not isinstance(node.field, SendColumnField):
-            return None
-        return node.field.domain
-
     def source_group(
         self,
-        rules: Sequence[tuple[PredicateRule, str]],
+        rules: Sequence[RuleExecutionPlan],
         group: PredicateGroupOperator,
         path: str,
         *,
         negated: bool = False,
     ) -> str:
-        domain = self.direct_source_domain(rules[0][0])
+        domain = rules[0].source_domain
         if domain is None:
             raise ValueError("source group requires direct SEND rules")
         columns = table_columns(self.con, domain.lower())
         study = _required(columns, STUDY_ID, domain)
-        subject = _find(columns, SUBJECT_ID)
+        subject = (
+            _required(columns, SUBJECT_ID, domain)
+            if grit42_domain_grain(domain) == "subject"
+            else None
+        )
         predicates: list[str] = []
         params: list[Any] = []
 
-        for rule, rule_path in rules:
+        for rule_plan in rules:
+            rule = rule_plan.node
             field = rule.field
             if not isinstance(field, SendColumnField) or field.domain != domain:
                 raise ValueError("source group rules must use one SEND domain")
@@ -319,7 +488,7 @@ class _Compiler:
 
             # Keep the independent rule match as diagnostic evidence. The
             # domain-group node below is the relation used for membership.
-            self.rule(rule, rule_path)
+            self.rule(rule_plan)
 
         join = f"cast(rows.{q(study)} AS VARCHAR) = universe.study_id"
         if subject is not None:
@@ -348,13 +517,15 @@ class _Compiler:
                     "group": group,
                     "negated": negated,
                     "scope": "source_row",
-                    "rule_paths": [rule_path for _, rule_path in rules],
+                    "rule_paths": [rule.path for rule in rules],
                 },
             )
         )
         return relation
 
-    def rule(self, node: PredicateRule, path: str) -> str:
+    def rule(self, plan: RuleExecutionPlan) -> str:
+        node = plan.node
+        path = plan.path
         field, operator, value = node.field, node.operator, node.value
         if isinstance(field, SendColumnField):
             sql, params = self.source(field, operator, value)
@@ -399,7 +570,9 @@ class _Compiler:
         source, study, subject = (
             _required(columns, column, domain),
             _required(columns, STUDY_ID, domain),
-            _find(columns, SUBJECT_ID),
+            _required(columns, SUBJECT_ID, domain)
+            if grit42_domain_grain(domain) == "subject"
+            else None,
         )
         predicate, params = _predicate(
             f"rows.{q(source)}",
@@ -522,9 +695,9 @@ class _Compiler:
         self, field: PreStudyEndpointField, operator: CanonicalOperator, value: Any
     ) -> str:
         name = field.endpoint
-        endpoint = next(
-            item for item in self.query.observation_contract.endpoints if item.name == name
-        )
+        from .endpoint_catalogue import canonical_endpoint
+
+        endpoint = canonical_endpoint(name).spec
         values = _load_pre_study_endpoint_values(
             self.con,
             _load_subject_contexts(self.con, _load_study_contexts(self.con)),
@@ -760,7 +933,7 @@ def _find(columns: Sequence[str], wanted: str) -> str | None:
 def _required(columns: Sequence[str], wanted: str, relation: str) -> str:
     found = _find(columns, wanted)
     if found is None:
-        raise ValueError(f"{relation} does not provide required column {wanted!r}")
+        raise SourceDataError(f"{relation} does not provide required column {wanted!r}")
     return found
 
 

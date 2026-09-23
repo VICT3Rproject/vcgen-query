@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "vcgen-query"
-version = "0.3.0a0"
+version = "0.4.0a0"
 description = "Local SEND cohort-query library for the VICT3R virtual-control project"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -40,9 +40,9 @@ dev = [
 ]
 
 [project.urls]
-Documentation = "https://github.com/lewis-k-s/vcgen-query#readme"
-Issues = "https://github.com/lewis-k-s/vcgen-query/issues"
-Repository = "https://github.com/lewis-k-s/vcgen-query"
+Documentation = "https://github.com/VICT3Rproject/vcgen-query#readme"
+Issues = "https://github.com/VICT3Rproject/vcgen-query/issues"
+Repository = "https://github.com/VICT3Rproject/vcgen-query"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/vcgen_query"]

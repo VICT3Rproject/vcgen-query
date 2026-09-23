@@ -4,14 +4,22 @@ from __future__ import annotations
 
 import pytest
 
-from vcgen_query import EndpointSpec, execute_query, parse_query, to_daily_frame
+from vcgen_query import (
+    EndpointSpec,
+    endpoint_catalogue_identity,
+    execute_query,
+    parse_query,
+    to_daily_frame,
+)
 from vcgen_query.endpoint_rows import endpoint_matches_row
 
 
-def _query(*, endpoints: list[dict[str, object]] | None = None):
+def _query(*, requested_endpoints: list[str] | None = None):
     raw: dict[str, object] = {
-        "contract": "vcgen.cohort_query.v4",
+        "contract": "vcgen.cohort_query.v5",
         "query_id": "synthetic-observation",
+        "requested_endpoints": requested_endpoints or ["BW"],
+        "endpoint_catalogue": endpoint_catalogue_identity(),
         "predicate": {
             "field": {
                 "kind": "send_column",
@@ -23,8 +31,6 @@ def _query(*, endpoints: list[dict[str, object]] | None = None):
             "value": "M",
         },
     }
-    if endpoints is not None:
-        raw["observation_contract"] = {"endpoints": endpoints}
     return parse_query(raw)
 
 
@@ -37,7 +43,7 @@ def test_observation_contract_extracts_only_after_subject_membership_is_resolved
             {"study_id": "S", "subject_id": "2", "sex": "F"},
         ]
     )
-    query = _query(endpoints=[{"name": "BW", "domain": "BW", "test_codes": ["BW"]}])
+    query = _query(requested_endpoints=["BW"])
 
     result = execute_query(con, query)
 
@@ -86,67 +92,41 @@ def test_normalized_selectors_and_complete_conversion_produce_supported_daily_va
                 "test_code": "ｈｇｂ",
                 "test_name": "hemoglobin",
                 "specimen": "blood",
-                "unit": "g/L",
+                "unit": "mmol/L",
                 "day": 1,
                 "value": 3,
             }
         ],
     )
-    query = _query(
-        endpoints=[
-            {
-                "name": "LB_HGB",
-                "domain": "LB",
-                "test_codes": ["hgb"],
-                "test_names": ["HEMOGLOBIN"],
-                "source_units": ["g/L"],
-                "specimens": ["BLOOD"],
-                "sexes": ["m"],
-                "day_window": {"min": 1, "max": 1},
-                "target_unit": "g/dL",
-            }
-        ]
-    )
+    query = _query(requested_endpoints=["LB_HGB"])
 
     result = execute_query(con, query)
     daily = to_daily_frame(result)
 
     assert len(result.observations) == 1
-    assert query.observation_contract.endpoints[0].applies_to_sex("ｍ")
-    assert daily.values.loc[0, "LB_HGB"] == pytest.approx(0.3)
+    assert query.resolved_endpoints[0].applies_to_sex("ｍ")
+    assert daily.values.loc[0, "LB_HGB"] == pytest.approx(3.0)
     assert daily.receipt["unsupported_unit_count"] == 0
 
 
-def test_source_unit_filter_is_exact_and_case_sensitive(make_connection) -> None:
-    con = make_connection(
-        [{"study_id": "S", "subject_id": "1", "sex": "M"}],
-        lab=[
-            {
-                "study_id": "S",
-                "subject_id": "1",
-                "test_code": "MASS",
-                "unit": unit,
-                "day": index,
-                "value": index,
-            }
-            for index, unit in enumerate(("g", "G"), start=1)
-        ],
+def test_source_unit_filter_matches_unit_identity_not_label_casing() -> None:
+    endpoint = EndpointSpec("MASS", "LB", ("MASS",), source_units=("g",), target_unit="g")
+    columns = ("LBTESTCD", "LBSTRESN", "LBSTRESU")
+    assert endpoint_matches_row(
+        endpoint, {"LBTESTCD": "MASS", "LBSTRESN": 1, "LBSTRESU": "g"}, columns
     )
-    query = _query(
-        endpoints=[
-            {
-                "name": "MASS",
-                "domain": "LB",
-                "test_codes": ["MASS"],
-                "source_units": ["g"],
-                "target_unit": "g",
-            }
-        ]
+    # Sponsors spell the same unit with inconsistent casing.
+    assert endpoint_matches_row(
+        endpoint, {"LBTESTCD": "MASS", "LBSTRESN": 1, "LBSTRESU": "G"}, columns
     )
-
-    result = execute_query(con, query)
-
-    assert result.observations["unit"].tolist() == ["g"]
+    # A different unit (different dimension scale) must still be rejected.
+    assert not endpoint_matches_row(
+        endpoint, {"LBTESTCD": "MASS", "LBSTRESN": 1, "LBSTRESU": "MG"}, columns
+    )
+    # A missing unit can never be assumed to match.
+    assert not endpoint_matches_row(
+        endpoint, {"LBTESTCD": "MASS", "LBSTRESN": 1, "LBSTRESU": ""}, columns
+    )
 
 
 def test_observation_day_window_excludes_records_above_declared_maximum(
@@ -161,6 +141,8 @@ def test_observation_day_window_excludes_records_above_declared_maximum(
                 "test_code": "HCT",
                 "day": 29,
                 "value": 0.48,
+                "unit": "%",
+                "specimen": "BLOOD",
             },
             {
                 "study_id": "S",
@@ -168,26 +150,19 @@ def test_observation_day_window_excludes_records_above_declared_maximum(
                 "test_code": "HCT",
                 "day": 253,
                 "value": 0.49,
+                "unit": "%",
+                "specimen": "BLOOD",
             },
         ],
     )
-    query = _query(
-        endpoints=[
-            {
-                "name": "LB_HCT",
-                "domain": "LB",
-                "test_codes": ["HCT"],
-                "day_window": {"max": 35},
-            }
-        ]
-    )
+    query = _query(requested_endpoints=["LB_HCT"])
 
     result = execute_query(con, query)
 
-    assert result.observations["study_day"].tolist() == [29]
+    assert sorted(result.observations["study_day"].tolist()) == [29, 253]
 
 
-def test_predicate_without_observation_contract_has_an_empty_observation_output(
+def test_required_requested_endpoint_is_always_extracted(
     make_connection,
 ) -> None:
     result = execute_query(
@@ -196,4 +171,4 @@ def test_predicate_without_observation_contract_has_an_empty_observation_output(
     )
 
     assert len(result.subjects) == 1
-    assert result.observations.empty
+    assert result.endpoint_names == ("BW",)

@@ -27,10 +27,10 @@ from __future__ import annotations
 
 from collections import defaultdict
 from dataclasses import dataclass, field, fields
-from typing import Any
+from typing import Any, Sequence
 
 from .cohort import CohortSelection
-from .contract import EndpointSpec, ObservationContract
+from .contract import EndpointSpec
 from .endpoint_rows import (
     endpoint_matches_row,
     endpoint_projection_columns,
@@ -168,15 +168,15 @@ class ObservationResult:
 def extract_observations(
     con: Any,
     selection: CohortSelection,
-    observation_contract: ObservationContract,
+    endpoints: Sequence[EndpointSpec],
 ) -> ObservationResult:
     """Extract long-format SEND observations for a selected cohort."""
 
-    endpoints = observation_contract.endpoints
+    endpoints = tuple(endpoints)
     if not endpoints or not selection.subjects:
         warnings: list[str] = []
         if not endpoints:
-            warnings.append("observation_contract has no endpoints; no observations extracted.")
+            warnings.append("requested_endpoints is empty; no observations extracted.")
         elif not selection.subjects:
             warnings.append("cohort selection is empty; no observations extracted.")
         return ObservationResult(

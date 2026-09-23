@@ -21,6 +21,7 @@ from .identities import (
     GRIT42_FORM_SUBJECT_QUERY_CONTRACT,
     GRIT42_SUBJECT_QUERY_IMPORT_CONTRACT,
 )
+from .endpoint_catalogue import endpoint_catalogue_identity, load_endpoint_catalogue
 
 _IDENTIFIER = re.compile(r"^[A-Z][A-Z0-9_]*(?:\.[A-Z][A-Z0-9_]*)?$")
 _TYPES = {
@@ -74,24 +75,6 @@ _VALUELESS = frozenset({"is_empty", "is_not_empty"})
 _LIST_OPS = frozenset({"in", "not_in"})
 _RANGE_OPS = frozenset({"between", "not_between"})
 
-# Existing, package-owned pre-study endpoint meanings.  They are declared on
-# imported queries because endpoint predicates are valid only when declared.
-_ENDPOINT_SPECS = {
-    "LB_RBC": ("LB", ["RBC"], ["10^12/L"], "10^12/L"),
-    "LB_HGB": ("LB", ["HGB"], ["mmol/L"], "mmol/L"),
-    "LB_HCT": ("LB", ["HCT"], ["%"], "%"),
-    "LB_RETI": ("LB", ["RET", "RETI"], ["10^9/L"], "10^9/L"),
-    "LB_PLAT": ("LB", ["PLAT", "PLT"], ["10^9/L"], "10^9/L"),
-    "LB_WBC": ("LB", ["WBC"], ["10^9/L"], "10^9/L"),
-    "LB_LYM": ("LB", ["LYM"], ["10^9/L"], "10^9/L"),
-    "LB_ALT": ("LB", ["ALAT", "ALT"], ["µkat/L"], "ukat/L"),
-    "LB_AST": ("LB", ["ASAT", "AST"], ["µkat/L"], "ukat/L"),
-    "LB_ALP": ("LB", ["ALP", "AP"], ["µkat/L"], "ukat/L"),
-    "LB_GLDH": ("LB", ["GLDH"], ["µkat/L"], "ukat/L"),
-    "LB_GGT": ("LB", ["GGT"], ["µkat/L"], "ukat/L"),
-    "LB_UREA": ("LB", ["UREA"], ["mmol/L"], "mmol/L"),
-    "PRE_STUDY_BODY_TEMPERATURE_C": ("VS", ["TEMP"], ["C"], "Cel"),
-}
 _FORM_CATEGORIES = {
     "splrnam": "supplier",
     "sstyp": "study_type",
@@ -105,10 +88,10 @@ _FORM_CATEGORIES = {
     "trtv": "treatment_vehicle",
 }
 _FORM_RANGES = {
-    "dose_duration_days": (
+    "planned_dose_duration_days": (
         "dose_duration_min",
         "dose_duration_max",
-        "dose_duration_days",
+        "planned_dose_duration_days",
     ),
     "study_start_year": (
         "study_start_year_min",
@@ -147,23 +130,27 @@ _FORM_ENDPOINTS = {
 _INACTIVE = frozenset({"ecg_init_min", "ecg_init_max", "lbtest", "pretestvalues", "trtvcat"})
 _DERIVED = {
     **{name: "string" for name in _FORM_CATEGORIES.values()},
-    "dose_duration_days": "number",
+    "planned_dose_duration_days": "number",
     "study_start_year": "number",
     "baseline_body_weight_g": "number",
     "age_days": "number",
 }
 
 
-def import_grit42_subject_query(raw: Mapping[str, Any]) -> Query:
+def import_grit42_subject_query(
+    raw: Mapping[str, Any], requested_endpoints: Sequence[str]
+) -> Query:
     """Import one complete saved Grit42 form or advanced subject query."""
 
     payload = _mapping(raw, "grit42 subject query")
     if payload.get("query_type") == "form":
-        return import_grit42_form_subject_query(payload)
-    return import_grit42_advanced_subject_query(payload)
+        return import_grit42_form_subject_query(payload, requested_endpoints)
+    return import_grit42_advanced_subject_query(payload, requested_endpoints)
 
 
-def import_grit42_form_subject_query(raw: Mapping[str, Any]) -> Query:
+def import_grit42_form_subject_query(
+    raw: Mapping[str, Any], requested_endpoints: Sequence[str]
+) -> Query:
     """Import one complete saved Grit42 form subject query."""
 
     payload = _mapping(raw, "grit42 form subject query")
@@ -174,10 +161,13 @@ def import_grit42_form_subject_query(raw: Mapping[str, Any]) -> Query:
     return _compile_form_values(
         _mapping(payload["form_values"], "grit42 saved form_values"),
         raw_payload=payload,
+        requested_endpoints=requested_endpoints,
     )
 
 
-def import_grit42_advanced_subject_query(raw: Mapping[str, Any]) -> Query:
+def import_grit42_advanced_subject_query(
+    raw: Mapping[str, Any], requested_endpoints: Sequence[str]
+) -> Query:
     """Import one complete saved Grit42 advanced subject query."""
 
     payload = _mapping(raw, "grit42 advanced subject query")
@@ -196,6 +186,7 @@ def import_grit42_advanced_subject_query(raw: Mapping[str, Any]) -> Query:
         digest,
         GRIT42_ADVANCED_SUBJECT_QUERY_CONTRACT,
         endpoints,
+        requested_endpoints,
     )
 
 
@@ -203,6 +194,7 @@ def _compile_form_values(
     payload: Mapping[str, Any],
     *,
     raw_payload: Mapping[str, Any],
+    requested_endpoints: Sequence[str],
 ) -> Query:
     """Compile supported fixed-form selectors with the given raw provenance."""
 
@@ -265,6 +257,7 @@ def _compile_form_values(
         digest,
         GRIT42_FORM_SUBJECT_QUERY_CONTRACT,
         endpoints,
+        requested_endpoints,
     )
 
 
@@ -294,10 +287,13 @@ def _query(
     source_payload_sha256: str,
     source_contract: str,
     endpoints: set[str],
+    requested_endpoints: Sequence[str],
 ) -> Query:
     raw: dict[str, Any] = {
         "contract": COHORT_QUERY_CONTRACT,
         "query_id": query_id,
+        "requested_endpoints": list(requested_endpoints),
+        "endpoint_catalogue": endpoint_catalogue_identity(),
         "import_provenance": {
             "contract": GRIT42_SUBJECT_QUERY_IMPORT_CONTRACT,
             "source_contract": source_contract,
@@ -306,35 +302,7 @@ def _query(
     }
     if predicate is not None:
         raw["predicate"] = predicate
-    if endpoints:
-        raw["observation_contract"] = {
-            "endpoints": [_endpoint_spec(name) for name in sorted(endpoints)]
-        }
     return parse_query(raw)
-
-
-def _endpoint_spec(name: str) -> dict[str, Any]:
-    try:
-        domain, test_codes, units, target_unit = _ENDPOINT_SPECS[name]
-    except KeyError as error:
-        raise QueryError(f"unsupported Grit42 pre-study endpoint: {name}") from error
-    if name == "PRE_STUDY_BODY_TEMPERATURE_C":
-        return {
-            "name": name,
-            "domain": domain,
-            "test_codes": test_codes,
-            "source_units": units,
-            "target_unit": target_unit,
-        }
-    return {
-        "name": name,
-        "domain": domain,
-        "test_codes": test_codes,
-        "source_units": units,
-        "target_unit": target_unit,
-        "specimens": ["URINE"],
-        "specimen_match": "not",
-    }
 
 
 def _node(
@@ -427,7 +395,7 @@ def _canonical_field_name(raw: Any, location: str) -> str:
         if len(domain_and_column) != 2:
             raise QueryError(f"{location}.properties.field must contain domain and column")
         name = ".".join(item.upper() for item in domain_and_column)
-    if name not in _DERIVED and name not in _ENDPOINT_SPECS and not _IDENTIFIER.fullmatch(name):
+    if name not in _DERIVED and not _is_endpoint(name) and not _IDENTIFIER.fullmatch(name):
         raise QueryError(f"{location}.properties.field must be a safe DOMAIN.COLUMN field")
     return name
 
@@ -435,7 +403,7 @@ def _canonical_field_name(raw: Any, location: str) -> str:
 def _field(name: str, endpoints: set[str], requested_type: str, location: str) -> dict[str, str]:
     if name in _DERIVED:
         return _derived(name, _DERIVED[name])
-    if name in _ENDPOINT_SPECS:
+    if _is_endpoint(name):
         endpoints.add(name)
         return _endpoint(name, "number")
     if not _IDENTIFIER.fullmatch(name) or "." not in name:
@@ -449,6 +417,10 @@ def _field(name: str, endpoints: set[str], requested_type: str, location: str) -
         "column": column,
         "value_type": requested_type,
     }
+
+
+def _is_endpoint(name: str) -> bool:
+    return name in load_endpoint_catalogue().endpoints
 
 
 def _type(
@@ -609,6 +581,14 @@ def _endpoint(endpoint: str, value_type: str) -> dict[str, str]:
 def _bounds(
     field: dict[str, str], low: Any, high: Any, low_name: str, high_name: str
 ) -> list[dict[str, Any]]:
+    if _active(low) and _active(high):
+        return [
+            _rule(
+                field,
+                "between",
+                [_number(low, low_name), _number(high, high_name)],
+            )
+        ]
     result = []
     if _active(low):
         result.append(_rule(field, "gte", _number(low, low_name)))

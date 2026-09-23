@@ -12,10 +12,22 @@ from vcgen_query import (
     QueryError,
     compare_membership,
     fingerprint_predicate,
-    import_grit42_advanced_subject_query,
-    import_grit42_form_subject_query,
-    import_grit42_subject_query,
+    import_grit42_advanced_subject_query as _import_grit42_advanced_subject_query,
+    import_grit42_form_subject_query as _import_grit42_form_subject_query,
+    import_grit42_subject_query as _import_grit42_subject_query,
 )
+
+
+def import_grit42_subject_query(raw):
+    return _import_grit42_subject_query(raw, ("BW",))
+
+
+def import_grit42_form_subject_query(raw):
+    return _import_grit42_form_subject_query(raw, ("BW",))
+
+
+def import_grit42_advanced_subject_query(raw):
+    return _import_grit42_advanced_subject_query(raw, ("BW",))
 
 
 def _advanced_tree(*, field: str = "DM.SEX", operator: str = "equal", value=None):
@@ -345,10 +357,35 @@ def test_form_values_imports_to_derived_predicates() -> None:
 
     assert {child["field"]["name"] for child in children} == {
         "sex",
-        "dose_duration_days",
+        "planned_dose_duration_days",
         "study_start_year",
     }
     assert all(child["field"]["kind"] == "derived" for child in children)
+
+
+def test_form_value_bounds_use_one_between_predicate() -> None:
+    query = import_grit42_form_subject_query(
+        {
+            "query_type": "form",
+            "form_values": {
+                "dose_duration_min": "28",
+                "dose_duration_max": "28",
+            },
+        }
+    )
+
+    children = query.to_canonical_dict()["predicate"]["children"]
+    assert children == [
+        {
+            "field": {
+                "kind": "derived",
+                "name": "planned_dose_duration_days",
+                "value_type": "number",
+            },
+            "operator": "between",
+            "value": [28.0, 28.0],
+        }
+    ]
 
 
 def test_form_values_reject_unknown_or_unsupported_selectors() -> None:

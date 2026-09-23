@@ -12,6 +12,7 @@ from vcgen_query import (
     DayWindow,
     DerivedField,
     EndpointSpec,
+    endpoint_catalogue_identity,
     ObservationContract,
     PreStudyEndpointField,
     PredicateGroup,
@@ -58,6 +59,8 @@ def _query(predicate: dict[str, object] | None = None, **extra: object) -> dict[
     payload: dict[str, object] = {
         "contract": COHORT_QUERY_CONTRACT,
         "query_id": "synthetic-v3",
+        "requested_endpoints": ["BW"],
+        "endpoint_catalogue": endpoint_catalogue_identity(),
         **extra,
     }
     if predicate is not None:
@@ -68,11 +71,15 @@ def _query(predicate: dict[str, object] | None = None, **extra: object) -> dict[
 def test_contract_id_and_absent_predicate_are_canonical_all_subjects() -> None:
     query = parse_query(_query())
 
-    assert query.contract == "vcgen.cohort_query.v4"
+    assert query.contract == "vcgen.cohort_query.v5"
     assert query.predicate is None
     assert query.import_provenance is None
     assert "predicate" not in query.to_canonical_dict()
     assert "import_provenance" not in query.to_canonical_dict()
+
+
+def test_source_data_error_is_a_public_value_error() -> None:
+    assert issubclass(vcgen_query.SourceDataError, ValueError)
 
 
 def test_manual_conversion_types_are_not_public() -> None:
@@ -105,45 +112,34 @@ def test_direct_endpoint_construction_enforces_and_normalizes_parser_invariants(
         EndpointSpec("HCT", "LB", ())
 
 
-def test_valid_direct_and_parsed_observation_contracts_are_identical() -> None:
-    direct = ObservationContract(
-        (
-            EndpointSpec(
-                "LB_HGB",
-                "LB",
-                ("ｈｇｂ",),
-                (" hemoglobin ",),
-                ("g/L", "g/dL"),
-                (" blood ",),
-                "exact",
-                ("m",),
-                DayWindow(1, 28),
-                "g/dL",
-            ),
-        )
-    )
-    parsed = parse_query(
-        _query(
-            observation_contract={
-                "endpoints": [
-                    {
-                        "name": "LB_HGB",
-                        "domain": "LB",
-                        "test_codes": ["ｈｇｂ"],
-                        "test_names": [" hemoglobin "],
-                        "source_units": ["g/L", "g/dL"],
-                        "specimens": [" blood "],
-                        "sexes": ["m"],
-                        "day_window": {"min": 1, "max": 28},
-                        "target_unit": "g/dL",
-                    }
-                ]
-            }
-        )
-    )
+def test_requested_endpoints_resolve_only_through_the_catalogue() -> None:
+    parsed = parse_query(_query(requested_endpoints=["LB_HGB"]))
 
-    assert parsed.observation_contract == direct
-    assert parsed.observation_contract.to_canonical_dict() == direct.to_canonical_dict()
+    assert tuple(item.name for item in parsed.resolved_endpoints) == ("LB_HGB",)
+    assert parsed.resolved_endpoints[0].domain == "LB"
+
+
+@pytest.mark.parametrize(
+    ("endpoints", "message"),
+    [
+        ([], "non-empty"),
+        (["BW", "BW"], "unique"),
+        (["bw"], "uppercase"),
+        (["NOT_A_CANONICAL_ENDPOINT"], "unknown canonical endpoint"),
+    ],
+)
+def test_requested_endpoints_are_required_unique_uppercase_catalogue_names(
+    endpoints: list[str], message: str
+) -> None:
+    with pytest.raises(QueryError, match=message):
+        parse_query(_query(requested_endpoints=endpoints))
+
+
+def test_requested_endpoints_are_required_in_serialized_queries() -> None:
+    payload = _query()
+    del payload["requested_endpoints"]
+    with pytest.raises(QueryError, match="requested_endpoints"):
+        parse_query(payload)
 
 
 def test_day_window_is_integer_only_inclusive_and_ordered() -> None:
@@ -193,11 +189,16 @@ def test_direct_group_and_query_construction_require_typed_entities() -> None:
     with pytest.raises(QueryError, match="typed predicates"):
         PredicateGroup("and", ({"operator": "eq"},))
     with pytest.raises(QueryError, match="typed predicate"):
-        Query("direct", predicate={"operator": "eq"})
-    with pytest.raises(QueryError, match="ObservationContract"):
-        Query("direct", observation_contract={})
+        Query("direct", ("BW",), endpoint_catalogue_identity(), predicate={"operator": "eq"})
+    with pytest.raises(QueryError, match="requested_endpoints"):
+        Query("direct", (), endpoint_catalogue_identity())
     with pytest.raises(QueryError, match="unsupported contract"):
-        Query("direct", contract="vcgen.cohort_query.v3")
+        Query(
+            "direct",
+            ("BW",),
+            endpoint_catalogue_identity(),
+            contract="vcgen.cohort_query.v3",
+        )
 
 
 def test_observation_container_rejects_invalid_members() -> None:
@@ -312,7 +313,7 @@ def test_legacy_manual_conversion_rules_are_rejected() -> None:
         {"contract": "vcgen.cohort_query.v3", "query_id": "old-contract"},
     ],
 )
-def test_native_parser_requires_explicit_v4_contract(payload: dict[str, object]) -> None:
+def test_native_parser_requires_explicit_v5_contract(payload: dict[str, object]) -> None:
     with pytest.raises(QueryError):
         parse_query(payload)
 
@@ -459,9 +460,7 @@ def test_predicate_fingerprint_ignores_query_and_import_provenance() -> None:
                 "source_contract": "grit42.form_subject_query.v1",
                 "source_payload_sha256": "b" * 64,
             },
-            observation_contract={
-                "endpoints": [{"name": "BW", "domain": "BW", "test_codes": ["BW"]}]
-            },
+            requested_endpoints=["LB_HCT"],
         )
     )
 
@@ -517,67 +516,22 @@ def test_nested_groups_and_negation_round_trip() -> None:
     assert nested["negated"] is True
 
 
-def test_observation_fingerprint_includes_compiled_endpoint_conversion() -> None:
-    base = {
-        "observation_contract": {
-            "endpoints": [
-                {
-                    "name": "HGB",
-                    "domain": "LB",
-                    "test_codes": ["HGB"],
-                    "source_units": ["g/L"],
-                    "target_unit": "g/dL",
-                }
-            ]
-        }
-    }
-    first = parse_query(_query(**base))
-    changed = parse_query(
-        _query(
-            observation_contract={
-                "endpoints": [
-                    {
-                        **base["observation_contract"]["endpoints"][0],
-                        "target_unit": "g/L",
-                    }
-                ]
-            }
-        )
-    )
+def test_observation_fingerprint_includes_catalogue_endpoint_semantics() -> None:
+    first = parse_query(_query(requested_endpoints=["LB_HGB"]))
+    changed = parse_query(_query(requested_endpoints=["LB_HCT"]))
 
     assert fingerprint_observation_contract(first) != fingerprint_observation_contract(changed)
 
 
 def test_observation_fingerprint_is_normalization_stable_and_endpoint_order_sensitive() -> None:
     first = parse_query(
-        _query(
-            observation_contract={
-                "endpoints": [
-                    {"name": "LB_HCT", "domain": "LB", "test_codes": ["ｈｃｔ"]},
-                    {"name": "BW", "domain": "BW", "test_codes": ["bw"]},
-                ]
-            }
-        )
+        _query(requested_endpoints=["LB_HCT", "BW"])
     )
     equivalent = parse_query(
-        _query(
-            observation_contract={
-                "endpoints": [
-                    {"name": "LB_HCT", "domain": "LB", "test_codes": ["HCT", "hct"]},
-                    {"name": "BW", "domain": "BW", "test_codes": ["BW"]},
-                ]
-            }
-        )
+        _query(requested_endpoints=["LB_HCT", "BW"])
     )
     reordered = parse_query(
-        _query(
-            observation_contract={
-                "endpoints": [
-                    {"name": "BW", "domain": "BW", "test_codes": ["BW"]},
-                    {"name": "LB_HCT", "domain": "LB", "test_codes": ["HCT"]},
-                ]
-            }
-        )
+        _query(requested_endpoints=["BW", "LB_HCT"])
     )
 
     assert fingerprint_observation_contract(first) == fingerprint_observation_contract(equivalent)

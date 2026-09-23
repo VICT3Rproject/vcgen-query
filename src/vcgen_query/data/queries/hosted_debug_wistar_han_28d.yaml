@@ -1,0 +1,70 @@
+# yaml-language-server: $schema=../vcgen.cohort_query.v5.schema.json
+# Compiled from ../saved_grit42_queries/hosted_debug_wistar_han_28d.json.
+contract: vcgen.cohort_query.v5
+query_id: grit42:subject:hosted-debug-wistar-han-28d
+requested_endpoints:
+- BW
+- LB_HCT
+endpoint_catalogue:
+  contract: vcgen.canonical_endpoint_catalogue.v4
+  catalogue_id: grit42-canonical-endpoints-2026-09-17-v4
+  sha256: 8ef29868c68b1b02f7dba9aa7790b70c046d4898aa04b3f3e784ea67ec7152e4
+predicate:
+  group: and
+  children:
+  - field:
+      kind: derived
+      name: sex
+      value_type: string
+    operator: in
+    value:
+    - F
+    - M
+  - field:
+      kind: derived
+      name: species
+      value_type: string
+    operator: in
+    value:
+    - RAT
+  - field:
+      kind: derived
+      name: route
+      value_type: string
+    operator: in
+    value:
+    - ORAL GAVAGE
+  - field:
+      kind: derived
+      name: planned_dose_duration_days
+      value_type: number
+    operator: between
+    value:
+    - 28.0
+    - 28.0
+  - field:
+      kind: derived
+      name: study_start_year
+      value_type: number
+    operator: between
+    value:
+    - 2017.0
+    - 2022.0
+  - field:
+      kind: derived
+      name: dose_frequency
+      value_type: string
+    operator: in
+    value:
+    - QD
+  - field:
+      kind: derived
+      name: strain
+      value_type: string
+    operator: in
+    value:
+    - WISTAR HAN
+import_provenance:
+  contract: grit42.subject_query_import.v1
+  source_contract: grit42.form_subject_query.v1
+  source_payload_sha256: c33685efd94c3e20563568bb8a7af1e98b090b4d524ee7e3ca3b9491150627ca

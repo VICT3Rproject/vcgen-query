@@ -1,30 +1,47 @@
-"""Bundled v4 query documents load through the local contract."""
+"""Bundled query examples use the correct source and local contracts."""
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pytest
 
-from vcgen_query import COHORT_QUERY_CONTRACT, load_query, schema_dict
+from vcgen_query import (
+    COHORT_QUERY_CONTRACT,
+    import_grit42_subject_query,
+    load_query,
+    schema_dict,
+)
 
 
 _DATA = Path(__file__).resolve().parents[1] / "src" / "vcgen_query" / "data"
 
 
-def test_bundled_documents_are_v4_only_and_loadable() -> None:
-    paths = [
-        _DATA / "examples" / "all_subjects.yaml",
-        _DATA / "examples" / "wistar_han_28d_cohort.yaml",
-        _DATA / "examples" / "wistar_han_28d_with_observations.yaml",
-        _DATA / "queries" / "wistar_han_28d_historical.yaml",
-        _DATA / "queries" / "gurjanov_28d_benchmark_full.yaml",
-        _DATA / "queries" / "gurjanov_28d_generation_core.yaml",
-    ]
+def test_bundled_documents_are_v5_only_and_loadable() -> None:
+    paths = sorted(
+        path
+        for directory in (_DATA / "examples", _DATA / "queries")
+        for path in directory.iterdir()
+        if path.suffix in {".json", ".yaml", ".yml"}
+    )
 
+    assert paths
     for path in paths:
         query = load_query(path)
-        assert query.contract == COHORT_QUERY_CONTRACT == "vcgen.cohort_query.v4"
+        assert query.contract == COHORT_QUERY_CONTRACT == "vcgen.cohort_query.v5"
+        assert query.requested_endpoints
+
+
+def test_saved_grit42_example_compiles_to_its_v5_counterpart() -> None:
+    source_path = (
+        _DATA / "saved_grit42_queries" / "hosted_debug_wistar_han_28d.json"
+    )
+    raw = json.loads(source_path.read_text(encoding="utf-8"))
+    imported = import_grit42_subject_query(raw, ["BW", "LB_HCT"])
+    expected = load_query(_DATA / "queries" / "hosted_debug_wistar_han_28d.yaml")
+
+    assert imported.to_canonical_dict() == expected.to_canonical_dict()
 
 
 def test_wistar_examples_use_supported_broad_filters_and_hct_categories() -> None:
@@ -44,11 +61,11 @@ def test_wistar_examples_use_supported_broad_filters_and_hct_categories() -> Non
 
     hct = next(
         endpoint
-        for endpoint in observed.observation_contract.endpoints
+        for endpoint in observed.resolved_endpoints
         if endpoint.name == "LB_HCT"
     )
-    assert hct.specimens == ("BLOOD", "WHOLE BLOOD")
-    assert hct.specimen_match == "exact"
+    assert hct.specimens == ("URINE",)
+    assert hct.specimen_match == "not"
     assert hct.source_units == ("%",)
     assert hct.target_unit == "%"
 
@@ -63,13 +80,13 @@ def test_gurjanov_profiles_separate_discovery_benchmark_and_generation() -> None
     benchmark = load_query(_DATA / "queries" / "gurjanov_28d_benchmark_full.yaml")
     core = load_query(_DATA / "queries" / "gurjanov_28d_generation_core.yaml")
 
-    assert len(discovery.observation_contract.endpoints) == 65
-    assert len(benchmark.observation_contract.endpoints) == 65
-    assert len(core.observation_contract.endpoints) == 48
+    assert len(discovery.requested_endpoints) == 65
+    assert len(benchmark.requested_endpoints) == 65
+    assert len(core.requested_endpoints) == 48
     assert benchmark.predicate == core.predicate
     assert discovery.predicate != core.predicate
-    benchmark_names = {item.name for item in benchmark.observation_contract.endpoints}
-    core_names = {item.name for item in core.observation_contract.endpoints}
+    benchmark_names = set(benchmark.requested_endpoints)
+    core_names = set(core.requested_endpoints)
     assert benchmark_names - core_names == {
         "LB_APTT",
         "LB_BILI",
@@ -92,7 +109,7 @@ def test_gurjanov_profiles_separate_discovery_benchmark_and_generation() -> None
     assert all(
         endpoint.day_window is None
         for query in (discovery, benchmark, core)
-        for endpoint in query.observation_contract.endpoints
+        for endpoint in query.resolved_endpoints
     )
 
     predicate = core.predicate.to_canonical_dict()

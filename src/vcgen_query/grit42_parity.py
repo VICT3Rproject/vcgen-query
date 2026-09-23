@@ -31,6 +31,7 @@ from .contract import Query, QueryError, parse_query, seq
 from .duckdb import create_derived_views
 from .fingerprint import fingerprint_predicate
 from .grit42 import compare_membership, import_grit42_subject_query
+from .endpoint_catalogue import endpoint_catalogue_identity
 from .identities import (
     GRIT42_ADVANCED_SUBJECT_QUERY_CONTRACT,
     GRIT42_SUBJECT_QUERY_IMPORT_CONTRACT,
@@ -67,7 +68,9 @@ class QueryBank:
         children.extend(dict(condition) for condition in case.conditions)
         return parse_query(
             {
-                "contract": "vcgen.cohort_query.v4",
+                "contract": "vcgen.cohort_query.v5",
+                "requested_endpoints": ["BW"],
+                "endpoint_catalogue": endpoint_catalogue_identity(),
                 "query_id": f"grit42-parity:{self.name}:{case.case_id}",
                 "predicate": {"group": "and", "children": children},
                 "import_provenance": {
@@ -424,8 +427,8 @@ def run_parity(
         for case in bank.cases:
             query_id = _query_id(bindings[case.case_id])
             saved = client.saved_query(query_id)
-            imported = import_grit42_subject_query(saved)
             expected = bank.query_for(case)
+            imported = import_grit42_subject_query(saved, expected.requested_endpoints)
             expected_fingerprint = fingerprint_predicate(expected.predicate)
             imported_fingerprint = fingerprint_predicate(imported.predicate)
             reference = client.subject_membership(query_id)

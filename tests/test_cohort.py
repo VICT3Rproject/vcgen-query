@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from vcgen_query import execute_query, parse_query
+from vcgen_query import endpoint_catalogue_identity, execute_query, parse_query
 
 
 def _send(
@@ -34,8 +34,10 @@ def _rule(
 
 def _query(predicate: dict[str, object] | None, **extra: object) -> object:
     raw: dict[str, object] = {
-        "contract": "vcgen.cohort_query.v4",
+        "contract": "vcgen.cohort_query.v5",
         "query_id": "synthetic-execution",
+        "requested_endpoints": ["BW"],
+        "endpoint_catalogue": endpoint_catalogue_identity(),
         **extra,
     }
     if predicate is not None:
@@ -329,13 +331,21 @@ def test_study_grain_rule_propagates_to_every_dm_subject(make_connection) -> Non
     assert _members(result) == {("MATCH", "MATCH-1"), ("MATCH", "MATCH-2")}
 
 
-def test_dose_duration_selector_respects_source_duration_units(make_connection) -> None:
+def test_planned_dose_duration_selector_respects_source_duration_units(
+    make_connection,
+) -> None:
     con = make_connection(
         [
             {"study_id": "DAYS", "subject_id": "1", "study_length": "P28D"},
             {"study_id": "WEEKS_EQUIVALENT", "subject_id": "1", "study_length": "P4W"},
             {"study_id": "TWENTY_EIGHT_WEEKS", "subject_id": "1", "study_length": "P28W"},
-            {"study_id": "MULTIPLE", "subject_id": "1", "study_length": "P14D"},
+            {
+                "study_id": "MULTIPLE",
+                "subject_id": "1",
+                "study_length": "P14D",
+                "exstdy": 1,
+                "exendy": 28,
+            },
         ],
         study_metadata={"MULTIPLE": {"DOSDUR": ["P28D"]}},
     )
@@ -344,7 +354,7 @@ def test_dose_duration_selector_respects_source_duration_units(make_connection) 
         28,
         field={
             "kind": "derived",
-            "name": "dose_duration_days",
+            "name": "planned_dose_duration_days",
             "value_type": "number",
         },
     )
@@ -354,6 +364,38 @@ def test_dose_duration_selector_respects_source_duration_units(make_connection) 
         ("WEEKS_EQUIVALENT", "WEEKS_EQUIVALENT-1"),
         ("MULTIPLE", "MULTIPLE-1"),
     }
+
+
+def test_planned_dose_duration_between_bounds_match_one_subject_value(
+    make_connection,
+) -> None:
+    con = make_connection(
+        [
+            {
+                "study_id": "MATCH",
+                "subject_id": "1",
+                "study_length": "P1D",
+                "exstdy": 1,
+                "exendy": 28,
+            },
+            {"study_id": "MISS", "subject_id": "1", "study_length": "P1D"},
+        ],
+        study_metadata={
+            "MATCH": {"DOSDUR": ["P28D"]},
+            "MISS": {"DOSDUR": ["P56D"]},
+        },
+    )
+    predicate = _rule(
+        "between",
+        [28, 28],
+        field={
+            "kind": "derived",
+            "name": "planned_dose_duration_days",
+            "value_type": "number",
+        },
+    )
+
+    assert _members(_run(con, predicate)) == {("MATCH", "MATCH-1")}
 
 
 def test_cross_domain_rules_compose_as_subject_key_sets(make_connection) -> None:

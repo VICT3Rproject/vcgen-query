@@ -86,7 +86,7 @@ def test_daily_frame_converts_and_collapses_decimal_equivalents() -> None:
     rule = daily.cell_audit.loc[0, "conversion_rule"][0]
     assert rule["source_ucum"] == "g/L"
     assert rule["target_unit"] == "g/dL"
-    assert rule["catalogue_id"] == "vcgen.unit_catalogue.v1"
+    assert rule["catalogue_id"] == "vcgen.unit_catalogue.v2"
 
 
 def test_equivalent_alias_is_an_audited_identity_conversion() -> None:

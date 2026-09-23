@@ -29,6 +29,8 @@ def _make_connection(
     body_weight: Iterable[dict[str, Any]] | None = None,
     lab: Iterable[dict[str, Any]] | None = None,
     vital_signs: Iterable[dict[str, Any]] | None = None,
+    exposure_intervals: Iterable[dict[str, Any]] | None = None,
+    dispositions: Iterable[dict[str, Any]] | None = None,
     study_metadata: Mapping[str, Mapping[str, str | Iterable[str] | None]] | None = None,
 ) -> Any:
     subjects = list(subjects)
@@ -74,15 +76,39 @@ def _make_connection(
     )
     for study in studies:
         length = next((s.get("study_length", 28) for s in subjects if s["study_id"] == study), 28)
+        dose_duration = next(
+            (
+                s.get("dose_duration", length)
+                for s in subjects
+                if s["study_id"] == study
+            ),
+            length,
+        )
+        next_sequence = 1
+        if dose_duration is not None:
+            con.execute(
+                "INSERT INTO ts VALUES (?,?,?,?,?)",
+                (study, str(next_sequence), "DOSDUR", "Dosing Duration", str(dose_duration)),
+            )
+            next_sequence += 1
+        overall_length = next(
+            (
+                s.get("overall_study_length", length)
+                for s in subjects
+                if s["study_id"] == study
+            ),
+            length,
+        )
         con.execute(
             "INSERT INTO ts VALUES (?,?,?,?,?)",
-            (study, "1", "DOSDUR", "Study Length", str(length)),
+            (study, str(next_sequence), "SLENGTH", "Study Length", str(overall_length)),
         )
+        next_sequence += 1
         for code, raw_values in (study_metadata or {}).get(study, {}).items():
             if raw_values is None:
                 continue
             values = (raw_values,) if isinstance(raw_values, str) else raw_values
-            for sequence, value in enumerate(values, start=2):
+            for sequence, value in enumerate(values, start=next_sequence):
                 con.execute(
                     "INSERT INTO ts VALUES (?,?,?,?,?)",
                     (study, str(sequence), code, code, value),
@@ -93,29 +119,55 @@ def _make_connection(
             STUDYID VARCHAR, USUBJID VARCHAR, EXSEQ VARCHAR, EXTRT VARCHAR,
             EXDOSE VARCHAR, EXDOSTXT VARCHAR, EXDOSU VARCHAR, EXDOSFRM VARCHAR,
             EXDOSFRQ VARCHAR, EXROUTE VARCHAR, EXMETHOD VARCHAR, EXTRTV VARCHAR,
-            EXSTDY VARCHAR, EXENDY VARCHAR
+            EXSTDY VARCHAR, EXENDY VARCHAR, EXSTDTC VARCHAR, EXENDTC VARCHAR
         )
         """
     )
-    for s in subjects:
-        length = s.get("study_length", 28)
+    interval_rows = (
+        list(exposure_intervals)
+        if exposure_intervals is not None
+        else [
+            {
+                "study_id": s["study_id"],
+                "subject_id": s["subject_id"],
+                "usubjid": s.get("usubjid", f"{s['study_id']}-{s['subject_id']}"),
+                "exseq": "1",
+                "extrt": s.get("extrt", "0.5% METHOCEL"),
+                "exdose": s.get("exdose", "0"),
+                "exdosfrq": s.get("exdosfrq", "QD"),
+                "exroute": s.get("exroute", "ORAL GAVAGE"),
+                "extrtv": s.get("extrtv", "0.5% METHOCEL"),
+                "exstdy": s.get("exstdy", 1),
+                "exendy": s.get("exendy", s.get("study_length", 28)),
+                "exstdtc": s.get("exstdtc", ""),
+                "exendtc": s.get("exendtc", ""),
+            }
+            for s in subjects
+        ]
+    )
+    for interval in interval_rows:
         con.execute(
-            "INSERT INTO ex VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            "INSERT INTO ex VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
             (
-                s["study_id"],
-                s.get("usubjid", f"{s['study_id']}-{s['subject_id']}"),
-                "1",
-                s.get("extrt", "0.5% METHOCEL"),
-                s.get("exdose", "0"),
+                interval["study_id"],
+                interval.get(
+                    "usubjid",
+                    f"{interval['study_id']}-{interval.get('subject_id', '')}",
+                ),
+                str(interval.get("exseq", "1")),
+                interval.get("extrt", "0.5% METHOCEL"),
+                interval.get("exdose", "0"),
                 "",
                 "MG/KG",
                 "SOLUTION",
-                s.get("exdosfrq", "QD"),
-                s.get("exroute", "ORAL GAVAGE"),
+                interval.get("exdosfrq", "QD"),
+                interval.get("exroute", "ORAL GAVAGE"),
                 "GAVAGE",
-                s.get("extrtv", "0.5% METHOCEL"),
-                str(s.get("exstdy", 1)),
-                str(length),
+                interval.get("extrtv", "0.5% METHOCEL"),
+                str(interval.get("exstdy", "")),
+                str(interval.get("exendy", "")),
+                str(interval.get("exstdtc", "")),
+                str(interval.get("exendtc", "")),
             ),
         )
 
@@ -151,8 +203,37 @@ def _make_connection(
     _create_bw(con, subjects, body_weight)
     _create_lb(con, subjects, lab)
     _create_vs(con, vital_signs)
+    if dispositions is not None:
+        _create_ds(con, dispositions)
     create_derived_views(con)
     return con
+
+
+def _create_ds(con, dispositions):
+    con.execute(
+        """
+        CREATE TABLE ds (
+            STUDYID VARCHAR, DOMAIN VARCHAR, USUBJID VARCHAR, DSSEQ VARCHAR,
+            DSTERM VARCHAR, DSDECOD VARCHAR, DSUSCHFL VARCHAR, DSSTDTC VARCHAR,
+            DSSTDY VARCHAR
+        )
+        """
+    )
+    for row in dispositions:
+        con.execute(
+            "INSERT INTO ds VALUES (?,?,?,?,?,?,?,?,?)",
+            (
+                row["study_id"],
+                "DS",
+                row.get("usubjid", f"{row['study_id']}-{row['subject_id']}"),
+                str(row.get("sequence", "1")),
+                row.get("term", row.get("decode", "")),
+                row["decode"],
+                "",
+                row.get("datetime", ""),
+                str(row["day"]) if row.get("day") is not None else None,
+            ),
+        )
 
 
 def _create_bw(con, subjects, body_weight):

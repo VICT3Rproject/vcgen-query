@@ -8,6 +8,7 @@ import re
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import date, datetime, timezone
+from types import MappingProxyType
 from typing import Any, Literal, TypeAlias, cast
 
 from .contract_helpers import QueryError
@@ -26,7 +27,7 @@ SpecimenMatch: TypeAlias = Literal["exact", "contains", "not"]
 DerivedFieldName: TypeAlias = Literal[
     "supplier",
     "study_type",
-    "dose_duration_days",
+    "planned_dose_duration_days",
     "test_facility",
     "study_start_year",
     "glp_status",
@@ -38,6 +39,8 @@ DerivedFieldName: TypeAlias = Literal[
     "treatment_vehicle",
     "baseline_body_weight_g",
     "age_days",
+    "disposition_categories",
+    "terminal_sacrifice_offset_days",
 ]
 CanonicalOperator: TypeAlias = Literal[
     "eq",
@@ -60,12 +63,12 @@ CanonicalOperator: TypeAlias = Literal[
     "not_between",
 ]
 PredicateGroupOperator: TypeAlias = Literal["and", "or"]
-CohortQueryContract: TypeAlias = Literal["vcgen.cohort_query.v4"]
+CohortQueryContract: TypeAlias = Literal["vcgen.cohort_query.v5"]
 
 DERIVED_FIELD_TYPES: dict[DerivedFieldName, ValueType] = {
     "supplier": "string",
     "study_type": "string",
-    "dose_duration_days": "number",
+    "planned_dose_duration_days": "number",
     "test_facility": "string",
     "study_start_year": "number",
     "glp_status": "string",
@@ -77,6 +80,8 @@ DERIVED_FIELD_TYPES: dict[DerivedFieldName, ValueType] = {
     "treatment_vehicle": "string",
     "baseline_body_weight_g": "number",
     "age_days": "number",
+    "disposition_categories": "string",
+    "terminal_sacrifice_offset_days": "number",
 }
 STR_OPS = frozenset(
     {
@@ -259,6 +264,8 @@ class EndpointSpec:
     sexes: tuple[str, ...] = ()
     day_window: DayWindow | None = None
     target_unit: str | None = None
+    methods: tuple[str, ...] = ()
+    method_match: SpecimenMatch = "exact"
     compiled_unit_rules: tuple[_CompiledUnitRule, ...] = field(
         init=False, repr=False, compare=False, default=()
     )
@@ -286,6 +293,12 @@ class EndpointSpec:
             "not",
         }:
             raise QueryError("endpoint.specimen_match is invalid.")
+        if not isinstance(self.method_match, str) or self.method_match not in {
+            "exact",
+            "contains",
+            "not",
+        }:
+            raise QueryError("endpoint.method_match is invalid.")
         if self.day_window is not None:
             if not isinstance(self.day_window, DayWindow):
                 raise QueryError("endpoint.day_window must be DayWindow when supplied.")
@@ -311,6 +324,7 @@ class EndpointSpec:
         object.__setattr__(
             self, "specimens", normalized_texts(self.specimens, "endpoint.specimens")
         )
+        object.__setattr__(self, "methods", normalized_texts(self.methods, "endpoint.methods"))
         object.__setattr__(self, "sexes", normalized_texts(self.sexes, "endpoint.sexes"))
 
     @classmethod
@@ -333,6 +347,8 @@ class EndpointSpec:
                 "sexes",
                 "day_window",
                 "target_unit",
+                "methods",
+                "method_match",
             },
             endpoint_location,
         )
@@ -347,6 +363,8 @@ class EndpointSpec:
             r.get("sexes", ()),
             DayWindow.from_mapping(r.get("day_window"), location=f"{endpoint_location}.day_window"),
             r.get("target_unit"),
+            r.get("methods", ()),
+            r.get("method_match", "exact"),
         )
 
     def applies_to_sex(self, sex):
@@ -359,11 +377,13 @@ class EndpointSpec:
             "domain": self.domain,
             "test_codes": list(self.test_codes),
         }
-        for k in ("test_names", "source_units", "specimens", "sexes"):
+        for k in ("test_names", "source_units", "specimens", "methods", "sexes"):
             if getattr(self, k):
                 o[k] = list(getattr(self, k))
         if self.specimen_match != "exact":
             o["specimen_match"] = self.specimen_match
+        if self.method_match != "exact":
+            o["method_match"] = self.method_match
         if self.day_window:
             o["day_window"] = self.day_window.to_canonical_dict()
         if self.target_unit is not None:
@@ -493,7 +513,11 @@ class PreStudyEndpointField:
             raise QueryError("field.kind must be 'pre_study_endpoint'.")
         if self.value_type != "number":
             raise QueryError("field.value_type must be 'number'.")
-        object.__setattr__(self, "endpoint", text(self.endpoint, "field.endpoint", True))
+        endpoint = machine_ident(self.endpoint, "field.endpoint")
+        from .endpoint_catalogue import canonical_endpoint
+
+        canonical_endpoint(endpoint)
+        object.__setattr__(self, "endpoint", endpoint)
 
     @classmethod
     def from_mapping(cls, v, *, location="field"):
@@ -786,8 +810,9 @@ class QueryImportProvenance:
 @dataclass(frozen=True)
 class Query:
     query_id: str
+    requested_endpoints: tuple[str, ...]
+    endpoint_catalogue: Mapping[str, str]
     predicate: Predicate | None = None
-    observation_contract: ObservationContract = field(default_factory=ObservationContract)
     import_provenance: QueryImportProvenance | None = None
     source_identity: str | None = None
     assumptions: tuple[str, ...] = ()
@@ -805,8 +830,25 @@ class Query:
             self.predicate, (PredicateRule, PredicateGroup)
         ):
             raise QueryError("predicate must be a typed predicate when supplied.")
-        if not isinstance(self.observation_contract, ObservationContract):
-            raise QueryError("observation_contract must be ObservationContract.")
+        if not seq(self.requested_endpoints) or not self.requested_endpoints:
+            raise QueryError("requested_endpoints must be a non-empty array.")
+        requested = tuple(
+            machine_ident(value, f"requested_endpoints[{index}]")
+            for index, value in enumerate(self.requested_endpoints)
+        )
+        if len(requested) != len(set(requested)):
+            raise QueryError("requested_endpoints must contain unique names.")
+        from .endpoint_catalogue import endpoint_catalogue_identity, resolve_endpoint_specs
+
+        catalogue = mapping(self.endpoint_catalogue, "endpoint_catalogue")
+        if set(catalogue) != {"contract", "catalogue_id", "sha256"}:
+            raise QueryError("endpoint_catalogue has unsupported or missing fields.")
+        expected_catalogue = endpoint_catalogue_identity()
+        if dict(catalogue) != expected_catalogue:
+            raise QueryError(
+                "endpoint_catalogue identity does not match the installed package catalogue."
+            )
+        resolve_endpoint_specs(requested)
         if self.import_provenance is not None and not isinstance(
             self.import_provenance, QueryImportProvenance
         ):
@@ -815,13 +857,9 @@ class Query:
             not isinstance(self.source_identity, str) or not self.source_identity.strip()
         ):
             raise QueryError("source_identity must be a non-empty string when supplied.")
-        e = {x.name for x in self.observation_contract.endpoints}
-        for r in rules(self.predicate):
-            if isinstance(r.field, PreStudyEndpointField) and r.field.endpoint not in e:
-                raise QueryError(
-                    f"pre_study_endpoint {r.field.endpoint!r} is not defined by observation_contract."
-                )
         object.__setattr__(self, "query_id", self.query_id.strip())
+        object.__setattr__(self, "requested_endpoints", requested)
+        object.__setattr__(self, "endpoint_catalogue", MappingProxyType(dict(catalogue)))
         object.__setattr__(self, "assumptions", texts(self.assumptions, "assumptions"))
         object.__setattr__(self, "warnings", texts(self.warnings, "warnings"))
 
@@ -833,8 +871,9 @@ class Query:
             {
                 "contract",
                 "query_id",
+                "requested_endpoints",
+                "endpoint_catalogue",
                 "predicate",
-                "observation_contract",
                 "import_provenance",
                 "source_identity",
                 "assumptions",
@@ -842,15 +881,22 @@ class Query:
             },
             "query",
         )
-        required = {"contract", "query_id"}
+        required = {"contract", "query_id", "requested_endpoints", "endpoint_catalogue"}
         if required - set(r):
             raise QueryError(f"query is missing required key(s): {sorted(required - set(r))}.")
         if r["contract"] != COHORT_QUERY_CONTRACT:
-            raise QueryError("unsupported contract.")
+            if r["contract"] == "vcgen.cohort_query.v4":
+                raise QueryError(
+                    "unsupported contract 'vcgen.cohort_query.v4'; v4 query documents are not supported."
+                )
+            raise QueryError(
+                f"unsupported contract {r['contract']!r}; expected {COHORT_QUERY_CONTRACT!r}."
+            )
         return cls(
             r["query_id"],
+            tuple(r["requested_endpoints"]) if seq(r["requested_endpoints"]) else r["requested_endpoints"],
+            r["endpoint_catalogue"],
             None if r.get("predicate") is None else parse_predicate(r["predicate"]),
-            ObservationContract.from_mapping(r.get("observation_contract")),
             None
             if r.get("import_provenance") is None
             else QueryImportProvenance.from_mapping(r["import_provenance"]),
@@ -864,7 +910,8 @@ class Query:
         o = {
             "contract": self.contract,
             "query_id": self.query_id,
-            "observation_contract": self.observation_contract.to_canonical_dict(),
+            "requested_endpoints": list(self.requested_endpoints),
+            "endpoint_catalogue": dict(self.endpoint_catalogue),
         }
         if self.predicate is not None:
             o["predicate"] = self.predicate.to_canonical_dict()
@@ -877,9 +924,17 @@ class Query:
                 o[k] = list(getattr(self, k))
         return o
 
+    @property
+    def resolved_endpoints(self) -> tuple[EndpointSpec, ...]:
+        """Resolve the ordered request set through the installed catalogue."""
+
+        from .endpoint_catalogue import resolve_endpoint_specs
+
+        return resolve_endpoint_specs(self.requested_endpoints)
+
 
 def parse_query(raw: Mapping[str, Any]) -> Query:
-    """Parse one native cohort-query v4 payload."""
+    """Parse one native cohort-query v5 payload."""
     return Query.from_mapping(mapping(raw, "query"))
 
 

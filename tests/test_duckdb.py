@@ -6,6 +6,7 @@ from zipfile import ZipFile
 
 import pytest
 
+from vcgen_query import SourceDataError
 from vcgen_query import duckdb as db
 
 
@@ -132,7 +133,9 @@ def test_study_design_summary_aggregates_deterministic_metadata_lists(make_conne
     )
     row = con.execute(
         """
-        SELECT study_length_days, study_length_values, dose_duration_day_values,
+        SELECT study_length_days, study_length_values,
+               study_planned_dose_duration_days,
+               declared_dose_duration_values, planned_dose_duration_day_values,
                supplier_values, study_type_values, test_facility_values,
                glp_status_values
         FROM study_design_summary
@@ -140,6 +143,8 @@ def test_study_design_summary_aggregates_deterministic_metadata_lists(make_conne
         """
     ).fetchone()
     assert row == (
+        28,
+        "28",
         28,
         "28",
         [28.0],
@@ -158,13 +163,307 @@ def test_study_design_summary_preserves_ambiguous_duration_values(make_connectio
 
     row = con.execute(
         """
-        SELECT study_length_days, study_length_values, dose_duration_day_values
+        SELECT study_length_days, study_length_values,
+               study_planned_dose_duration_days,
+               declared_dose_duration_values, planned_dose_duration_day_values
         FROM study_design_summary
         WHERE STUDYID = 'S1'
         """
     ).fetchone()
 
-    assert row == (None, "P14D | P28D", [14.0, 28.0])
+    assert row == (14, "P14D", None, "P14D | P28D", [14.0, 28.0])
+
+
+def test_subject_exposure_resolves_ambiguous_planned_duration(make_connection):
+    con = make_connection(
+        [
+            {
+                "study_id": "S1",
+                "subject_id": "0001",
+                "study_length": "P28D",
+                "overall_study_length": "P57D",
+                "exstdy": 1,
+                "exendy": 28,
+            }
+        ],
+        study_metadata={"S1": {"DOSDUR": ["P1D"]}},
+    )
+
+    row = con.execute(
+        """
+        SELECT observed_exposure_span_days, planned_dose_duration_days,
+               dose_duration_evidence_status
+        FROM subject_exposure_summary
+        WHERE STUDYID = 'S1' AND USUBJID = 'S1-0001'
+        """
+    ).fetchone()
+
+    assert row == (28, 28, "corroborated")
+
+
+@pytest.mark.parametrize(
+    ("intervals", "expected_span", "expected_interval_status"),
+    [
+        ([(1, 14), (15, 28)], 28, "complete_contiguous"),
+        ([(1, 14), (10, 28)], 28, "complete_contiguous"),
+        ([(1, 14), (16, 28)], None, "gapped"),
+        ([(1, 28)], 28, "complete_contiguous"),
+        ([(1, 1), (8, 8), (15, 15), (22, 22)], None, "gapped"),
+    ],
+)
+def test_subject_exposure_merges_only_continuous_interval_coverage(
+    make_connection,
+    intervals,
+    expected_span,
+    expected_interval_status,
+):
+    con = make_connection(
+        [{"study_id": "S1", "subject_id": "1", "dose_duration": 28}],
+        exposure_intervals=[
+            {
+                "study_id": "S1",
+                "subject_id": "1",
+                "exseq": index,
+                "exstdy": start,
+                "exendy": end,
+            }
+            for index, (start, end) in enumerate(intervals, start=1)
+        ],
+    )
+
+    row = con.execute(
+        """
+        SELECT observed_exposure_span_days, exposure_interval_status
+        FROM subject_exposure_summary
+        """
+    ).fetchone()
+
+    assert row == (expected_span, expected_interval_status)
+
+
+@pytest.mark.parametrize(
+    ("end_day", "expected_status"),
+    [(28, "corroborated"), (14, "shorter_than_planned")],
+)
+def test_numeric_planned_duration_survives_unknown_declaration(
+    make_connection,
+    end_day,
+    expected_status,
+):
+    con = make_connection(
+        [{"study_id": "S1", "subject_id": "1", "dose_duration": 28, "exendy": end_day}],
+        study_metadata={"S1": {"DOSDUR": ["UNKNOWN"]}},
+    )
+
+    row = con.execute(
+        """
+        SELECT planned_dose_duration_days, observed_exposure_span_days,
+               dose_duration_evidence_status, dose_duration_declaration_incomplete
+        FROM subject_exposure_summary
+        """
+    ).fetchone()
+
+    assert row == (28, end_day, expected_status, True)
+
+
+def test_multiple_planned_durations_require_complete_matching_exposure(make_connection):
+    con = make_connection(
+        [
+            {"study_id": "S1", "subject_id": "MATCH", "dose_duration": 28},
+            {"study_id": "S1", "subject_id": "UNRESOLVED", "dose_duration": 28},
+        ],
+        study_metadata={"S1": {"DOSDUR": ["P56D"]}},
+        exposure_intervals=[
+            {
+                "study_id": "S1",
+                "subject_id": "MATCH",
+                "exstdy": 1,
+                "exendy": 28,
+            },
+            {
+                "study_id": "S1",
+                "subject_id": "UNRESOLVED",
+                "exseq": 1,
+                "exstdy": 1,
+                "exendy": 14,
+            },
+            {
+                "study_id": "S1",
+                "subject_id": "UNRESOLVED",
+                "exseq": 2,
+                "exstdy": 16,
+                "exendy": 28,
+            },
+        ],
+    )
+
+    rows = con.execute(
+        """
+        SELECT USUBJID, planned_dose_duration_days, observed_exposure_span_days,
+               dose_duration_evidence_status
+        FROM subject_exposure_summary
+        ORDER BY USUBJID
+        """
+    ).fetchall()
+
+    assert rows == [
+        ("S1-MATCH", 28, 28, "corroborated"),
+        ("S1-UNRESOLVED", None, None, "ambiguous"),
+    ]
+
+
+def test_unknown_only_does_not_infer_planned_duration_from_ex(make_connection):
+    con = make_connection(
+        [{"study_id": "S1", "subject_id": "1", "dose_duration": None, "exendy": 28}],
+        study_metadata={"S1": {"DOSDUR": ["UNKNOWN"]}},
+    )
+
+    row = con.execute(
+        """
+        SELECT planned_dose_duration_days, observed_exposure_span_days,
+               dose_duration_evidence_status
+        FROM subject_exposure_summary
+        """
+    ).fetchone()
+
+    assert row == (None, 28, "unresolved")
+
+
+@pytest.mark.parametrize(
+    ("start_day", "end_day", "expected_issue"),
+    [(28, 1, "inverted_study_day_bounds"), (-1, 1, "crosses_missing_study_day_zero")],
+)
+def test_invalid_study_day_intervals_do_not_resolve_observed_span(
+    make_connection,
+    start_day,
+    end_day,
+    expected_issue,
+):
+    con = make_connection(
+        [{"study_id": "S1", "subject_id": "1", "dose_duration": 28}],
+        exposure_intervals=[
+            {
+                "study_id": "S1",
+                "subject_id": "1",
+                "exstdy": start_day,
+                "exendy": end_day,
+            }
+        ],
+    )
+
+    interval = con.execute(
+        "SELECT interval_source, interval_issue FROM subject_exposure_intervals"
+    ).fetchone()
+    summary = con.execute(
+        "SELECT observed_exposure_span_days FROM subject_exposure_summary"
+    ).fetchone()
+
+    assert interval == (None, expected_issue)
+    assert summary == (None,)
+
+
+def test_date_intervals_are_preferred_and_can_cross_the_reference_date(make_connection):
+    con = make_connection(
+        [
+            {
+                "study_id": "DATES",
+                "subject_id": "1",
+                "dose_duration": 3,
+                "rfstdtc": "2020-01-01",
+            },
+            {"study_id": "DAYS", "subject_id": "1", "dose_duration": 28},
+        ],
+        exposure_intervals=[
+            {
+                "study_id": "DATES",
+                "subject_id": "1",
+                "exstdy": 1,
+                "exendy": 1,
+                "exstdtc": "2019-12-31",
+                "exendtc": "2020-01-02",
+            },
+            {
+                "study_id": "DAYS",
+                "subject_id": "1",
+                "exstdy": 1,
+                "exendy": 28,
+            },
+        ],
+    )
+
+    intervals = con.execute(
+        """
+        SELECT STUDYID, interval_source, interval_duration_days,
+               crosses_reference_date
+        FROM subject_exposure_intervals
+        ORDER BY STUDYID
+        """
+    ).fetchall()
+    summaries = con.execute(
+        """
+        SELECT STUDYID, observed_exposure_span_days
+        FROM subject_exposure_summary
+        ORDER BY STUDYID
+        """
+    ).fetchall()
+
+    assert intervals == [
+        ("DATES", "date", 3, True),
+        ("DAYS", "study_day", 28, False),
+    ]
+    assert summaries == [("DATES", 3), ("DAYS", 28)]
+
+
+def test_partial_date_bounds_fall_back_to_valid_study_days(make_connection):
+    con = make_connection(
+        [{"study_id": "S1", "subject_id": "1", "dose_duration": 28}],
+        exposure_intervals=[
+            {
+                "study_id": "S1",
+                "subject_id": "1",
+                "exstdy": 1,
+                "exendy": 28,
+                "exstdtc": "2020-01-01",
+            }
+        ],
+    )
+
+    interval = con.execute(
+        "SELECT interval_source, interval_duration_days, interval_issue "
+        "FROM subject_exposure_intervals"
+    ).fetchone()
+    summary = con.execute(
+        "SELECT observed_exposure_span_days FROM subject_exposure_summary"
+    ).fetchone()
+
+    assert interval == ("study_day", 28, None)
+    assert summary == (28,)
+
+
+def test_complete_invalid_dates_do_not_fall_back_to_study_days(make_connection):
+    con = make_connection(
+        [{"study_id": "S1", "subject_id": "1", "dose_duration": 28}],
+        exposure_intervals=[
+            {
+                "study_id": "S1",
+                "subject_id": "1",
+                "exstdy": 1,
+                "exendy": 28,
+                "exstdtc": "2020-01-28",
+                "exendtc": "2020-01-01",
+            }
+        ],
+    )
+
+    interval = con.execute(
+        "SELECT interval_source, interval_issue FROM subject_exposure_intervals"
+    ).fetchone()
+    summary = con.execute(
+        "SELECT observed_exposure_span_days FROM subject_exposure_summary"
+    ).fetchone()
+
+    assert interval == (None, "inverted_date_bounds")
+    assert summary == (None,)
 
 
 def test_register_csv_views_creates_view_from_csv(tmp_path):
@@ -173,3 +472,57 @@ def test_register_csv_views_creates_view_from_csv(tmp_path):
     db.register_csv_views(con, tmp_path, domains=["DM"])
     assert "STUDYID" in db.table_columns(con, "dm")
     assert con.execute("SELECT count(*) FROM dm WHERE \"STUDYID\" = 'S1'").fetchone()[0] == 1
+
+
+def test_open_directory_adds_core_domains_to_active_domain_selection(tmp_path):
+    _write_minimal_source(tmp_path)
+
+    con = db.open_directory(tmp_path, domains=["LB"])
+
+    assert db.table_columns(con, "dm")
+    assert db.table_columns(con, "ts")
+    assert db.table_columns(con, "ex")
+    assert not db.table_columns(con, "om")
+
+
+def test_open_directory_reports_identity_schema_error_before_derived_views(tmp_path):
+    _write_minimal_source(tmp_path, dm_subject_column=False)
+
+    with pytest.raises(SourceDataError, match="DM.*USUBJID"):
+        db.open_directory(tmp_path)
+
+
+def _write_minimal_source(tmp_path, *, dm_subject_column: bool = True) -> None:
+    dm_columns = [
+        "STUDYID",
+        *(["USUBJID"] if dm_subject_column else []),
+        "SPECIES",
+        "STRAIN",
+        "SEX",
+        "AGE",
+        "AGEU",
+        "RFSTDTC",
+    ]
+    dm_values = [
+        "S",
+        *(["S-1"] if dm_subject_column else []),
+        "RAT",
+        "WISTAR HAN",
+        "M",
+        "8",
+        "WEEK",
+        "2020-01-01",
+    ]
+    (tmp_path / "DM.csv").write_text(
+        f"{','.join(dm_columns)}\n{','.join(dm_values)}\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "TS.csv").write_text(
+        "STUDYID,TSPARMCD,TSVAL\nS,DOSDUR,28\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "EX.csv").write_text(
+        "STUDYID,USUBJID,EXSTDY,EXROUTE,EXDOSFRQ,EXTRT\n"
+        "S,S-1,1,ORAL GAVAGE,QD,VEHICLE\n",
+        encoding="utf-8",
+    )

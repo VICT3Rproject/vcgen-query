@@ -2,24 +2,17 @@
 
 from __future__ import annotations
 
-from vcgen_query import execute_query, parse_query
-
-
-_OBSERVATIONS = {
-    "endpoints": [
-        {"name": "LB_HGB", "domain": "LB", "test_codes": ["HGB"]},
-        {"name": "LB_WBC", "domain": "LB", "test_codes": ["WBC"]},
-    ]
-}
+from vcgen_query import endpoint_catalogue_identity, execute_query, parse_query
 
 
 def _query(predicate: dict[str, object]):
     return parse_query(
         {
-            "contract": "vcgen.cohort_query.v4",
+            "contract": "vcgen.cohort_query.v5",
             "query_id": "synthetic-pre-study",
+            "requested_endpoints": ["BW"],
+            "endpoint_catalogue": endpoint_catalogue_identity(),
             "predicate": predicate,
-            "observation_contract": _OBSERVATIONS,
         }
     )
 
@@ -52,7 +45,7 @@ def test_pre_study_endpoint_uses_latest_value_strictly_before_exposure(
                 "test_code": "HGB",
                 "day": 0,
                 "value": 6,
-                "unit": "G/DL",
+                "unit": "mmol/L",
             },
             {
                 "study_id": "S",
@@ -60,7 +53,7 @@ def test_pre_study_endpoint_uses_latest_value_strictly_before_exposure(
                 "test_code": "HGB",
                 "day": 1,
                 "value": 8,
-                "unit": "G/DL",
+                "unit": "mmol/L",
             },
             {
                 "study_id": "S",
@@ -68,7 +61,7 @@ def test_pre_study_endpoint_uses_latest_value_strictly_before_exposure(
                 "test_code": "HGB",
                 "day": 2,
                 "value": 20,
-                "unit": "G/DL",
+                "unit": "mmol/L",
             },
         ],
     )
@@ -90,7 +83,7 @@ def test_pre_study_endpoint_ties_and_missing_values_fail_even_negative_rules(
                 "day": None,
                 "datetime": "2020-01-01T12:00:00",
                 "value": 20,
-                "unit": "G/DL",
+                "unit": "mmol/L",
             },
         ],
     )
@@ -113,7 +106,8 @@ def test_pre_study_endpoint_rules_are_independent_subject_sets(make_connection) 
                 "test_code": "HGB",
                 "day": 0,
                 "value": 8,
-                "unit": "G/DL",
+                "unit": "mmol/L",
+                "specimen": "BLOOD",
             },
             {
                 "study_id": "S",
@@ -122,6 +116,7 @@ def test_pre_study_endpoint_rules_are_independent_subject_sets(make_connection) 
                 "day": 0,
                 "value": 12,
                 "unit": "10^9/L",
+                "specimen": "BLOOD",
             },
         ],
     )

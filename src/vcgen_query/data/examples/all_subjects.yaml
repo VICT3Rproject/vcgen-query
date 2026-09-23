@@ -1,6 +1,10 @@
-# yaml-language-server: $schema=../vcgen.cohort_query.v4.schema.json
-# Minimal query: every DM subject and no observations.
-# An absent predicate is the DM-universe selection.
-
-contract: vcgen.cohort_query.v4
+# yaml-language-server: $schema=../vcgen.cohort_query.v5.schema.json
+# Endpoint source selectors are resolved by the package catalogue.
+contract: vcgen.cohort_query.v5
 query_id: all_subjects
+requested_endpoints:
+- BW
+endpoint_catalogue:
+  contract: vcgen.canonical_endpoint_catalogue.v4
+  catalogue_id: grit42-canonical-endpoints-2026-09-17-v4
+  sha256: 8ef29868c68b1b02f7dba9aa7790b70c046d4898aa04b3f3e784ea67ec7152e4

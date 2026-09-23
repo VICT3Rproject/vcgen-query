@@ -50,6 +50,7 @@ def test_internal_catalogue_matches_ucum_2_2_for_all_compatible_canonical_pairs(
     ("source", "target", "resolved"),
     [
         ("G", "g", "g"),
+        ("MG", "g", "mg"),
         ("µkat/L", "U/L", "ukat/L"),
         ("μkat/L", "ukat/L", "ukat/L"),
         ("°C", "K", "Cel"),
@@ -76,5 +77,5 @@ def test_internal_catalogue_matches_nlm_ucum_4_1_9_golden_fixture() -> None:
 
 
 def test_catalogue_resource_is_packaged() -> None:
-    resource = resources.files("vcgen_query").joinpath("data/unit_catalogue.v1.json")
+    resource = resources.files("vcgen_query").joinpath("data/unit_catalogue.v2.json")
     assert resource.is_file()

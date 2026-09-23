@@ -1,0 +1,15 @@
+{
+  "id": "hosted-debug-wistar-han-28d",
+  "query_type": "form",
+  "form_values": {
+    "species": ["RAT"],
+    "strain": ["WISTAR HAN"],
+    "sex": ["F", "M"],
+    "route": ["ORAL GAVAGE"],
+    "dose_frequency": ["QD"],
+    "dose_duration_min": "28",
+    "dose_duration_max": "28",
+    "study_start_year_min": "2017",
+    "study_start_year_max": "2022"
+  }
+}
