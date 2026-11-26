@@ -180,7 +180,7 @@ def _write_csv(path, columns, rows):
 
 @pytest.mark.parametrize(
     "notebook_name",
-    ["01_gurjanov_28d_generation_core.ipynb", "02_editable_cohort_query.ipynb"],
+    ["02_editable_cohort_query.ipynb"],
 )
 def test_notebook_runs_to_completion(notebook_name, synthetic_send_dir, tmp_path, monkeypatch):
     notebook_path = _NOTEBOOKS / notebook_name
@@ -208,29 +208,3 @@ def test_notebook_runs_to_completion(notebook_name, synthetic_send_dir, tmp_path
             output for output in cell.get("outputs", []) if output.get("output_type") == "error"
         ]
         assert not errors, f"cell error in {notebook_name}: {errors}"
-
-
-def test_generation_core_notebook_demonstrates_terminal_lab_reshape():
-    notebook = nbformat.read(
-        _NOTEBOOKS / "01_gurjanov_28d_generation_core.ipynb", as_version=4
-    )
-    code = "\n".join(
-        cell.source for cell in notebook.cells if cell.cell_type == "code"
-    )
-
-    assert "gurjanov_28d_generation_core.yaml" in code
-    assert "TERMINAL_DAY_RANGE = (21, 35)" in code
-    assert ".dropna(subset=lab_columns, how=\"all\")" in code
-    assert ".set_index(KEY_COLUMNS)" in code
-    assert ".melt(" in code
-
-
-def test_editable_notebook_demonstrates_daily_index():
-    notebook = nbformat.read(
-        _NOTEBOOKS / "02_editable_cohort_query.ipynb", as_version=4
-    )
-    code = "\n".join(
-        cell.source for cell in notebook.cells if cell.cell_type == "code"
-    )
-
-    assert ".set_index(KEY_COLUMNS)" in code

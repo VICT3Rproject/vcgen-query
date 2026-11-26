@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections import Counter, defaultdict
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, field
 import math
 from typing import Any
@@ -15,6 +15,7 @@ from .endpoint_rows import (
     endpoint_projection_columns,
     fetch_batches,
 )
+from .facility import facility_group
 from .send_columns import SEX, SPECIES, STRAIN, STUDY_ID, SUBJECT_ID
 from .send_semantics import day_columns, parse_result
 
@@ -28,6 +29,8 @@ class StudyContext:
     suppliers: frozenset[str]
     study_types: frozenset[str]
     test_facilities: frozenset[str]
+    facility_group: str | None
+    facility_group_evidence: str | None
     study_start_year: int | None
     glp_statuses: frozenset[str]
 
@@ -53,6 +56,8 @@ class SubjectContext:
     dose_frequencies: frozenset[str]
     treatment_vehicles: frozenset[str]
     test_facilities: frozenset[str]
+    facility_group: str | None
+    facility_group_evidence: str | None
     glp_statuses: frozenset[str]
     baseline_body_weight_g: float | None
     age_days: float | None
@@ -79,6 +84,8 @@ class SubjectContext:
             "dose_frequencies": sorted(self.dose_frequencies),
             "treatment_vehicles": sorted(self.treatment_vehicles),
             "test_facilities": sorted(self.test_facilities),
+            "facility_group": self.facility_group,
+            "facility_group_evidence": self.facility_group_evidence,
             "glp_statuses": sorted(self.glp_statuses),
             "baseline_body_weight_g": self.baseline_body_weight_g,
             "age_days": self.age_days,
@@ -125,15 +132,14 @@ class CohortSelection:
 
 def _load_pre_study_endpoint_values(
     con: Any,
-    subjects: tuple[SubjectContext, ...],
+    subject_sexes: Mapping[tuple[str, str], str],
     resolved_endpoints: tuple[tuple[EndpointSpec, DayWindow | None], ...],
 ) -> dict[tuple[str, str], dict[str, float]]:
     """Load each active endpoint's strict latest pre-study value per subject."""
 
-    if not resolved_endpoints or not subjects:
+    if not resolved_endpoints or not subject_sexes:
         return {}
-    contexts = {(subject.study_id, subject.subject_id): subject for subject in subjects}
-    study_ids = {subject.study_id for subject in subjects}
+    study_ids = {study_id for study_id, _ in subject_sexes}
     endpoints_by_domain: dict[str, list[EndpointSpec]] = defaultdict(list)
     for endpoint, _ in resolved_endpoints:
         endpoints_by_domain[endpoint.domain].append(endpoint)
@@ -151,15 +157,8 @@ def _load_pre_study_endpoint_values(
                 row = dict(zip(names, raw))
                 study_id = str(row.get(STUDY_ID) or "")
                 subject_id = str(row.get(SUBJECT_ID) or "").strip()
-                context = contexts.get((study_id, subject_id))
-                if context is None:
-                    continue
-                parsed = parse_result(domain, row, names)
-                if (
-                    parsed.excluded
-                    or parsed.numeric_value is None
-                    or not math.isfinite(parsed.numeric_value)
-                ):
+                key = (study_id, subject_id)
+                if key not in subject_sexes:
                     continue
                 study_day = _optional_int(row.get("study_day"))
                 measurement_time = row.get("measurement_timestamp")
@@ -177,9 +176,16 @@ def _load_pre_study_endpoint_values(
                     ):
                         continue
                     rank = (0, 0, str(measurement_time))
+                parsed = parse_result(domain, row, names)
+                if (
+                    parsed.excluded
+                    or parsed.numeric_value is None
+                    or not math.isfinite(parsed.numeric_value)
+                ):
+                    continue
                 for endpoint in endpoints:
                     if endpoint_matches_row(endpoint, row, names) and endpoint.applies_to_sex(
-                        context.sex
+                        subject_sexes[key]
                     ):
                         candidates[(study_id, subject_id, endpoint.name)].append(
                             (rank, parsed.numeric_value)
@@ -236,19 +242,32 @@ def _pre_study_endpoint_cursor(
     exposure_expr = "exposure.first_exposure_day" if has_exposure else "NULL"
     study_ids = tuple(sorted(study_id for study_id in eligible_study_ids if study_id))
     placeholders = ", ".join("?" for _ in study_ids)
+    # The outer filter keeps exactly the rows that the caller does not skip
+    # for timing: a study day before the first exposure day (or day 1), or,
+    # without a study day, a timestamp before the reference start. The caller
+    # repeats these checks, so this filter only removes post-dose rows early.
     return con.execute(
         f"""
-        SELECT {projection},
-            {day_expr} AS study_day,
-            {timestamp_expr} AS measurement_timestamp,
-            {reference_expr} AS reference_timestamp,
-            {exposure_expr} AS first_exposure_day
-        FROM {quote_ident(domain.lower())} AS rows
-        INNER JOIN dm AS dm
-            ON rows.{q(STUDY_ID)} = dm.{q(STUDY_ID)}
-            AND rows.{q(SUBJECT_ID)} = dm.{q(SUBJECT_ID)}
-        {exposure_join}
-        WHERE cast(rows.{q(STUDY_ID)} AS VARCHAR) IN ({placeholders})
+        SELECT * FROM (
+            SELECT {projection},
+                {day_expr} AS study_day,
+                {timestamp_expr} AS measurement_timestamp,
+                {reference_expr} AS reference_timestamp,
+                {exposure_expr} AS first_exposure_day
+            FROM {quote_ident(domain.lower())} AS rows
+            INNER JOIN dm AS dm
+                ON rows.{q(STUDY_ID)} = dm.{q(STUDY_ID)}
+                AND rows.{q(SUBJECT_ID)} = dm.{q(SUBJECT_ID)}
+            {exposure_join}
+            WHERE cast(rows.{q(STUDY_ID)} AS VARCHAR) IN ({placeholders})
+        ) AS timed
+        WHERE (study_day IS NOT NULL AND study_day < coalesce(first_exposure_day, 1))
+            OR (
+                study_day IS NULL
+                AND measurement_timestamp IS NOT NULL
+                AND reference_timestamp IS NOT NULL
+                AND measurement_timestamp < reference_timestamp
+            )
         """,
         list(study_ids),
     )
@@ -288,22 +307,27 @@ def _load_study_contexts(con: Any) -> dict[str, StudyContext]:
         """
     )
     columns = [item[0] for item in cursor.description]
-    return {
-        str(values["study_id"] or ""): StudyContext(
+    contexts = {}
+    for values in (dict(zip(columns, raw)) for raw in cursor.fetchall()):
+        group, evidence = _single_facility_group(values.get("test_facility_values"))
+        study = StudyContext(
             study_id=str(values["study_id"] or ""),
             study_length_days=_optional_int(values.get("study_length_days")),
             suppliers=_value_set(values.get("supplier_values")),
             study_types=_value_set(values.get("study_type_values")),
             test_facilities=_value_set(values.get("test_facility_values")),
+            facility_group=group,
+            facility_group_evidence=evidence,
             study_start_year=_optional_int(values.get("study_start_year")),
             glp_statuses=_value_set(values.get("glp_status_values")),
         )
-        for values in (dict(zip(columns, raw)) for raw in cursor.fetchall())
-    }
+        contexts[study.study_id] = study
+    return contexts
 
 
 def _load_subject_contexts(
-    con: Any, study_contexts: dict[str, StudyContext]
+    con: Any, study_contexts: dict[str, StudyContext],
+    *, selected_keys: set[tuple[str, str]], observed_keys: list[tuple[str, str]],
 ) -> tuple[SubjectContext, ...]:
     query = _subject_context_query(con)
     cursor = con.execute(query.sql, query.params)
@@ -313,6 +337,10 @@ def _load_subject_contexts(
         values = dict(zip(columns, raw))
         study_id = str(values.get(STUDY_ID) or "")
         subject_id = str(values.get(SUBJECT_ID) or "")
+        key = (study_id, subject_id)
+        observed_keys.append(key)
+        if key not in selected_keys:
+            continue
         study = study_contexts[study_id]
         contexts.append(
             SubjectContext(
@@ -339,6 +367,8 @@ def _load_subject_contexts(
                 dose_frequencies=_value_set(values.get("dose_frequency_values")),
                 treatment_vehicles=_value_set(values.get("treatment_values")),
                 test_facilities=study.test_facilities,
+                facility_group=study.facility_group,
+                facility_group_evidence=study.facility_group_evidence,
                 glp_statuses=study.glp_statuses,
                 baseline_body_weight_g=_optional_float(values.get("baseline_body_weight_g")),
                 age_days=_optional_float(values.get("age_days")),
@@ -437,6 +467,11 @@ def _value_set(raw: Any) -> frozenset[str]:
     return frozenset(
         normalize_category(part) for part in items if isinstance(part, str) and part.strip()
     )
+
+
+def _single_facility_group(raw: Any) -> tuple[str | None, str | None]:
+    groups = {facility_group(value)[:2] for value in _value_set(raw)}
+    return next(iter(groups)) if len(groups) == 1 else (None, None)
 
 
 def _optional_float(value: Any) -> float | None:

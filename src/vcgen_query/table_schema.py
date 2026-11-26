@@ -81,6 +81,8 @@ SUBJECTS_TABLE = ResultTable(
         _column("dose_frequencies", "object", False, "Distinct normalized dose frequencies.", nested_value="list[str]"),
         _column("treatment_vehicles", "object", False, "Distinct normalized treatment vehicles.", nested_value="list[str]"),
         _column("test_facilities", "object", False, "Distinct normalized test facilities.", nested_value="list[str]"),
+        _column("facility_group", "string", True, "Categorical source-facility group."),
+        _column("facility_group_evidence", "string", True, "Evidence type for the facility group."),
         _column("glp_statuses", "object", False, "Distinct normalized GLP statuses.", nested_value="list[str]"),
         _column("baseline_body_weight_g", "Float64", True, "Resolved pre-study body weight.", unit="g"),
         _column("age_days", "Float64", True, "Age normalized to days.", unit="day"),

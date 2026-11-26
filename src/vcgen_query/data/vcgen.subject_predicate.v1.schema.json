@@ -29,7 +29,7 @@
           "properties": {
             "kind": {"const": "derived"},
             "name": {
-              "enum": ["supplier", "study_type", "planned_dose_duration_days", "test_facility", "study_start_year", "glp_status", "species", "sex", "strain", "route", "dose_frequency", "treatment_vehicle", "baseline_body_weight_g", "age_days", "disposition_categories", "terminal_sacrifice_offset_days"]
+              "enum": ["supplier", "study_type", "planned_dose_duration_days", "test_facility", "facility_group", "study_start_year", "glp_status", "species", "sex", "strain", "route", "dose_frequency", "treatment_vehicle", "baseline_body_weight_g", "age_days", "disposition_categories", "terminal_sacrifice_offset_days"]
             },
             "value_type": {"$ref": "#/$defs/valueType"}
           }

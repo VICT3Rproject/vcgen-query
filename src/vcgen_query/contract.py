@@ -1,4 +1,4 @@
-"""Typed predicate and cohort-query contracts."""
+"""Typed predicate contracts shared by the Grit42 subject query and its stages."""
 
 from __future__ import annotations
 import hashlib
@@ -8,14 +8,13 @@ import re
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import date, datetime, timezone
-from types import MappingProxyType
 from typing import Any, Literal, TypeAlias, cast
 
 from .contract_helpers import QueryError
 from .send_semantics import normalize_human_category, normalize_unit
+from .facility import canonical_facility_group
 from .unit_catalogue import _CompiledUnitRule, compile_unit_rules
 from .identities import (
-    COHORT_QUERY_CONTRACT,
     GRIT42_ADVANCED_SUBJECT_QUERY_CONTRACT,
     GRIT42_FORM_SUBJECT_QUERY_CONTRACT,
     GRIT42_SUBJECT_QUERY_IMPORT_CONTRACT,
@@ -29,6 +28,7 @@ DerivedFieldName: TypeAlias = Literal[
     "study_type",
     "planned_dose_duration_days",
     "test_facility",
+    "facility_group",
     "study_start_year",
     "glp_status",
     "species",
@@ -63,13 +63,13 @@ CanonicalOperator: TypeAlias = Literal[
     "not_between",
 ]
 PredicateGroupOperator: TypeAlias = Literal["and", "or"]
-CohortQueryContract: TypeAlias = Literal["vcgen.cohort_query.v5"]
 
 DERIVED_FIELD_TYPES: dict[DerivedFieldName, ValueType] = {
     "supplier": "string",
     "study_type": "string",
     "planned_dose_duration_days": "number",
     "test_facility": "string",
+    "facility_group": "string",
     "study_start_year": "number",
     "glp_status": "string",
     "species": "string",
@@ -392,35 +392,6 @@ class EndpointSpec:
 
 
 @dataclass(frozen=True)
-class ObservationContract:
-    endpoints: tuple[EndpointSpec, ...] = ()
-
-    def __post_init__(self) -> None:
-        if not seq(self.endpoints) or any(
-            not isinstance(endpoint, EndpointSpec) for endpoint in self.endpoints
-        ):
-            raise QueryError("observation_contract.endpoints must contain EndpointSpec values.")
-        endpoints = tuple(self.endpoints)
-        if len(endpoints) != len({endpoint.name for endpoint in endpoints}):
-            raise QueryError("observation_contract endpoint names must be unique.")
-        object.__setattr__(self, "endpoints", endpoints)
-
-    @classmethod
-    def from_mapping(cls, v):
-        if v is None:
-            return cls()
-        r = mapping(v, "observation_contract")
-        keys(r, {"endpoints"}, "observation_contract")
-        items = r.get("endpoints", ())
-        if not seq(items):
-            raise QueryError("observation_contract.endpoints must be an array.")
-        return cls(tuple(EndpointSpec.from_mapping(x, index=i) for i, x in enumerate(items)))
-
-    def to_canonical_dict(self):
-        return {"endpoints": [x.to_canonical_dict() for x in self.endpoints]}
-
-
-@dataclass(frozen=True)
 class SendColumnField:
     domain: str
     column: str
@@ -641,6 +612,14 @@ class PredicateRule:
             "value",
             ruleval(self.value, self.field.value_type, self.operator, "predicate.value"),
         )
+        if isinstance(self.field, DerivedField) and self.field.name == "facility_group":
+            if self.operator in {"eq", "ne"}:
+                object.__setattr__(self, "value", canonical_facility_group(self.value))
+            elif self.operator in {"in", "not_in"}:
+                object.__setattr__(
+                    self, "value",
+                    tuple(sorted({canonical_facility_group(value) for value in self.value})),
+                )
 
     @classmethod
     def from_mapping(cls, v, *, location="predicate"):
@@ -672,9 +651,13 @@ class PredicateRule:
             o["value"] = list(self.value) if isinstance(self.value, tuple) else self.value
         return o
 
+    to_dict = to_canonical_dict
+
 
 @dataclass(frozen=True)
 class PredicateGroup:
+    """A Boolean group. Children keep the submitted order; only fingerprints sort."""
+
     group: PredicateGroupOperator
     children: tuple[PredicateRule | PredicateGroup, ...]
     negated: bool = False
@@ -688,7 +671,7 @@ class PredicateGroup:
             raise QueryError("predicate.children must contain typed predicates.")
         if not isinstance(self.negated, bool):
             raise QueryError("predicate.negated must be boolean.")
-        object.__setattr__(self, "children", canon(tuple(self.children)))
+        object.__setattr__(self, "children", tuple(self.children))
 
     @classmethod
     def from_mapping(cls, v, *, location="predicate"):
@@ -703,12 +686,7 @@ class PredicateGroup:
             raise QueryError(f"{location}.negated must be boolean.")
         return cls(
             r["group"],
-            canon(
-                tuple(
-                    parse_predicate(x, location=f"{location}.children[{i}]")
-                    for i, x in enumerate(c)
-                )
-            ),
+            tuple(parse_predicate(x, location=f"{location}.children[{i}]") for i, x in enumerate(c)),
             r.get("negated", False),
         )
 
@@ -716,10 +694,18 @@ class PredicateGroup:
     def operator(self):
         return self.group
 
+    def to_dict(self):
+        """Return the group in submitted child order."""
+        o = {"group": self.group, "children": [x.to_dict() for x in self.children]}
+        if self.negated:
+            o["negated"] = True
+        return o
+
     def to_canonical_dict(self):
+        """Return the order-free form that fingerprints use; duplicate children collapse."""
         o = {
             "group": self.group,
-            "children": [x.to_canonical_dict() for x in self.children],
+            "children": [x.to_canonical_dict() for x in canon(self.children)],
         }
         if self.negated:
             o["negated"] = True
@@ -807,157 +793,23 @@ class QueryImportProvenance:
         }
 
 
-@dataclass(frozen=True)
-class Query:
-    query_id: str
-    requested_endpoints: tuple[str, ...]
-    endpoint_catalogue: Mapping[str, str]
-    predicate: Predicate | None = None
-    import_provenance: QueryImportProvenance | None = None
-    source_identity: str | None = None
-    assumptions: tuple[str, ...] = ()
-    warnings: tuple[str, ...] = ()
-    contract: CohortQueryContract = COHORT_QUERY_CONTRACT
-
-    def __post_init__(self):
-        if self.contract != COHORT_QUERY_CONTRACT:
-            raise QueryError(
-                f"unsupported contract {self.contract!r}; expected {COHORT_QUERY_CONTRACT!r}."
-            )
-        if not isinstance(self.query_id, str) or not self.query_id.strip():
-            raise QueryError("query_id must be a non-empty string.")
-        if self.predicate is not None and not isinstance(
-            self.predicate, (PredicateRule, PredicateGroup)
-        ):
-            raise QueryError("predicate must be a typed predicate when supplied.")
-        if not seq(self.requested_endpoints) or not self.requested_endpoints:
-            raise QueryError("requested_endpoints must be a non-empty array.")
-        requested = tuple(
-            machine_ident(value, f"requested_endpoints[{index}]")
-            for index, value in enumerate(self.requested_endpoints)
-        )
-        if len(requested) != len(set(requested)):
-            raise QueryError("requested_endpoints must contain unique names.")
-        from .endpoint_catalogue import endpoint_catalogue_identity, resolve_endpoint_specs
-
-        catalogue = mapping(self.endpoint_catalogue, "endpoint_catalogue")
-        if set(catalogue) != {"contract", "catalogue_id", "sha256"}:
-            raise QueryError("endpoint_catalogue has unsupported or missing fields.")
-        expected_catalogue = endpoint_catalogue_identity()
-        if dict(catalogue) != expected_catalogue:
-            raise QueryError(
-                "endpoint_catalogue identity does not match the installed package catalogue."
-            )
-        resolve_endpoint_specs(requested)
-        if self.import_provenance is not None and not isinstance(
-            self.import_provenance, QueryImportProvenance
-        ):
-            raise QueryError("import_provenance must be QueryImportProvenance when supplied.")
-        if self.source_identity is not None and (
-            not isinstance(self.source_identity, str) or not self.source_identity.strip()
-        ):
-            raise QueryError("source_identity must be a non-empty string when supplied.")
-        object.__setattr__(self, "query_id", self.query_id.strip())
-        object.__setattr__(self, "requested_endpoints", requested)
-        object.__setattr__(self, "endpoint_catalogue", MappingProxyType(dict(catalogue)))
-        object.__setattr__(self, "assumptions", texts(self.assumptions, "assumptions"))
-        object.__setattr__(self, "warnings", texts(self.warnings, "warnings"))
-
-    @classmethod
-    def from_mapping(cls, v):
-        r = mapping(v, "query")
-        keys(
-            r,
-            {
-                "contract",
-                "query_id",
-                "requested_endpoints",
-                "endpoint_catalogue",
-                "predicate",
-                "import_provenance",
-                "source_identity",
-                "assumptions",
-                "warnings",
-            },
-            "query",
-        )
-        required = {"contract", "query_id", "requested_endpoints", "endpoint_catalogue"}
-        if required - set(r):
-            raise QueryError(f"query is missing required key(s): {sorted(required - set(r))}.")
-        if r["contract"] != COHORT_QUERY_CONTRACT:
-            if r["contract"] == "vcgen.cohort_query.v4":
-                raise QueryError(
-                    "unsupported contract 'vcgen.cohort_query.v4'; v4 query documents are not supported."
-                )
-            raise QueryError(
-                f"unsupported contract {r['contract']!r}; expected {COHORT_QUERY_CONTRACT!r}."
-            )
-        return cls(
-            r["query_id"],
-            tuple(r["requested_endpoints"]) if seq(r["requested_endpoints"]) else r["requested_endpoints"],
-            r["endpoint_catalogue"],
-            None if r.get("predicate") is None else parse_predicate(r["predicate"]),
-            None
-            if r.get("import_provenance") is None
-            else QueryImportProvenance.from_mapping(r["import_provenance"]),
-            r.get("source_identity"),
-            r.get("assumptions", ()),
-            r.get("warnings", ()),
-            COHORT_QUERY_CONTRACT,
-        )
-
-    def to_canonical_dict(self):
-        o = {
-            "contract": self.contract,
-            "query_id": self.query_id,
-            "requested_endpoints": list(self.requested_endpoints),
-            "endpoint_catalogue": dict(self.endpoint_catalogue),
-        }
-        if self.predicate is not None:
-            o["predicate"] = self.predicate.to_canonical_dict()
-        if self.import_provenance is not None:
-            o["import_provenance"] = self.import_provenance.to_canonical_dict()
-        if self.source_identity is not None:
-            o["source_identity"] = self.source_identity
-        for k in ("assumptions", "warnings"):
-            if getattr(self, k):
-                o[k] = list(getattr(self, k))
-        return o
-
-    @property
-    def resolved_endpoints(self) -> tuple[EndpointSpec, ...]:
-        """Resolve the ordered request set through the installed catalogue."""
-
-        from .endpoint_catalogue import resolve_endpoint_specs
-
-        return resolve_endpoint_specs(self.requested_endpoints)
-
-
-def parse_query(raw: Mapping[str, Any]) -> Query:
-    """Parse one native cohort-query v5 payload."""
-    return Query.from_mapping(mapping(raw, "query"))
-
-
 def normalize_category(v: Any) -> str:
     return text(v, "category", True).upper()
 
 
 __all__ = [
     "CanonicalOperator",
-    "CohortQueryContract",
     "DayWindow",
     "DERIVED_FIELD_TYPES",
     "DerivedFieldName",
     "DerivedField",
     "EndpointSpec",
     "FieldRef",
-    "ObservationContract",
     "PreStudyEndpointField",
     "Predicate",
     "PredicateGroup",
     "PredicateGroupOperator",
     "PredicateRule",
-    "Query",
     "QueryError",
     "QueryImportProvenance",
     "SendColumnField",
@@ -967,5 +819,4 @@ __all__ = [
     "normalize_operator",
     "parse_field",
     "parse_predicate",
-    "parse_query",
 ]

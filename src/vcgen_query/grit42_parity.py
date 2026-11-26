@@ -27,15 +27,16 @@ import duckdb
 import pandas as pd
 import yaml
 
-from .contract import Query, QueryError, parse_query, seq
+from .contract import QueryError, seq
 from .duckdb import create_derived_views
 from .fingerprint import fingerprint_predicate
 from .grit42 import compare_membership, import_grit42_subject_query
-from .endpoint_catalogue import endpoint_catalogue_identity
 from .identities import (
     GRIT42_ADVANCED_SUBJECT_QUERY_CONTRACT,
     GRIT42_SUBJECT_QUERY_IMPORT_CONTRACT,
+    SUBJECT_QUERY_CONTRACT,
 )
+from .query import SubjectQuery, parse_subject_query
 from .result import explain_query
 
 BANK_CONTRACT = "vcgen.grit42_membership_bank.v1"
@@ -63,14 +64,12 @@ class QueryBank:
     base_rules: tuple[Mapping[str, Any], ...]
     cases: tuple[BankCase, ...]
 
-    def query_for(self, case: BankCase) -> Query:
+    def query_for(self, case: BankCase) -> SubjectQuery:
         children = [dict(rule) for rule in self.base_rules]
         children.extend(dict(condition) for condition in case.conditions)
-        return parse_query(
+        return parse_subject_query(
             {
-                "contract": "vcgen.cohort_query.v5",
-                "requested_endpoints": ["BW"],
-                "endpoint_catalogue": endpoint_catalogue_identity(),
+                "contract": SUBJECT_QUERY_CONTRACT,
                 "query_id": f"grit42-parity:{self.name}:{case.case_id}",
                 "predicate": {"group": "and", "children": children},
                 "import_provenance": {
@@ -428,7 +427,7 @@ def run_parity(
             query_id = _query_id(bindings[case.case_id])
             saved = client.saved_query(query_id)
             expected = bank.query_for(case)
-            imported = import_grit42_subject_query(saved, expected.requested_endpoints)
+            imported = import_grit42_subject_query(saved)
             expected_fingerprint = fingerprint_predicate(expected.predicate)
             imported_fingerprint = fingerprint_predicate(imported.predicate)
             reference = client.subject_membership(query_id)
@@ -493,6 +492,8 @@ def run_parity(
         connection.close()
     summary = {
         "contract": "vcgen.grit42_membership_parity.v1",
+        # Parity compares membership after the subject query and before any later stage.
+        "checkpoint_stage": SubjectQuery.info.id,
         "bank": bank.name,
         "seed_study_id": bank.seed_study_id,
         "source_identity": source_identity,

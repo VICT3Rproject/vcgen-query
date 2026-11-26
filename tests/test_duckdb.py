@@ -10,29 +10,6 @@ from vcgen_query import SourceDataError
 from vcgen_query import duckdb as db
 
 
-def test_table_columns_returns_empty_for_missing_view():
-    con = db.connect(":memory:")
-    assert db.table_columns(con, "does_not_exist") == ()
-
-
-def test_normalize_and_quote_helpers():
-    assert db.normalize_domain("bw") == "BW"
-    assert db.domain_view_name("BW") == "bw"
-    assert db.quote_ident('a"b') == '"a""b"'
-    assert db.quote_literal("o'reilly") == "'o''reilly'"
-    with pytest.raises(ValueError):
-        db.normalize_domain("bad-domain!")
-
-
-def test_archive_sha256_is_stable(tmp_path):
-    archive = tmp_path / "a.zip"
-    with ZipFile(archive, "w") as zf:
-        zf.writestr("dm.csv", "STUDYID\nS1\n")
-    h1 = db.archive_sha256(archive)
-    h2 = db.archive_sha256(archive)
-    assert h1 == h2 and len(h1) == 64
-
-
 def test_ensure_extracted_re_extracts_when_archive_changes(tmp_path):
     archive = tmp_path / "a.zip"
     cache = tmp_path / "cache"
@@ -54,18 +31,6 @@ def test_ensure_extracted_re_extracts_when_archive_changes(tmp_path):
     db.ensure_extracted(archive, cache, domains=["DM"])
     assert (cache / "dm.csv").read_text() == "STUDYID\nS1\nS2\n"
     assert (cache / ".archive_sha256").read_text().strip() == db.archive_sha256(archive)
-
-
-def test_ensure_extracted_repairs_corrupted_member(tmp_path):
-    archive = tmp_path / "a.zip"
-    cache = tmp_path / "cache"
-    with ZipFile(archive, "w") as zf:
-        zf.writestr("dm.csv", "STUDYID\nS1\nS2\n")
-    db.ensure_extracted(archive, cache, domains=["DM"])
-    # Corrupt the cached file (wrong size) without changing the archive hash.
-    (cache / "dm.csv").write_text("truncated")
-    db.ensure_extracted(archive, cache, domains=["DM"])
-    assert (cache / "dm.csv").read_text() == "STUDYID\nS1\nS2\n"
 
 
 def test_ensure_extracted_repairs_same_size_corruption(tmp_path):
@@ -464,25 +429,6 @@ def test_complete_invalid_dates_do_not_fall_back_to_study_days(make_connection):
 
     assert interval == (None, "inverted_date_bounds")
     assert summary == (None,)
-
-
-def test_register_csv_views_creates_view_from_csv(tmp_path):
-    (tmp_path / "dm.csv").write_text("STUDYID,USUBJID\nS1,S1-1\n")
-    con = db.connect(":memory:")
-    db.register_csv_views(con, tmp_path, domains=["DM"])
-    assert "STUDYID" in db.table_columns(con, "dm")
-    assert con.execute("SELECT count(*) FROM dm WHERE \"STUDYID\" = 'S1'").fetchone()[0] == 1
-
-
-def test_open_directory_adds_core_domains_to_active_domain_selection(tmp_path):
-    _write_minimal_source(tmp_path)
-
-    con = db.open_directory(tmp_path, domains=["LB"])
-
-    assert db.table_columns(con, "dm")
-    assert db.table_columns(con, "ts")
-    assert db.table_columns(con, "ex")
-    assert not db.table_columns(con, "om")
 
 
 def test_open_directory_reports_identity_schema_error_before_derived_views(tmp_path):

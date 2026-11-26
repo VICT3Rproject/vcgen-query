@@ -1,0 +1,98 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vict3r.org/schemas/vcgen.cohort_query.v7.schema.json",
+  "title": "VCGen cohort query v7: a subject query followed by ordered query stages",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contract", "subject_query", "stages"],
+  "properties": {
+    "contract": {"const": "vcgen.cohort_query.v7"},
+    "subject_query": {"$ref": "https://vict3r.org/schemas/vcgen.subject_query.v1.schema.json"},
+    "stages": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 3,
+      "description": "An optional study_exclusion, an optional endpoint_exclusion, then exactly one endpoint_observations stage, in that order. Order and the link between endpoint_exclusion and endpoint_observations are checked by the loader.",
+      "items": {
+        "oneOf": [
+          {"$ref": "#/$defs/studyExclusion"},
+          {"$ref": "#/$defs/endpointExclusion"},
+          {"$ref": "#/$defs/endpointObservations"}
+        ]
+      }
+    }
+  },
+  "$defs": {
+    "studyExclusion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["stage", "entries"],
+      "properties": {
+        "stage": {"const": "study_exclusion"},
+        "entries": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["study_id", "ref", "note"],
+            "properties": {
+              "study_id": {"type": "string", "minLength": 1},
+              "ref": {"type": "string", "pattern": "^[a-z][a-z0-9-]{1,31}$"},
+              "note": {"type": "string", "minLength": 1}
+            }
+          }
+        }
+      }
+    },
+    "endpointExclusion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["stage", "requested_endpoints", "entries"],
+      "properties": {
+        "stage": {"const": "endpoint_exclusion"},
+        "requested_endpoints": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"type": "string", "pattern": "^[A-Z][A-Z0-9_]*$"}
+        },
+        "entries": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["endpoint", "note"],
+            "properties": {
+              "endpoint": {"type": "string", "pattern": "^[A-Z][A-Z0-9_]*$"},
+              "note": {"type": "string", "minLength": 1}
+            }
+          }
+        }
+      }
+    },
+    "endpointObservations": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["stage", "requested_endpoints", "endpoint_catalogue"],
+      "properties": {
+        "stage": {"const": "endpoint_observations"},
+        "requested_endpoints": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"type": "string", "pattern": "^[A-Z][A-Z0-9_]*$"}
+        },
+        "endpoint_catalogue": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["contract", "catalogue_id", "sha256"],
+          "properties": {
+            "contract": {"const": "vcgen.canonical_endpoint_catalogue.v4"},
+            "catalogue_id": {"const": "grit42-canonical-endpoints-2026-09-17-v4"},
+            "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+          }
+        }
+      }
+    }
+  }
+}

@@ -3,9 +3,12 @@
 from __future__ import annotations
 
 from collections.abc import Iterable, Sequence
-from typing import Any, Literal, TypeAlias
+from typing import TYPE_CHECKING, Any, Literal, TypeAlias
 
-from .contract import PreStudyEndpointField, Query, SendColumnField, rules
+from .contract import EndpointSpec, PreStudyEndpointField, SendColumnField, rules
+
+if TYPE_CHECKING:
+    from .query import SubjectQuery
 from .contract_helpers import SourceDataError
 from .grit42_catalogue import grit42_domain_grain
 from .send_columns import STUDY_ID, SUBJECT_ID
@@ -60,8 +63,10 @@ def validate_derived_source_schema(con: Any) -> None:
             _require_columns(_relation_columns(con, "dm"), ("RFSTDTC",), "DM")
 
 
-def validate_active_source(con: Any, query: Query) -> None:
-    """Validate identities in only the relations that the query can consume."""
+def validate_active_source(
+    con: Any, query: SubjectQuery, endpoints: Sequence[EndpointSpec] = ()
+) -> None:
+    """Validate identities in only the relations that the query stages can consume."""
 
     requirements: dict[str, tuple[SourceGrain, bool]] = {"DM": ("subject", True)}
 
@@ -84,7 +89,7 @@ def validate_active_source(con: Any, query: Query) -> None:
             endpoint = canonical_endpoint(field.endpoint).spec
             _merge_requirement(requirements, endpoint.domain, "subject", required=True)
 
-    for endpoint in query.resolved_endpoints:
+    for endpoint in endpoints:
         _merge_requirement(requirements, endpoint.domain, "subject", required=False)
 
     for domain, (grain, required) in sorted(requirements.items()):

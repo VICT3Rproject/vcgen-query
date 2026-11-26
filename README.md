@@ -54,13 +54,14 @@ query_resource = files("vcgen_query").joinpath(
     "data/examples/wistar_han_28d_with_observations.yaml"
 )
 with as_file(query_resource) as query_path:
-    query = vq.load_query(query_path)
+    query = vq.load_cohort_query(query_path)
 
 result = vq.execute_query("/data/rodent_db_export.zip", query)
 
 result.subjects.head()       # one row per selected animal
 result.observations.head()   # one row per matching source measurement
 result.receipt               # source, query, counts, and warnings
+result.trace                 # one StageRecord per query stage, with counts
 ```
 
 For a ZIP source, the default extraction directory is `.vcgen_query_cache`
@@ -99,23 +100,40 @@ columns. They do not set a pandas index.
 
 ## Define a query
 
-A query has three package-owned parts:
+A cohort query is an ordered list of stage blocks. Each block carries display
+metadata (`info`: id, name, kind, origin, description) and its parameters.
 
-- `predicate` selects the cohort.
-- `requested_endpoints` is the required, ordered set of canonical measurements to return.
-- `endpoint_catalogue` binds the query to the package catalogue that resolves those names.
+1. `SubjectQuery` (`vcgen.subject_query.v1`) selects the cohort. It is the
+   Grit42-compatible layer: Grit42 sends it over the API, and the package keeps
+   it exactly as submitted. Its output membership is the Grit42 parity
+   checkpoint.
+2. `StudyExclusion` (optional) removes the subjects of listed studies from the
+   matched cohort, each entry with a `ref` (an opaque public label) and a `note`
+   that says why. It runs after the subject query, so the Grit42 membership and
+   its hash are unchanged, and before subject context is built.
+3. `EndpointExclusion` (optional) records the endpoint selection as submitted and
+   removes listed endpoints from it, each with a `note`.
+4. `EndpointObservations` selects the canonical endpoints and extracts their
+   observations. Endpoint selection is not part of the subject query.
+
+`CohortQuery.compose(subject_query, ["BW", "LB_HCT"])` builds the standard
+plan. Pass `study_exclusions=` and `endpoint_exclusions=` (a list, possibly
+empty) to add the matching stage; the stage then records the review even when
+nothing applies. `CohortQuery.submitted_endpoints` keeps what was asked for,
+and `requested_endpoints` what is extracted. `execute_query()` runs the blocks
+in order and records one `StageRecord` per stage: `source`, `subject_query`,
+`study_exclusion`, `subject_context`, `endpoint_exclusion`, then
+`endpoint_observations`. Each record holds the subject, study and observation
+counts in and out. An endpoint exclusion counts the removed endpoints as a drop
+in the `endpoints` unit, which is not a flow unit. To add a query stage, add one
+block class in `query.py` and its runner in `result.py`.
 
 An omitted predicate selects all subjects in the SEND Demographics (`DM`)
 domain.
 
 ```yaml
-contract: vcgen.cohort_query.v5
+contract: vcgen.subject_query.v1
 query_id: wistar_han_28d
-requested_endpoints: [BW, LB_HCT]
-endpoint_catalogue:
-  contract: vcgen.canonical_endpoint_catalogue.v4
-  catalogue_id: grit42-canonical-endpoints-2026-09-17-v4
-  sha256: 8ef29868c68b1b02f7dba9aa7790b70c046d4898aa04b3f3e784ea67ec7152e4
 predicate:
   group: and
   children:
@@ -132,6 +150,24 @@ predicate:
       operator: in
       value: [F, M]
 ```
+
+The serialized cohort query nests the subject query and lists the later stages:
+
+```yaml
+contract: vcgen.cohort_query.v7
+subject_query: {contract: vcgen.subject_query.v1, query_id: wistar_han_28d}
+stages:
+- stage: endpoint_observations
+  requested_endpoints: [BW, LB_HCT]
+  endpoint_catalogue:
+    contract: vcgen.canonical_endpoint_catalogue.v4
+    catalogue_id: grit42-canonical-endpoints-2026-09-17-v4
+    sha256: 8ef29868c68b1b02f7dba9aa7790b70c046d4898aa04b3f3e784ea67ec7152e4
+```
+
+Predicate groups keep their submitted child order, so explanation node paths
+match the document. Fingerprints use an order-free canonical form, so a
+reordered predicate has the same fingerprint.
 
 Endpoint names are uppercase canonical identifiers from the package endpoint
 catalogue. A request must contain at least one unique name. Empty does not mean
@@ -188,6 +224,15 @@ SEND `DOSDUR`. A single numeric declaration applies directly, including when
 another declaration is non-numeric. If a study declares multiple numeric
 durations, complete subject-level EX interval evidence can select one declared
 value. EX evidence alone never creates a planned value.
+
+The `facility_group` derived predicate compares categorical source-facility
+groups. It accepts a group key such as `site:charles_river:edinburgh` or a raw
+test-facility spelling, which the query parser normalizes with the same rule
+used for returned subject metadata. Case, punctuation, spacing, and reviewed
+aliases map to one key. Unrecognized text becomes an `unresolved_label`
+category; the parser does not infer a site from a similar spelling. The raw
+`test_facilities` values remain available for audit. Group evidence is
+`explicit_site`, `entity_only`, `opaque_code`, or `unresolved_label`.
 
 Returned subject metadata keeps the planned and observed facts separate:
 
@@ -335,13 +380,10 @@ for comparing local subject selection with live Grit42 results.
 |---|---|
 | [`all_subjects.yaml`](src/vcgen_query/data/examples/all_subjects.yaml) | Select every subject. |
 | [`wistar_han_28d_cohort.yaml`](src/vcgen_query/data/examples/wistar_han_28d_cohort.yaml) | Select a broad 28-day Wistar Han cohort. |
-| [`wistar_han_28d_with_observations.yaml`](src/vcgen_query/data/examples/wistar_han_28d_with_observations.yaml) | Select the broad cohort and return body weight and haematocrit. |
-| [`wistar_han_28d_historical.yaml`](src/vcgen_query/data/queries/wistar_han_28d_historical.yaml) | Find candidate Wistar Han studies for source acquisition. |
-| [`gurjanov_28d_benchmark_full.yaml`](src/vcgen_query/data/queries/gurjanov_28d_benchmark_full.yaml) | Run the strict 65-endpoint local benchmark. |
-| [`gurjanov_28d_generation_core.yaml`](src/vcgen_query/data/queries/gurjanov_28d_generation_core.yaml) | Return the 48 endpoints used for virtual-control generation. |
-| [`hosted_debug_wistar_han_28d.yaml`](src/vcgen_query/data/queries/hosted_debug_wistar_han_28d.yaml) | Load the v5 contract compiled from the checked-in Grit42 form fixture. |
-| [`hosted_debug_wistar_han_28d.json`](src/vcgen_query/data/saved_grit42_queries/hosted_debug_wistar_han_28d.json) | Import an example Grit42 form record into a local v5 query. |
-| [`01_gurjanov_28d_generation_core.ipynb`](notebooks/01_gurjanov_28d_generation_core.ipynb) | Run the generation-core query and prepare daily body-weight and terminal laboratory tables. |
+| [`wistar_han_28d_with_observations.yaml`](src/vcgen_query/data/examples/wistar_han_28d_with_observations.yaml) | A cohort query (v7): the broad cohort, then body weight and haematocrit. |
+| [`wistar_han_28d_historical.yaml`](src/vcgen_query/data/queries/wistar_han_28d_historical.yaml) | A cohort query (v7) that finds candidate Wistar Han studies for source acquisition. |
+| [`hosted_debug_wistar_han_28d.yaml`](src/vcgen_query/data/queries/hosted_debug_wistar_han_28d.yaml) | The subject query compiled from the checked-in Grit42 form fixture. |
+| [`hosted_debug_wistar_han_28d.json`](src/vcgen_query/data/saved_grit42_queries/hosted_debug_wistar_han_28d.json) | Import an example Grit42 form record into a subject query. |
 | [`02_editable_cohort_query.ipynb`](notebooks/02_editable_cohort_query.ipynb) | Define and run a small editable query. |
 
 The 28-day filters use the resolved planned SEND `DOSDUR` value. The package
@@ -349,13 +391,13 @@ accepts durations stated in days or weeks. It does not infer an exact number of
 days from month or year units, and it does not convert observed EX follow-up
 into a planned duration.
 
-Files under `data/queries` are local `vcgen.cohort_query.v5` documents for
-`load_query()` and direct upload to the debug service client. Files under
+Files under `data/queries` are local query documents. Load a
+`vcgen.subject_query.v1` file with `load_subject_query()` and a
+`vcgen.cohort_query.v7` file with `load_cohort_query()`. Files under
 `data/saved_grit42_queries` are Grit42 source records for
-`import_grit42_subject_query()` only. The service no longer accepts raw Grit42
-records. A service request repeats the v5 query's non-empty
-`requested_endpoints` list in its parallel request field; the two lists must
-match exactly.
+`import_grit42_subject_query()` only. The service does not accept raw Grit42
+records. A service request sends the subject query unchanged in `query` and
+the endpoint selection in its own `requested_endpoints` field.
 
 The first notebook uses a study-specific day 21-35 terminal window only for its
 display table. It does not remove or change observations in the query result.

@@ -2,19 +2,14 @@
 
 from __future__ import annotations
 
-from vcgen_query import endpoint_catalogue_identity, execute_query, parse_query
+from vcgen_query import CohortQuery, execute_query, parse_subject_query
 
 
 def _query(predicate: dict[str, object]):
-    return parse_query(
-        {
-            "contract": "vcgen.cohort_query.v5",
-            "query_id": "synthetic-pre-study",
-            "requested_endpoints": ["BW"],
-            "endpoint_catalogue": endpoint_catalogue_identity(),
-            "predicate": predicate,
-        }
+    subject = parse_subject_query(
+        {"contract": "vcgen.subject_query.v1", "query_id": "synthetic-pre-study", "predicate": predicate}
     )
+    return CohortQuery.compose(subject, ["BW"])
 
 
 def _members(result) -> set[tuple[str, str]]:
@@ -137,3 +132,44 @@ def test_pre_study_endpoint_rules_are_independent_subject_sets(make_connection) 
     }
 
     assert _members(execute_query(con, _query(predicate))) == {("S", "S-1")}
+
+
+# Failure modes: repeated bounds change subject-set semantics; resolved values
+# leak into a later execution against another source with the same subject keys.
+def test_repeated_endpoint_bounds_keep_source_values_local_to_execution(make_connection):
+    query = _query({"group": "and", "children": [_endpoint("gte", 7), _endpoint("lte", 9)]})
+    results = []
+    for value in (8, 12):
+        con = make_connection(
+            [{"study_id": "S", "subject_id": "1"}],
+            lab=[{"study_id": "S", "subject_id": "1", "test_code": "HGB",
+                  "day": 0, "value": value, "unit": "mmol/L", "specimen": "BLOOD"}],
+        )
+        results.append(_members(execute_query(con, query)))
+    assert results == [{("S", "S-1")}, set()]
+
+
+# Failure modes before reducing baseline scans: timestamp evidence overrides a
+# valid study day; exposure-day rows enter the baseline; missing-day timestamp
+# rows are lost; bulk subject-key loading changes independent predicate sets.
+def test_pre_study_day_priority_and_timestamp_fallback(make_connection):
+    con = make_connection(
+        [{"study_id": "S", "subject_id": "1", "sex": "F", "exstdy": 2,
+          "rfstdtc": "2020-01-01T12:00:00"},
+         {"study_id": "S", "subject_id": "2", "sex": "M", "exstdy": 2,
+          "rfstdtc": "2020-01-01T12:00:00"}],
+        lab=[
+            {"study_id": "S", "subject_id": "1", "test_code": "HGB", "day": 1,
+             "datetime": "2020-01-02T12:00:00", "value": 8, "unit": "mmol/L"},
+            {"study_id": "S", "subject_id": "1", "test_code": "HGB", "day": 2,
+             "datetime": "2019-12-31T12:00:00", "value": 100, "unit": "mmol/L"},
+            {"study_id": "S", "subject_id": "1", "test_code": "HGB", "day": None,
+             "datetime": "2020-01-01T11:00:00", "value": 7, "unit": "mmol/L"},
+            {"study_id": "S", "subject_id": "2", "test_code": "HGB", "day": None,
+             "datetime": "2020-01-01T11:00:00", "value": 9, "unit": "mmol/L"},
+            {"study_id": "S", "subject_id": "2", "test_code": "HGB", "day": None,
+             "datetime": "2020-01-01T12:00:00", "value": 99, "unit": "mmol/L"},
+        ],
+    )
+    assert _members(execute_query(con, _query(_endpoint("eq", 8)))) == {("S", "S-1")}
+    assert _members(execute_query(con, _query(_endpoint("eq", 9)))) == {("S", "S-2")}

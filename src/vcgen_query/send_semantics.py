@@ -13,6 +13,7 @@ import re
 import unicodedata
 from collections.abc import Mapping
 from dataclasses import dataclass
+from functools import lru_cache
 from typing import Any, Literal, TypeAlias
 
 ResultState: TypeAlias = Literal[
@@ -509,6 +510,11 @@ def normalize_method(value: Any) -> str | None:
     normalized = normalize_human_category(value)
     if normalized is None:
         return None
+    return _normalize_method_text(normalized)
+
+
+@lru_cache(maxsize=1 << 16)
+def _normalize_method_text(normalized: str) -> str:
     normalized = normalized.replace("_", " ")
     normalized = re.sub(r"\s*([/+])\s*", r"\1", normalized)
     normalized = re.sub(r"\s*-\s*", "-", normalized)
@@ -542,7 +548,13 @@ def normalize_flag(value: Any) -> str | None:
 
 
 def _normalize_text(value: Any) -> str:
-    text = unicodedata.normalize("NFKC", str(value)).replace("\u00a0", " ")
+    return _normalize_str(str(value))
+
+
+# SEND columns repeat a small set of labels, so normalize each string once.
+@lru_cache(maxsize=1 << 16)
+def _normalize_str(value: str) -> str:
+    text = unicodedata.normalize("NFKC", value).replace("\u00a0", " ")
     return re.sub(r"\s+", " ", text).strip().upper()
 
 

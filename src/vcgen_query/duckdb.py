@@ -32,6 +32,7 @@ from zipfile import ZipFile, ZipInfo
 
 import duckdb
 
+from .facility import facility_group
 from .source_validation import validate_derived_source_schema
 from .send_columns import (
     AGE,
@@ -81,15 +82,26 @@ def connect(database: str | Path | None = None, *, read_only: bool = False) -> A
     return duckdb.connect(db, read_only=read_only)
 
 
-def archive_sha256(archive: str | Path) -> str:
-    """Return the SHA-256 of a SEND archive for content-aware caching."""
+_ARCHIVE_DIGESTS: dict[tuple[str, int, int, int], str] = {}
 
-    archive = Path(archive)
-    digest = hashlib.sha256()
-    with archive.open("rb") as handle:
-        for chunk in iter(lambda: handle.read(1 << 20), b""):
-            digest.update(chunk)
-    return digest.hexdigest()
+
+def archive_sha256(archive: str | Path) -> str:
+    """Return the SHA-256 of a SEND archive for content-aware caching.
+
+    One process hashes one file version once. The key includes the inode,
+    size, and modification time, so a replaced archive is hashed again.
+    """
+
+    archive = Path(archive).resolve()
+    stat = archive.stat()
+    key = (str(archive), stat.st_ino, stat.st_size, stat.st_mtime_ns)
+    if key not in _ARCHIVE_DIGESTS:
+        digest = hashlib.sha256()
+        with archive.open("rb") as handle:
+            for chunk in iter(lambda: handle.read(1 << 20), b""):
+                digest.update(chunk)
+        _ARCHIVE_DIGESTS[key] = digest.hexdigest()
+    return _ARCHIVE_DIGESTS[key]
 
 
 def ensure_extracted(
@@ -160,6 +172,20 @@ def _member_matches_cache(target: Path, member: ZipInfo) -> bool:
     return digest == member.CRC
 
 
+def _csv_source_sql(path: Path, domain: str, *, all_varchar: bool = True) -> str:
+    parallel = "false" if domain == "CO" else "true"
+    return f"""
+            SELECT *
+            FROM read_csv_auto(
+                {quote_literal(path)},
+                header = true,
+                all_varchar = {str(all_varchar).lower()},
+                null_padding = true,
+                parallel = {parallel}
+            )
+            """
+
+
 def register_csv_views(
     con: Any,
     csv_dir: str | Path,
@@ -180,34 +206,219 @@ def register_csv_views(
         if not path.exists():
             continue
         view_name = domain_view_name(domain)
-        parallel = "false" if domain == "CO" else "true"
         con.execute(
-            f"""
-            CREATE OR REPLACE VIEW {quote_ident(view_name)} AS
-            SELECT *
-            FROM read_csv_auto(
-                {quote_literal(path)},
-                header = true,
-                all_varchar = {str(all_varchar).lower()},
-                null_padding = true,
-                parallel = {parallel}
-            )
-            """
+            f"CREATE OR REPLACE VIEW {quote_ident(view_name)} AS "
+            f"{_csv_source_sql(path, domain, all_varchar=all_varchar)}"
         )
+
+
+# An archive source is one DuckDB database: each raw SEND domain and each
+# derived view is a table. The scientific pipeline and the service image build
+# it with the same functions. A domain table is reused only when its archive
+# and zip member identity match; the derived tables are reused only when the
+# domain records and the derived SQL match. Change the format when the CSV read
+# options change.
+_SOURCE_TABLES = "__vcgen_source_tables"
+_SOURCE_TABLE_FORMAT = "vcgen.source_table.v1:read_csv_auto(header,all_varchar,null_padding)"
+_DERIVED_RECORD = "__derived__"
+
+
+def _archive_members(archive: Path) -> dict[str, ZipInfo]:
+    with ZipFile(archive) as zf:
+        members = {
+            normalize_domain(Path(member.filename).stem): member
+            for member in zf.infolist()
+            if Path(member.filename).suffix.lower() == ".csv"
+        }
+    return {domain: members[domain] for domain in RAW_DOMAIN_ORDER if domain in members}
+
+
+def _source_table_records(con: Any) -> dict[str, tuple[str, int, int, str]]:
+    con.execute(
+        f"CREATE TABLE IF NOT EXISTS {quote_ident(_SOURCE_TABLES)} ("
+        "domain VARCHAR PRIMARY KEY, archive_sha256 VARCHAR, member_crc BIGINT, "
+        "member_size BIGINT, table_format VARCHAR)"
+    )
+    return {
+        str(domain): (str(digest), int(crc), int(size), str(table_format))
+        for domain, digest, crc, size, table_format in con.execute(
+            f"SELECT domain, archive_sha256, member_crc, member_size, table_format "
+            f"FROM {quote_ident(_SOURCE_TABLES)}"
+        ).fetchall()
+    }
+
+
+def _set_record(con: Any, domain: str, values: tuple[str, int, int, str]) -> None:
+    con.execute(f"DELETE FROM {quote_ident(_SOURCE_TABLES)} WHERE domain = ?", [domain])
+    con.execute(
+        f"INSERT INTO {quote_ident(_SOURCE_TABLES)} VALUES (?, ?, ?, ?, ?)", [domain, *values]
+    )
+
+
+def _relation_kind(con: Any, name: str) -> str | None:
+    row = con.execute(
+        "SELECT table_type FROM information_schema.tables "
+        "WHERE table_schema = 'main' AND table_name = ?",
+        [name],
+    ).fetchone()
+    return None if row is None else str(row[0])
+
+
+def _drop_relation(con: Any, name: str) -> None:
+    kind = _relation_kind(con, name)
+    if kind == "VIEW":
+        con.execute(f"DROP VIEW {quote_ident(name)}")
+    elif kind is not None:
+        con.execute(f"DROP TABLE {quote_ident(name)}")
+
+
+def materialize_archive_tables(
+    con: Any,
+    archive: str | Path,
+    extract_dir: str | Path,
+    *,
+    overwrite_extract: bool = False,
+) -> bool:
+    """Make each raw archive domain a table that matches the archive.
+
+    The domains are the archive CSV members named in ``RAW_DOMAIN_ORDER``. A
+    table holds the CSV rows as varchar. It is reused only when its record
+    names the current archive SHA-256 and the zip member CRC and size.
+    Otherwise the member is extracted and verified with
+    :func:`ensure_extracted`, then loaded in one transaction. Tables that were
+    loaded from another archive are dropped. Returns whether a table changed.
+    """
+
+    archive = Path(archive)
+    digest = archive_sha256(archive)
+    members = _archive_members(archive)
+    records = _source_table_records(con)
+    changed = False
+    for domain, record in records.items():
+        if domain != _DERIVED_RECORD and (record[0] != digest or domain not in members):
+            con.execute("BEGIN TRANSACTION")
+            _drop_relation(con, domain_view_name(domain))
+            con.execute(f"DELETE FROM {quote_ident(_SOURCE_TABLES)} WHERE domain = ?", [domain])
+            con.execute("COMMIT")
+            changed = True
+
+    def identity(domain: str) -> tuple[str, int, int, str]:
+        member = members[domain]
+        return (digest, member.CRC, member.file_size, _SOURCE_TABLE_FORMAT)
+
+    stale = tuple(
+        domain
+        for domain in members
+        if overwrite_extract
+        or records.get(domain) != identity(domain)
+        or _relation_kind(con, domain_view_name(domain)) != "BASE TABLE"
+    )
+    if not stale:
+        return changed
+    csv_dir = ensure_extracted(
+        archive=archive, extract_dir=extract_dir, domains=stale, overwrite=overwrite_extract
+    )
+    for domain in stale:
+        name = domain_view_name(domain)
+        building = f"__vcgen_building_{name}"
+        con.execute("BEGIN TRANSACTION")
+        con.execute(f"DROP TABLE IF EXISTS {quote_ident(building)}")
+        con.execute(
+            f"CREATE TABLE {quote_ident(building)} AS "
+            f"{_csv_source_sql(csv_dir / f'{domain}.csv', domain)}"
+        )
+        _drop_relation(con, name)
+        con.execute(f"ALTER TABLE {quote_ident(building)} RENAME TO {quote_ident(name)}")
+        _set_record(con, domain, identity(domain))
+        con.execute("COMMIT")
+    return True
+
+
+def register_facility_group_function(con: Any) -> None:
+    """Make the query-layer category available on fresh and hosted connections."""
+
+    try:
+        con.create_function(
+            "vcgen_facility_group", lambda value: facility_group(value)[0],
+            ["VARCHAR"], "VARCHAR",
+        )
+    except duckdb.Error as error:
+        if "already" not in str(error).lower() or "vcgen_facility_group" not in str(error):
+            raise
+
+
+def _derived_view_statements(con: Any) -> tuple[tuple[str, str], ...]:
+    """Return (view name, CREATE VIEW statement) pairs in dependency order."""
+
+    statements = [
+        ("subject_demographics", _subject_demographics_sql()),
+        ("study_design_summary", _study_design_summary_sql()),
+        (
+            "subject_exposure_intervals",
+            _exposure_intervals_sql(table_columns(con, "ex"), table_columns(con, "dm")),
+        ),
+        ("subject_exposure_summary", _exposure_summary_sql()),
+    ]
+    if table_columns(con, "bw"):
+        statements.append(("subject_baseline_body_weight", _baseline_body_weight_sql()))
+    if table_columns(con, "ds"):
+        statements.append(("subject_disposition_summary", _subject_disposition_sql()))
+    return tuple(statements)
 
 
 def create_derived_views(con: Any) -> None:
     """Create derived views needed for canonical cohort selection."""
 
-    con.execute(_subject_demographics_sql())
-    con.execute(_study_design_summary_sql())
-    exposure_columns = table_columns(con, "ex")
-    con.execute(_exposure_intervals_sql(exposure_columns, table_columns(con, "dm")))
-    con.execute(_exposure_summary_sql())
-    if table_columns(con, "bw"):
-        con.execute(_baseline_body_weight_sql())
-    if table_columns(con, "ds"):
-        con.execute(_subject_disposition_sql())
+    register_facility_group_function(con)
+    for _name, statement in _derived_view_statements(con):
+        con.execute(statement)
+
+
+_DERIVED_VIEWS = (
+    "subject_demographics",
+    "study_design_summary",
+    "subject_exposure_intervals",
+    "subject_exposure_summary",
+    "subject_baseline_body_weight",
+    "subject_disposition_summary",
+)
+
+
+def materialize_derived_tables(con: Any) -> bool:
+    """Store each derived view as a table computed from the domain tables.
+
+    The tables are reused while the domain records and the derived SQL are
+    unchanged. A view that reads another derived view is computed after it.
+    Returns whether the tables were rebuilt.
+    """
+
+    register_facility_group_function(con)
+    statements = _derived_view_statements(con)
+    records = _source_table_records(con)
+    identity = hashlib.sha256(
+        repr((
+            sorted((domain, record) for domain, record in records.items() if domain != _DERIVED_RECORD),
+            statements,
+        )).encode("utf-8")
+    ).hexdigest()
+    expected = (identity, 0, 0, _SOURCE_TABLE_FORMAT)
+    if records.get(_DERIVED_RECORD) == expected and all(
+        _relation_kind(con, name) == "BASE TABLE" for name, _ in statements
+    ):
+        return False
+    con.execute("BEGIN TRANSACTION")
+    for name in _DERIVED_VIEWS:
+        _drop_relation(con, name)
+    for _name, statement in statements:
+        con.execute(statement)
+    for name, _ in statements:
+        building = f"__vcgen_building_{name}"
+        con.execute(f"CREATE TABLE {quote_ident(building)} AS SELECT * FROM {quote_ident(name)}")
+        con.execute(f"DROP VIEW {quote_ident(name)}")
+        con.execute(f"ALTER TABLE {quote_ident(building)} RENAME TO {quote_ident(name)}")
+    _set_record(con, _DERIVED_RECORD, expected)
+    con.execute("COMMIT")
+    return True
 
 
 def open_archive(
@@ -215,35 +426,20 @@ def open_archive(
     extract_dir: str | Path,
     *,
     database: str | Path | None = None,
-    domains: Iterable[str] | None = None,
     overwrite_extract: bool = False,
 ) -> Any:
-    """Extract a SEND archive, register raw views, and create derived views.
+    """Open the source database for a SEND archive, building what is stale.
 
-    Required cohort domains are always included. ``database`` defaults to an
-    in-memory DuckDB instance so no file is written unless requested.
+    The database holds every raw domain and derived view as a table, as
+    described above. ``database`` defaults to an in-memory DuckDB instance; a
+    file database keeps its tables for later calls with the same archive. The
+    service image builds its reference database with this function.
     """
 
-    selected_domains = (
-        tuple(
-            sorted(
-                _REQUIRED_COHORT_DOMAINS
-                | {normalize_domain(domain) for domain in domains}
-            )
-        )
-        if domains is not None
-        else None
-    )
     con = connect(database)
-    csv_dir = ensure_extracted(
-        archive=archive,
-        extract_dir=extract_dir,
-        domains=selected_domains,
-        overwrite=overwrite_extract,
-    )
-    register_csv_views(con, csv_dir, domains=selected_domains)
+    materialize_archive_tables(con, archive, extract_dir, overwrite_extract=overwrite_extract)
     validate_derived_source_schema(con)
-    create_derived_views(con)
+    materialize_derived_tables(con)
     return con
 
 
@@ -862,6 +1058,8 @@ __all__ = [
     "create_derived_views",
     "domain_view_name",
     "ensure_extracted",
+    "materialize_archive_tables",
+    "materialize_derived_tables",
     "normalize_domain",
     "open_archive",
     "open_directory",

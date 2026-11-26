@@ -6,9 +6,9 @@ import pytest
 
 from vcgen_query import (
     EndpointSpec,
-    endpoint_catalogue_identity,
+    CohortQuery,
     execute_query,
-    parse_query,
+    parse_subject_query,
     to_daily_frame,
 )
 from vcgen_query.endpoint_rows import endpoint_matches_row
@@ -16,10 +16,8 @@ from vcgen_query.endpoint_rows import endpoint_matches_row
 
 def _query(*, requested_endpoints: list[str] | None = None):
     raw: dict[str, object] = {
-        "contract": "vcgen.cohort_query.v5",
+        "contract": "vcgen.subject_query.v1",
         "query_id": "synthetic-observation",
-        "requested_endpoints": requested_endpoints or ["BW"],
-        "endpoint_catalogue": endpoint_catalogue_identity(),
         "predicate": {
             "field": {
                 "kind": "send_column",
@@ -31,7 +29,7 @@ def _query(*, requested_endpoints: list[str] | None = None):
             "value": "M",
         },
     }
-    return parse_query(raw)
+    return CohortQuery.compose(parse_subject_query(raw), requested_endpoints or ["BW"])
 
 
 def test_observation_contract_extracts_only_after_subject_membership_is_resolved(

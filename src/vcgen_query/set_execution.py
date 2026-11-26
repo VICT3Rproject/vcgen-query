@@ -10,7 +10,9 @@ import hashlib
 import json
 import math
 import re
-from typing import Any, Literal, TypeAlias
+from typing import TYPE_CHECKING, Any, Literal, TypeAlias
+
+import pandas as pd
 
 from .cohort import (
     CohortSelection,
@@ -26,11 +28,10 @@ from .contract import (
     PredicateGroupOperator,
     PredicateRule,
     PreStudyEndpointField,
-    Query,
     SendColumnField,
     ValueType,
 )
-from .duckdb import q, quote_ident, table_columns
+from .duckdb import q, quote_ident, register_facility_group_function, table_columns
 from .contract_helpers import SourceDataError
 from .grit42_catalogue import (
     AdvancedQueryDatetimeSource,
@@ -40,6 +41,9 @@ from .grit42_catalogue import (
 from .identities import GRIT42_ADVANCED_SUBJECT_QUERY_CONTRACT
 from .send_columns import STUDY_ID, SUBJECT_ID
 from .source_validation import validate_active_source
+
+if TYPE_CHECKING:
+    from .query import SubjectQuery
 
 _DATE_DATETIME = r"\d{4}-\d{2}-\d{2}"
 _TIME_DATETIME = r"\d{2}:\d{2}:\d{2}(?:\.\d{1,6})?"
@@ -75,6 +79,7 @@ _DERIVED: dict[str, tuple[str, str, bool, bool]] = {
     "supplier": ("study_design_summary", "supplier_values", False, True),
     "study_type": ("study_design_summary", "study_type_values", False, True),
     "test_facility": ("study_design_summary", "test_facility_values", False, True),
+    "facility_group": ("study_design_summary", "test_facility_values", False, True),
     "glp_status": ("study_design_summary", "glp_status_values", False, True),
     "species": ("subject_demographics", "SPECIES", True, False),
     "sex": ("subject_demographics", "SEX", True, False),
@@ -133,7 +138,7 @@ class PredicateExecutionPlan:
     root: ResolvedExecutionNode | None
 
 
-def resolve_execution_plan(query: Query) -> PredicateExecutionPlan:
+def resolve_execution_plan(query: SubjectQuery) -> PredicateExecutionPlan:
     """Resolve execution scope while preserving every predicate group boundary."""
 
     def resolve(node: Predicate, path: str) -> ResolvedExecutionNode:
@@ -240,8 +245,26 @@ def membership_hash(keys: Sequence[tuple[str, str]]) -> str:
     return hashlib.sha256(payload).hexdigest()
 
 
-def evaluate_predicate(con: Any, query: Query) -> PredicateEvaluation:
-    validate_active_source(con, query)
+def subject_universe(con: Any) -> tuple[tuple[str, str], ...]:
+    """Return the DM subject universe in the same form as predicate evaluation."""
+    columns = table_columns(con, "dm")
+    _required(columns, STUDY_ID, "DM")
+    _required(columns, SUBJECT_ID, "DM")
+    return tuple(
+        (str(study), str(subject))
+        for study, subject in con.execute(
+            f"SELECT DISTINCT cast({q(STUDY_ID)} AS VARCHAR), cast({q(SUBJECT_ID)} AS VARCHAR) "
+            "FROM dm ORDER BY 1, 2"
+        ).fetchall()
+    )
+
+
+def evaluate_predicate(
+    con: Any, query: SubjectQuery, *, validate_source: bool = True
+) -> PredicateEvaluation:
+    """Evaluate the subject query alone. Its output is the Grit42 parity checkpoint."""
+    if validate_source:
+        validate_active_source(con, query)
     columns = table_columns(con, "dm")
     _required(columns, STUDY_ID, "DM")
     _required(columns, SUBJECT_ID, "DM")
@@ -280,7 +303,16 @@ def selection_for_keys(
     *,
     universe_keys: Sequence[tuple[str, str]],
 ) -> CohortSelection:
-    contexts = _load_subject_contexts(con, _load_study_contexts(con))
+    requested = tuple(keys)
+    if len(requested) != len(set(requested)):
+        raise SourceDataError("predicate evaluation produced duplicate subject keys")
+    observed_keys: list[tuple[str, str]] = []
+    contexts = _load_subject_contexts(
+        con, _load_study_contexts(con), selected_keys=set(requested), observed_keys=observed_keys,
+    )
+    actual_universe = set(observed_keys)
+    if len(observed_keys) != len(actual_universe):
+        raise SourceDataError("subject context assembly produced duplicate subject keys")
     contexts_by_key = {}
     for context in contexts:
         key = (context.study_id, context.subject_id)
@@ -289,7 +321,6 @@ def selection_for_keys(
         contexts_by_key[key] = context
 
     expected_universe = set(universe_keys)
-    actual_universe = set(contexts_by_key)
     if actual_universe != expected_universe:
         raise SourceDataError(
             "subject context keys do not match the DM universe: "
@@ -297,9 +328,6 @@ def selection_for_keys(
             f"extra={len(actual_universe - expected_universe)}"
         )
 
-    requested = tuple(keys)
-    if len(requested) != len(set(requested)):
-        raise SourceDataError("predicate evaluation produced duplicate subject keys")
     missing = set(requested) - actual_universe
     if missing:
         raise SourceDataError(
@@ -352,7 +380,7 @@ def selection_for_keys(
 
 
 class _Compiler:
-    def __init__(self, con: Any, query: Query) -> None:
+    def __init__(self, con: Any, query: SubjectQuery) -> None:
         self.con, self.query, self.index, self.universe = (
             con,
             query,
@@ -361,6 +389,8 @@ class _Compiler:
         )
         self.nodes: list[NodeExplanation] = []
         self.warnings: list[str] = []
+        self.pre_study_sexes: dict[tuple[str, str], str] | None = None
+        self.pre_study_values: dict[str, dict[tuple[str, str], dict[str, float]]] = {}
         self.grit42_advanced_import = (
             query.import_provenance is not None
             and query.import_provenance.source_contract
@@ -633,9 +663,13 @@ class _Compiler:
         if subject_grain:
             join += f" AND cast(rows.{q(subject)} AS VARCHAR) = universe.subject_id"
         if list_value:
+            if name == "facility_group":
+                register_facility_group_function(self.con)
             actual = (
                 "candidate.value" if kind == "number" else "upper(cast(candidate.value AS VARCHAR))"
             )
+            if name == "facility_group":
+                actual = "vcgen_facility_group(cast(candidate.value AS VARCHAR))"
             predicate, params = _predicate(actual, operator, value, kind)
             return (
                 "SELECT DISTINCT universe.study_id, universe.subject_id "
@@ -697,19 +731,35 @@ class _Compiler:
         name = field.endpoint
         from .endpoint_catalogue import canonical_endpoint
 
-        endpoint = canonical_endpoint(name).spec
-        values = _load_pre_study_endpoint_values(
-            self.con,
-            _load_subject_contexts(self.con, _load_study_contexts(self.con)),
-            ((endpoint, None),),
-        )
+        if name not in self.pre_study_values:
+            if self.pre_study_sexes is None:
+                self.pre_study_sexes = {
+                    (str(study or ""), str(subject or "")): str(sex or "")
+                    for study, subject, sex in self.con.execute(
+                        f"SELECT {q(STUDY_ID)}, {q(SUBJECT_ID)}, {q('SEX')} FROM subject_demographics"
+                    ).fetchall()
+                }
+            self.pre_study_values[name] = _load_pre_study_endpoint_values(
+                self.con, self.pre_study_sexes, ((canonical_endpoint(name).spec, None),),
+            )
+        values = self.pre_study_values[name]
         relation = self.new_relation()
         self.con.execute(
             f"CREATE OR REPLACE TEMP TABLE {quote_ident(relation)} (study_id VARCHAR, subject_id VARCHAR)"
         )
-        for key, resolved in values.items():
-            if _python_match(resolved.get(name), operator, value, "number"):
-                self.con.execute(f"INSERT INTO {quote_ident(relation)} VALUES (?, ?)", list(key))
+        selected = [key for key, resolved in values.items()
+                    if _python_match(resolved.get(name), operator, value, "number")]
+        if selected:
+            registered = relation + "_keys"
+            self.con.register(registered, pd.DataFrame.from_records(
+                selected, columns=("study_id", "subject_id"),
+            ))
+            try:
+                self.con.execute(
+                    f"INSERT INTO {quote_ident(relation)} SELECT study_id, subject_id FROM {quote_ident(registered)}"
+                )
+            finally:
+                self.con.unregister(registered)
         return relation
 
     def new_relation(self) -> str:
@@ -717,12 +767,13 @@ class _Compiler:
         return f"_vcgen_predicate_v1_node_{self.index}"
 
     def rows(self, relation: str) -> tuple[tuple[str, str], ...]:
-        return tuple(
-            (str(a), str(b))
-            for a, b in self.con.execute(
-                f"SELECT DISTINCT study_id, subject_id FROM {quote_ident(relation)} ORDER BY 1, 2"
-            ).fetchall()
-        )
+        fetched = self.con.execute(
+            f"SELECT DISTINCT study_id, subject_id FROM {quote_ident(relation)} ORDER BY 1, 2"
+        ).fetchall()
+        if not fetched:
+            return ()
+        studies, subjects = zip(*fetched)
+        return tuple(zip(map(str, studies), map(str, subjects)))
 
 def _predicate(
     expr: str,
@@ -943,4 +994,5 @@ __all__ = [
     "evaluate_predicate",
     "membership_hash",
     "selection_for_keys",
+    "subject_universe",
 ]

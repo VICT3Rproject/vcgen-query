@@ -9,21 +9,28 @@ from typing import Any
 
 import yaml
 
-from .contract import Query, QueryError, parse_query
+from .contract import QueryError
+from .query import CohortQuery, SubjectQuery, parse_cohort_query, parse_subject_query
 from .identities import (
     COHORT_QUERY_CONTRACT,
     GRIT42_ADVANCED_SUBJECT_QUERY_CONTRACT,
     GRIT42_FORM_SUBJECT_QUERY_CONTRACT,
     GRIT42_SUBJECT_QUERY_IMPORT_CONTRACT,
     SUBJECT_PREDICATE_CONTRACT,
+    SUBJECT_QUERY_CONTRACT,
 )
+
+# libyaml parses the same documents several times faster than the pure-Python loader.
+# Both loaders share one resolver and constructor, so loaded values are identical.
+_YAML_LOADER = getattr(yaml, "CSafeLoader", yaml.SafeLoader)
 
 SCHEMA_RESOURCES = {
     GRIT42_FORM_SUBJECT_QUERY_CONTRACT: "data/grit42.form_subject_query.v1.schema.json",
     GRIT42_ADVANCED_SUBJECT_QUERY_CONTRACT: "data/grit42.advanced_subject_query.v1.schema.json",
     GRIT42_SUBJECT_QUERY_IMPORT_CONTRACT: "data/grit42.subject_query_import.v1.schema.json",
     SUBJECT_PREDICATE_CONTRACT: "data/vcgen.subject_predicate.v1.schema.json",
-    COHORT_QUERY_CONTRACT: "data/vcgen.cohort_query.v5.schema.json",
+    SUBJECT_QUERY_CONTRACT: "data/vcgen.subject_query.v1.schema.json",
+    COHORT_QUERY_CONTRACT: "data/vcgen.cohort_query.v7.schema.json",
 }
 
 
@@ -40,7 +47,7 @@ def load_query_mapping(path: str | Path) -> Mapping[str, Any]:
             raise QueryError(f"invalid JSON query file {path}: {error}") from error
     elif path.suffix.lower() in {".yaml", ".yml"}:
         try:
-            raw = yaml.safe_load(text)
+            raw = yaml.load(text, Loader=_YAML_LOADER)
         except yaml.YAMLError as error:
             raise QueryError(f"invalid YAML query file {path}: {error}") from error
     else:
@@ -50,8 +57,12 @@ def load_query_mapping(path: str | Path) -> Mapping[str, Any]:
     return raw
 
 
-def load_query(path: str | Path) -> Query:
-    return parse_query(load_query_mapping(path))
+def load_subject_query(path: str | Path) -> SubjectQuery:
+    return parse_subject_query(load_query_mapping(path))
+
+
+def load_cohort_query(path: str | Path) -> CohortQuery:
+    return parse_cohort_query(load_query_mapping(path))
 
 
 def schema_dict(contract: str) -> dict[str, Any]:
@@ -74,7 +85,8 @@ def schema_resources() -> dict[str, dict[str, Any]]:
 
 __all__ = [
     "SCHEMA_RESOURCES",
-    "load_query",
+    "load_cohort_query",
+    "load_subject_query",
     "load_query_mapping",
     "schema_dict",
     "schema_resources",

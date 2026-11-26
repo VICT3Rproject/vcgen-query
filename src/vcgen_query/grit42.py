@@ -14,14 +14,15 @@ from collections.abc import Iterable, Mapping, Sequence
 from datetime import datetime
 from typing import Any
 
-from .contract import Query, QueryError, parse_query
+from .contract import QueryError
 from .identities import (
-    COHORT_QUERY_CONTRACT,
     GRIT42_ADVANCED_SUBJECT_QUERY_CONTRACT,
     GRIT42_FORM_SUBJECT_QUERY_CONTRACT,
     GRIT42_SUBJECT_QUERY_IMPORT_CONTRACT,
+    SUBJECT_QUERY_CONTRACT,
 )
-from .endpoint_catalogue import endpoint_catalogue_identity, load_endpoint_catalogue
+from .endpoint_catalogue import load_endpoint_catalogue
+from .query import SubjectQuery, parse_subject_query
 
 _IDENTIFIER = re.compile(r"^[A-Z][A-Z0-9_]*(?:\.[A-Z][A-Z0-9_]*)?$")
 _TYPES = {
@@ -137,20 +138,19 @@ _DERIVED = {
 }
 
 
-def import_grit42_subject_query(
-    raw: Mapping[str, Any], requested_endpoints: Sequence[str]
-) -> Query:
-    """Import one complete saved Grit42 form or advanced subject query."""
+def import_grit42_subject_query(raw: Mapping[str, Any]) -> SubjectQuery:
+    """Import one complete saved Grit42 form or advanced subject query.
+
+    The result is membership only. Endpoint selection is a later query stage.
+    """
 
     payload = _mapping(raw, "grit42 subject query")
     if payload.get("query_type") == "form":
-        return import_grit42_form_subject_query(payload, requested_endpoints)
-    return import_grit42_advanced_subject_query(payload, requested_endpoints)
+        return import_grit42_form_subject_query(payload)
+    return import_grit42_advanced_subject_query(payload)
 
 
-def import_grit42_form_subject_query(
-    raw: Mapping[str, Any], requested_endpoints: Sequence[str]
-) -> Query:
+def import_grit42_form_subject_query(raw: Mapping[str, Any]) -> SubjectQuery:
     """Import one complete saved Grit42 form subject query."""
 
     payload = _mapping(raw, "grit42 form subject query")
@@ -161,13 +161,10 @@ def import_grit42_form_subject_query(
     return _compile_form_values(
         _mapping(payload["form_values"], "grit42 saved form_values"),
         raw_payload=payload,
-        requested_endpoints=requested_endpoints,
     )
 
 
-def import_grit42_advanced_subject_query(
-    raw: Mapping[str, Any], requested_endpoints: Sequence[str]
-) -> Query:
+def import_grit42_advanced_subject_query(raw: Mapping[str, Any]) -> SubjectQuery:
     """Import one complete saved Grit42 advanced subject query."""
 
     payload = _mapping(raw, "grit42 advanced subject query")
@@ -180,22 +177,14 @@ def import_grit42_advanced_subject_query(
     endpoints: set[str] = set()
     predicate = _node(payload["condition_tree"], inventory, endpoints, "condition_tree")
     digest = _raw_hash(payload)
-    return _query(
-        _identity(payload, digest),
-        predicate,
-        digest,
-        GRIT42_ADVANCED_SUBJECT_QUERY_CONTRACT,
-        endpoints,
-        requested_endpoints,
-    )
+    return _query(_identity(payload, digest), predicate, digest, GRIT42_ADVANCED_SUBJECT_QUERY_CONTRACT)
 
 
 def _compile_form_values(
     payload: Mapping[str, Any],
     *,
     raw_payload: Mapping[str, Any],
-    requested_endpoints: Sequence[str],
-) -> Query:
+) -> SubjectQuery:
     """Compile supported fixed-form selectors with the given raw provenance."""
 
     supported = {
@@ -256,8 +245,6 @@ def _compile_form_values(
         _group("and", rules) if rules else None,
         digest,
         GRIT42_FORM_SUBJECT_QUERY_CONTRACT,
-        endpoints,
-        requested_endpoints,
     )
 
 
@@ -286,14 +273,10 @@ def _query(
     predicate: dict[str, Any] | None,
     source_payload_sha256: str,
     source_contract: str,
-    endpoints: set[str],
-    requested_endpoints: Sequence[str],
-) -> Query:
+) -> SubjectQuery:
     raw: dict[str, Any] = {
-        "contract": COHORT_QUERY_CONTRACT,
+        "contract": SUBJECT_QUERY_CONTRACT,
         "query_id": query_id,
-        "requested_endpoints": list(requested_endpoints),
-        "endpoint_catalogue": endpoint_catalogue_identity(),
         "import_provenance": {
             "contract": GRIT42_SUBJECT_QUERY_IMPORT_CONTRACT,
             "source_contract": source_contract,
@@ -302,7 +285,7 @@ def _query(
     }
     if predicate is not None:
         raw["predicate"] = predicate
-    return parse_query(raw)
+    return parse_subject_query(raw)
 
 
 def _node(

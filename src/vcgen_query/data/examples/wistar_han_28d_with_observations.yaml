@@ -1,62 +1,66 @@
-# yaml-language-server: $schema=../vcgen.cohort_query.v5.schema.json
-# Endpoint source selectors are resolved by the package catalogue.
-contract: vcgen.cohort_query.v5
-query_id: wistar_han_28d_with_observations
-predicate:
-  group: and
-  children:
-  - field:
-      kind: derived
-      name: planned_dose_duration_days
-      value_type: number
-    operator: between
-    value:
-    - 28
-    - 28
-  - field:
-      kind: derived
-      name: study_start_year
-      value_type: number
-    operator: between
-    value:
-    - 2019
-    - 2025
-  - field:
-      kind: derived
-      name: species
-      value_type: string
-    operator: eq
-    value: RAT
-  - field:
-      kind: derived
-      name: sex
-      value_type: string
-    operator: in
-    value:
-    - M
-    - F
-  - field:
-      kind: derived
-      name: strain
-      value_type: string
-    operator: eq
-    value: WISTAR HAN
-  - field:
-      kind: derived
-      name: route
-      value_type: string
-    operator: eq
-    value: ORAL GAVAGE
-  - field:
-      kind: derived
-      name: dose_frequency
-      value_type: string
-    operator: eq
-    value: QD
-requested_endpoints:
-- BW
-- LB_HCT
-endpoint_catalogue:
-  contract: vcgen.canonical_endpoint_catalogue.v4
-  catalogue_id: grit42-canonical-endpoints-2026-09-17-v4
-  sha256: 8ef29868c68b1b02f7dba9aa7790b70c046d4898aa04b3f3e784ea67ec7152e4
+# yaml-language-server: $schema=../vcgen.cohort_query.v7.schema.json
+# A cohort query: the Grit42-compatible subject query, then VCGen query stages.
+contract: vcgen.cohort_query.v7
+subject_query:
+  contract: vcgen.subject_query.v1
+  query_id: wistar_han_28d_with_observations
+  predicate:
+    group: and
+    children:
+    - field:
+        kind: derived
+        name: planned_dose_duration_days
+        value_type: number
+      operator: between
+      value:
+      - 28
+      - 28
+    - field:
+        kind: derived
+        name: study_start_year
+        value_type: number
+      operator: between
+      value:
+      - 2019
+      - 2025
+    - field:
+        kind: derived
+        name: species
+        value_type: string
+      operator: eq
+      value: RAT
+    - field:
+        kind: derived
+        name: sex
+        value_type: string
+      operator: in
+      value:
+      - M
+      - F
+    - field:
+        kind: derived
+        name: strain
+        value_type: string
+      operator: eq
+      value: WISTAR HAN
+    - field:
+        kind: derived
+        name: route
+        value_type: string
+      operator: eq
+      value: ORAL GAVAGE
+    - field:
+        kind: derived
+        name: dose_frequency
+        value_type: string
+      operator: eq
+      value: QD
+stages:
+- stage: endpoint_observations
+  requested_endpoints:
+  - BW
+  - LB_HCT
+  endpoint_catalogue:
+    contract: vcgen.canonical_endpoint_catalogue.v4
+    catalogue_id: grit42-canonical-endpoints-2026-09-17-v4
+    sha256: 8ef29868c68b1b02f7dba9aa7790b70c046d4898aa04b3f3e784ea67ec7152e4

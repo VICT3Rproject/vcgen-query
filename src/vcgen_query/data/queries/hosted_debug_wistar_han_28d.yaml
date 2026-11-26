@@ -1,14 +1,7 @@
-# yaml-language-server: $schema=../vcgen.cohort_query.v5.schema.json
+# yaml-language-server: $schema=../vcgen.subject_query.v1.schema.json
 # Compiled from ../saved_grit42_queries/hosted_debug_wistar_han_28d.json.
-contract: vcgen.cohort_query.v5
+contract: vcgen.subject_query.v1
 query_id: grit42:subject:hosted-debug-wistar-han-28d
-requested_endpoints:
-- BW
-- LB_HCT
-endpoint_catalogue:
-  contract: vcgen.canonical_endpoint_catalogue.v4
-  catalogue_id: grit42-canonical-endpoints-2026-09-17-v4
-  sha256: 8ef29868c68b1b02f7dba9aa7790b70c046d4898aa04b3f3e784ea67ec7152e4
 predicate:
   group: and
   children:

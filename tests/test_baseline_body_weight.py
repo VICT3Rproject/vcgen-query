@@ -2,19 +2,14 @@
 
 from __future__ import annotations
 
-from vcgen_query import endpoint_catalogue_identity, execute_query, parse_query
+from vcgen_query import CohortQuery, execute_query, parse_subject_query
 
 
 def _query(predicate: dict[str, object]):
-    return parse_query(
-        {
-            "contract": "vcgen.cohort_query.v5",
-            "query_id": "synthetic-derived",
-            "requested_endpoints": ["BW"],
-            "endpoint_catalogue": endpoint_catalogue_identity(),
-            "predicate": predicate,
-        }
+    subject = parse_subject_query(
+        {"contract": "vcgen.subject_query.v1", "query_id": "synthetic-derived", "predicate": predicate}
     )
+    return CohortQuery.compose(subject, ["BW"])
 
 
 def _members(result) -> set[tuple[str, str]]:
