@@ -36,7 +36,7 @@ def control_arm_sql(arm: str) -> str:
 
     text = f"upper(trim(CAST({arm} AS VARCHAR)))"
     doses = f"regexp_extract_all({text}, {_literal(_DOSE)}, 1)"
-    nonzero = f"len(list_filter({doses}, dose -> coalesce(TRY_CAST(replace(dose, ',', '.') AS DOUBLE), 1) <> 0))"
+    nonzero = f"len(list_filter({doses}, lambda dose: coalesce(TRY_CAST(replace(dose, ',', '.') AS DOUBLE), 1) <> 0))"
     return (
         f"(nullif({text}, '') IS NULL OR ({nonzero} = 0 AND ("
         f"(regexp_matches({text}, {_literal(_CONTROL_WORD)}) "

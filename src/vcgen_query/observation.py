@@ -194,11 +194,11 @@ def extract_observations(
         # Every endpoint requires its test code, so a row is checked only against
         # the endpoints that name the row's code (in configuration order).
         by_code = endpoints_by_test_code(domain_endpoints)
-        cursor, prefilter = _endpoint_filtered_cursor(
+        relation, prefilter = _endpoint_filtered_relation(
             con, domain, columns, selected_studies, set(contexts_by_key), set(by_code)
         )
         # The last column is the row position in the complete study-filtered order.
-        domain_columns = tuple(item[0] for item in cursor.description)[:-1]
+        domain_columns = tuple(item[0] for item in relation.description)[:-1]
         rows_read += prefilter.rows_read
         skipped_not_selected += prefilter.not_selected
         tally.rows_lost["no_endpoint_match"] += prefilter.no_endpoint_code
@@ -216,7 +216,7 @@ def extract_observations(
             tally=tally,
         )
         domain_seen = False
-        for batch in cursor.to_arrow_reader(_BATCH_ROWS):
+        for batch in relation.to_arrow_reader(_BATCH_ROWS):
             emitted = extractor.process(batch, chunks, observed)
             record_count += emitted
             domain_seen = domain_seen or emitted > 0
@@ -879,7 +879,7 @@ class _PrefilterCounts:
     no_endpoint_code: int
 
 
-def _endpoint_filtered_cursor(
+def _endpoint_filtered_relation(
     con: Any,
     domain: str,
     columns: tuple[str, ...],
@@ -967,25 +967,27 @@ def _endpoint_filtered_cursor(
         *([[values[index] for values in code_values] for index in range(len(code_columns))]),
         *study_ids,
     ]
-    # Only the stream sorts the rows; the counts read them unsorted.
-    rows_read, not_selected, no_endpoint_code = con.execute(
+    # Only the stream sorts the rows; the counts read them unsorted. fetchall
+    # finishes the result, so the connection is free for the stream.
+    ((rows_read, not_selected, no_endpoint_code),) = con.execute(
         f"""{statement}
         SELECT count(*),
             count(*) FILTER (WHERE NOT subject_ok),
             count(*) FILTER (WHERE subject_ok AND NOT code_ok)
         FROM flagged""",
         params,
-    ).fetchone()
-    cursor = con.execute(
+    ).fetchall()
+    # A relation streams Arrow batches without the extra copy of a DB-API result.
+    relation = con.sql(
         f"""{statement}
         SELECT {projection}, __vcgen_source_index FROM (
             SELECT flagged.*, row_number() OVER (ORDER BY {projection}) AS __vcgen_source_index
             FROM flagged
         )
         WHERE subject_ok AND code_ok ORDER BY __vcgen_source_index""",
-        params,
+        params=params,
     )
-    return cursor, _PrefilterCounts(int(rows_read), int(not_selected), int(no_endpoint_code))
+    return relation, _PrefilterCounts(int(rows_read), int(not_selected), int(no_endpoint_code))
 
 
 __all__ = [

@@ -1061,7 +1061,7 @@ def _exposure_summary_sql() -> str:
                      ELSE evidence.route_values END AS route_values,
                 CASE WHEN {ts_fallback}
                      THEN list_transform(studies.declared_route_values,
-                                         value -> {{'route': value, 'method': CAST(NULL AS VARCHAR)}})
+                                         lambda value: {{'route': value, 'method': CAST(NULL AS VARCHAR)}})
                      ELSE evidence.route_method_values END AS route_method_values,
                 CASE WHEN {ts_fallback} THEN studies.declared_dose_frequency_values
                      ELSE evidence.dose_frequency_values END AS dose_frequency_values,
