@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import pandas as pd
 
 import pytest
 
@@ -10,7 +9,6 @@ from vcgen_query import (
     GRIT42_ADVANCED_SUBJECT_QUERY_CONTRACT,
     GRIT42_FORM_SUBJECT_QUERY_CONTRACT,
     QueryError,
-    compare_membership,
     fingerprint_predicate,
     import_grit42_advanced_subject_query,
     import_grit42_form_subject_query,
@@ -386,25 +384,3 @@ def test_equivalent_form_and_advanced_sources_share_predicate_not_import_provena
         form.import_provenance.source_payload_sha256
         != advanced.import_provenance.source_payload_sha256
     )
-
-
-def test_compare_membership_reports_deterministic_missing_and_extra_subject_keys() -> None:
-    comparison = compare_membership(
-        [("S2", "S2-2"), ("S1", "S1-1")],
-        [("S1", "S1-1"), ("S3", "S3-3")],
-    )
-
-    assert comparison["matches"] is False
-    assert comparison["missing_keys"] == (("S3", "S3-3"),)
-    assert comparison["extra_keys"] == (("S2", "S2-2"),)
-    assert comparison["local_count"] == comparison["reference_count"] == 2
-    assert comparison["local_hash"] != comparison["reference_hash"]
-
-
-def test_compare_membership_reads_dataframe_rows_not_column_labels() -> None:
-    local = pd.DataFrame([{"study_id": "S", "subject_id": "1"}])
-    reference = pd.DataFrame([{"STUDYID": "S", "USUBJID": "1"}])
-    assert compare_membership(local, reference)["matches"] is True
-
-    with pytest.raises(QueryError, match="must contain STUDYID/USUBJID"):
-        compare_membership(local, pd.DataFrame([{"wrong": "S"}]))

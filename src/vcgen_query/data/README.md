@@ -1,50 +1,55 @@
 # Bundled VCGen query data
 
-This directory is the package-owned source of query contracts and supporting
-catalogues. Do not copy these query files into the parent application's
-`data/` directory. A duplicate copy can drift from the query package that
-parses and executes it.
+This directory is the package-owned source of query contracts and reviewed
+tables. Do not copy these files into the data directory of a caller. A copy can
+drift from the query package that parses and executes it.
 
-## Query documents
+| File or directory | Owner | Review command |
+|---|---|---|
+| `examples/`, `queries/` | Local query documents (`vcgen.subject_query.v1`, `vcgen.cohort_query.v7`). The format and the file list are in the [package README](../../../README.md#included-examples-and-notebooks). They hold no assumptions or warnings; execution receipts record runtime diagnostics. | |
+| `saved_grit42_queries/` | Complete Grit42 source records for `import_grit42_subject_query()` only. The procedure is in the [saved-query guide](../../../GRIT42_SAVED_QUERY_GUIDE.md). They are not query documents. | |
+| `vcgen.subject_query.v1.schema.json`, `vcgen.cohort_query.v7.schema.json`, `vcgen.subject_predicate.v1.schema.json` | `config.py`, `contract.py`, `query.py` | |
+| `grit42.*.schema.json` | `grit42.py` | |
+| `grit42_columns.*.json` (Grit42 column catalogue), `grit42_endpoint_catalogue.*.json` (Grit42 endpoint catalogue) | `grit42_catalogue.py`; `scripts/build_grit42_endpoint_catalogue.py` rebuilds the endpoint file | |
+| `specimen_vocabulary.v1.yaml` | `specimen.py`: maps a raw LBSPEC string to a specimen class and a matrix | |
+| `route_aliases.ex.v1.yaml` | `route_aliases.py`: maps the reviewed EXROUTE and EXMETHOD pairs, and the TS `ROUTE` values, to one canonical route | `vcgen_query.route_aliases.route_alias_inventory()` lists the EX pairs and the TS values with separate EX and TS counts. Run it when the source archive changes. |
+| `dose_frequency_aliases.v1.yaml` | `frequency_aliases.py`: maps the reviewed EXDOSFRQ and TS PDOSFRQ spellings to one canonical dose frequency. A control-only study takes its route, frequency and treatment from TS values (the TS exposure fallback). | `vcgen_query.frequency_aliases.frequency_alias_inventory()` lists the EX and TS `PDOSFRQ` values. Run it when the source archive changes. |
+| `endpoint_catalogue/catalogue.json.gz` (bundled endpoint catalogue, `vcgen.canonical_endpoint_catalogue.v6`) | `endpoint_catalogue.py` (`bundled_catalogue_bytes()`); the gzip of the exact bytes of one locked endpoint catalogue, written with its catalogue lock. Its identity is the md5 of the decompressed bytes. Do not edit it. | The caller that owns the catalogue lock checks that the decompressed bytes have the locked md5. |
+| `unit_catalogue.v3.json` (unit catalogue) | `unit_catalogue.py`; `tests/test_unit_catalogue.py` compares it with a UCUM reference implementation and with examples from the US National Library of Medicine UCUM service | |
 
-A `vcgen.subject_query.v1` document selects subjects only. It is the
-Grit42-compatible layer, and the package keeps it exactly as written. A
-`vcgen.cohort_query.v7` document nests one subject query and lists the later
-stages, currently one `endpoint_observations` stage with the requested
-endpoints. Load them with `load_subject_query()` and `load_cohort_query()`.
+Both alias tables use the loader `alias_table.py`. A value that is not in an
+alias table maps to no route or no frequency.
 
-| Category | File | Contract | Requested endpoints | Intended use |
-|---|---|---|---:|---|
-| Minimal example | `examples/all_subjects.yaml` | subject query | – | Smallest valid all-subject query |
-| Predicate example | `examples/wistar_han_28d_cohort.yaml` | subject query | – | Wistar Han 28-day cohort selection |
-| Observation example | `examples/wistar_han_28d_with_observations.yaml` | cohort query | 2 | The same cohort, then BW and LB_HCT |
-| Staging debug | `queries/hosted_debug_wistar_han_28d.yaml` | subject query | – | Fast hosted-service check |
-| Research discovery | `queries/wistar_han_28d_historical.yaml` | cohort query | 65 | Historical-cohort discovery profile |
+## Unit catalogue annotations
 
-The service accepts a subject query plus a separate endpoint selection. The
-catalogue marks generation endpoints as requestable and can also retain
-predicate-only endpoint definitions. Each request selects its exact active
-endpoint set; deterministic derived parents are added internally when
-required.
+A UCUM code with an annotation names one analyte or one scaled quantity, and
+its scale holds the conversion factor: `g/L{Hb}` is an amount concentration
+(1 / 16,114.5 g/mol of the haemoglobin monomer), and `%{SG}` is specific
+gravity times 100. In plain UCUM an annotation has no effect, so a plain UCUM
+tool refuses these codes or converts them incorrectly. The unit catalogue is
+the authority for them. Do not convert a `source_ucum` value with another UCUM
+library.
 
-## Grit42 source records
+## Endpoint catalogue and data decisions
 
-`saved_grit42_queries/` contains complete Grit42 source records for importer
-and parity work. These files are not service inputs. Convert one with
-`vcgen_query.import_grit42_subject_query()` to a subject query. Parity compares
-membership at the subject-query stage.
+`load_endpoint_catalogue()` and `load_data_decisions()` return the active
+endpoint catalogue and data decisions:
 
-## Supporting data
+- A caller names a locked endpoint catalogue with both
+  `VCGEN_ENDPOINT_CATALOGUE` (the path of `catalogue.json`) and
+  `VCGEN_ENDPOINT_CATALOGUE_LOCK` (the path of its catalogue lock). The data
+  decisions are `data_decisions.yaml` (`vcgen.data_decisions.v3`) beside
+  `catalogue.json`. The package reads each file only when its md5 is the one
+  that the catalogue lock names under `outputs` (`catalogue.json`,
+  `data_decisions.yaml`). There is no fallback.
+- A caller that sets only one of the two variables gets a `QueryError`.
+- Without the two variables, the package uses its bundled endpoint catalogue
+  and no data decisions. Data decisions name the studies of one reviewed
+  source, so the package does not ship them.
 
-- `vcgen.subject_query.v1.schema.json`, `vcgen.cohort_query.v7.schema.json`
-  and `vcgen.subject_predicate.v1.schema.json` define the local query contracts.
-- `grit42.*.schema.json` files define Grit42 import contracts.
-- `grit42_columns.*.json` and `grit42_endpoint_catalogue.*.json` are versioned
-  source validation catalogues.
-- `grit42_membership_bank.*.yaml` files are parity fixtures, not executable
-  service queries.
-- `canonical_endpoints.*.json` owns each endpoint's canonical unit, temporal
-  behavior, and primitive or deterministic-derived definition. Ratio
-  definitions contain their ordered parents and fixed scale.
-- `unit_catalogue.v2.json` defines the UCUM codes, aliases, dimensions, and
-  affine conversions used to validate those canonical units.
+The actions and the keys of the data decisions are in the docstring of
+[`data_decisions.py`](../data_decisions.py). The query applies them during
+observation extraction. The query metadata names the active data decisions
+(`data_decisions`), and the endpoint observations stage record lists the
+decisions that it applied (`data_decisions_applied`). The endpoint catalogue
+owns each endpoint's canonical unit and its definition.

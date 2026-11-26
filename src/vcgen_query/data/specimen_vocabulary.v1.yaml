@@ -1,0 +1,30 @@
+# LB specimen vocabulary, owned by vcgen-query. Rules match the raw LBSPEC
+# string after whitespace collapse and upper-casing; the first match wins.
+# `class` is the specimen class: catalogue class rules (`specimen_rule.match:
+# class`) and data decisions use it, and the source audit uses it for variation
+# and effect sizes. `matrix` groups classes for audit catalogue proposals
+# (serum, plasma, and whole blood share the BLOOD matrix). A null matrix cannot
+# form a proposal. UNKNOWN (NO DATA), MISSING (blank), and UNRESOLVED (no rule)
+# are not real specimens.
+contract: vcgen.specimen_vocabulary.v1
+rules:
+  - {pattern: '^SERUM$', class: SERUM, matrix: BLOOD}
+  - {pattern: '^PLASMA$', class: PLASMA, matrix: BLOOD}
+  - {pattern: '^(WHOLE BLOOD|BLOOD)$', class: WHOLE_BLOOD, matrix: BLOOD}
+  - {pattern: '^EMPTY VIAL', class: UNKNOWN, matrix: null}
+  - {pattern: '^URINE$', class: URINE, matrix: URINE}
+  - {pattern: '^(NO DATA|UNKNOWN)$', class: UNKNOWN, matrix: null}
+  - {pattern: 'SEMEN', class: SEMEN, matrix: SEMEN}
+  - {pattern: '^BONE MARROW', class: BONE_MARROW, matrix: BONE_MARROW}
+  - {pattern: 'CEREBROSPINAL', class: CSF, matrix: CSF}
+  - {pattern: '^(BAL|BRONCHOALVEOLAR LAVAGE.*)$', class: BAL, matrix: BAL}
+  - {pattern: '^SPLEEN$', class: TISSUE_SPLEEN, matrix: TISSUE_SPLEEN}
+  - {pattern: '^THYMUS$', class: TISSUE_THYMUS, matrix: TISSUE_THYMUS}
+  - {pattern: '^LIVER$', class: TISSUE_LIVER, matrix: TISSUE_LIVER}
+  - {pattern: '^EPIDIDYMIS$', class: TISSUE_EPIDIDYMIS, matrix: TISSUE_EPIDIDYMIS}
+  - {pattern: '^BRAIN$', class: TISSUE_BRAIN, matrix: TISSUE_BRAIN}
+  - {pattern: '^GLAND, THYROID$', class: TISSUE_THYROID, matrix: TISSUE_THYROID}
+  - {pattern: '^GLAND, PITUITARY$', class: TISSUE_PITUITARY, matrix: TISSUE_PITUITARY}
+  - {pattern: '^(ATRIUM|VENTRICLE)$', class: TISSUE_HEART, matrix: TISSUE_HEART}
+  - {pattern: '^FEMUR$', class: TISSUE_FEMUR, matrix: TISSUE_FEMUR}
+  - {pattern: '^PANCREAS$', class: TISSUE_PANCREAS, matrix: TISSUE_PANCREAS}

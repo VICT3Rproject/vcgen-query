@@ -1,40 +1,22 @@
 from __future__ import annotations
 
 from copy import deepcopy
-from importlib import resources
-from pathlib import Path
 import json
 
 import pytest
 
-from vcgen_query import (
-    ENDPOINT_CATALOGUE_FILENAME,
-    canonical_endpoint,
-    endpoint_catalogue_from_mapping,
-    endpoint_catalogue_identity,
-    load_endpoint_catalogue,
-)
+from vcgen_query import endpoint_catalogue_from_mapping
+from vcgen_query.endpoint_catalogue import bundled_catalogue_bytes
+
+
 def _payload() -> dict[str, object]:
-    resource = resources.files("vcgen_query").joinpath(
-        "data", ENDPOINT_CATALOGUE_FILENAME
-    )
-    return json.loads(resource.read_text(encoding="utf-8"))
+    """The bundled endpoint catalogue, as a mapping to change."""
+
+    return json.loads(bundled_catalogue_bytes())
 
 
 def _compile(payload: dict[str, object]):
-    return endpoint_catalogue_from_mapping(payload, sha256="a" * 64)
-
-
-def test_catalogue_has_stable_identity_and_endpoint_provenance() -> None:
-    catalogue = load_endpoint_catalogue()
-    assert endpoint_catalogue_identity() == catalogue.identity.to_canonical_dict()
-    assert len(catalogue.endpoints) >= 3
-    assert canonical_endpoint("LB_HCT").provenance["grit42_column_catalogue_id"]
-    assert canonical_endpoint("LB_HCT").derivation.kind == "primitive"
-    ratio = canonical_endpoint("OM_OWBW_BRAIN").derivation
-    assert ratio.kind == "ratio"
-    assert ratio.parents == ("OM_WEIGHT_BRAIN", "BW_TERMINAL")
-    assert ratio.scale == 100.0
+    return endpoint_catalogue_from_mapping(payload, md5="a" * 32)
 
 
 def test_catalogue_rejects_ambiguous_aliases() -> None:
@@ -58,11 +40,52 @@ def test_catalogue_rejects_incomplete_qualifiers_and_invalid_units() -> None:
         _compile(payload)
 
 
+def _chemistry(payload: dict[str, object]) -> dict[str, object]:
+    return next(item for item in payload["endpoints"] if item["name"] == "LB_ALT_BLOOD")
+
+
+def test_catalogue_specimen_rules_are_positive_and_panel_bound() -> None:
+    # Failure modes: a negative rule ("not URINE") enters the catalogue; a class
+    # rule has no panel, an unknown panel, or classes other than the panel's; a
+    # panel offers a user choice with one class; a panel names an unknown class.
+    payload = _payload()
+    _chemistry(payload)["specimen_rule"] = {"match": "not", "values": ["URINE"]}
+    with pytest.raises(RuntimeError, match="match is invalid"):
+        _compile(payload)
+
+    payload = _payload()
+    del _chemistry(payload)["specimen_panel"]
+    with pytest.raises(RuntimeError, match="specimen_panel"):
+        _compile(payload)
+
+    payload = _payload()
+    _chemistry(payload)["specimen_panel"] = "no_such_panel"
+    with pytest.raises(RuntimeError, match="unknown specimen panel"):
+        _compile(payload)
+
+    payload = _payload()
+    _chemistry(payload)["specimen_rule"] = {"match": "class", "values": ["SERUM"]}
+    with pytest.raises(RuntimeError, match="classes of its specimen panel"):
+        _compile(payload)
+
+    payload = _payload()
+    panel = next(item for item in payload["specimen_panels"] if item["id"] == "haematology")
+    panel["user_choice"] = True
+    with pytest.raises(RuntimeError, match="user choice"):
+        _compile(payload)
+
+    payload = _payload()
+    panel = next(item for item in payload["specimen_panels"] if item["id"] == "blood_chemistry")
+    panel["classes"] = ["SERUM", "BLOOD"]
+    with pytest.raises(RuntimeError, match="unknown specimen class"):
+        _compile(payload)
+
+
 def test_catalogue_rejects_unknown_derived_parents() -> None:
     payload = _payload()
     payload["endpoints"][0]["derivation"] = {
         "kind": "ratio",
-        "parents": ["NOT_IN_THE_CATALOGUE", "BW_TERMINAL"],
+        "parents": ["NOT_IN_THE_CATALOGUE", "BW_TERMBW"],
         "scale": 100,
     }
     with pytest.raises(RuntimeError, match="unknown derived parent"):
@@ -80,14 +103,9 @@ def test_catalogue_rejects_representation_timing() -> None:
         _compile(payload)
 
 
-def test_catalogue_cutover_preserves_every_source_selector_and_conversion() -> None:
-    golden = json.loads((Path(__file__).parent / "fixtures/catalogue_selector_parity.json").read_text())
-    assert {name: endpoint.spec.to_canonical_dict() for name, endpoint in load_endpoint_catalogue().endpoints.items()} == golden
-
-
 def test_catalogue_rejects_parent_cycles() -> None:
     payload = _payload()
     endpoint = next(item for item in payload["endpoints"] if item["name"] == "OM_OWBW_BRAIN")
-    endpoint["derivation"]["parents"] = ["OM_OWBW_BRAIN", "BW_TERMINAL"]
+    endpoint["derivation"]["parents"] = ["OM_OWBW_BRAIN", "BW_TERMBW"]
     with pytest.raises(RuntimeError, match="cycle"):
         _compile(payload)

@@ -1,10 +1,8 @@
 """SEND-like column constants for VICT3R cohort queries.
 
-This module is the package-private column vocabulary. It is a strict subset of
-the host project's shared constants: the repository-specific path defaults
-(``DEFAULT_ARCHIVE`` / ``DEFAULT_EXTRACT_DIR`` / ``DEFAULT_DUCKDB_PATH``) are
-deliberately absent. A public query library must never derive data locations
-from its own install path, so callers pass explicit paths instead.
+This module is the package-private column vocabulary. It has no default data
+paths: a public query library must never derive data locations from its own
+install path, so callers pass explicit paths instead.
 """
 
 from __future__ import annotations
@@ -16,6 +14,10 @@ SUPPLIER_PARAMETER_CODE = "SPLRNAM"
 STUDY_TYPE_PARAMETER_CODE = "SSTYP"
 TEST_FACILITY_PARAMETER_CODE = "TSTFNAM"
 GLP_STATUS_PARAMETER_CODE = "GLPFL"
+# TS parameter codes of the declared exposure of a study without EX rows.
+ROUTE_PARAMETER_CODE = "ROUTE"
+DOSE_FREQUENCY_PARAMETER_CODE = "PDOSFRQ"
+VEHICLE_PARAMETER_CODE = "TRTV"
 
 # Core identity columns.
 STUDY_ID = "STUDYID"

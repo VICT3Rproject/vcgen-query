@@ -1,18 +1,35 @@
 """Shared fixtures and synthetic SEND builders for the vcgen-query test suite.
 
 Tests build small, deterministic SEND-like datasets in an in-memory DuckDB
-connection and run the derived views, mirroring the host project's fixture
-pattern but self-contained inside this package.
+connection and run the derived views.
 """
 
 from __future__ import annotations
 
 from collections.abc import Iterable, Mapping
+import os
 from typing import Any
 
 import pytest
 
 from vcgen_query.duckdb import connect, create_derived_views
+from vcgen_query import CohortQuery, QueryResult, evaluate_membership, execute_query
+
+# The tests run on the bundled endpoint catalogue and no data decisions, also when the
+# environment of the caller names a locked endpoint catalogue.
+for _name in ("VCGEN_ENDPOINT_CATALOGUE", "VCGEN_ENDPOINT_CATALOGUE_LOCK"):
+    os.environ.pop(_name, None)
+
+
+def members(result) -> set[tuple[str, str]]:
+    return {(row["study_id"], row["subject_id"]) for row in result.subjects.to_dict("records")}
+
+
+def run_query(source: Any, query: CohortQuery, **options: Any) -> QueryResult:
+    """Evaluate the subject query on ``source``, then execute ``query`` on that membership."""
+    scope = {key: options[key] for key in ("extract_dir", "database") if key in options}
+    membership = evaluate_membership(source, query.subject_query, close_connection=False, **scope)
+    return execute_query(source, query, membership=membership, **options)
 
 
 @pytest.fixture
@@ -62,7 +79,7 @@ def _make_connection(
                 "",
                 s.get("age_unit", "WEEK"),
                 "CTRL",
-                "CONTROL",
+                s["arm"] if "arm" in s else "CONTROL",
                 "1",
                 "",
                 s.get("rfstdtc", "2020-01-01"),
@@ -136,6 +153,7 @@ def _make_connection(
                 "exdose": s.get("exdose", "0"),
                 "exdosfrq": s.get("exdosfrq", "QD"),
                 "exroute": s.get("exroute", "ORAL GAVAGE"),
+                "exmethod": s.get("exmethod", "GAVAGE"),
                 "extrtv": s.get("extrtv", "0.5% METHOCEL"),
                 "exstdy": s.get("exstdy", 1),
                 "exendy": s.get("exendy", s.get("study_length", 28)),
@@ -162,7 +180,7 @@ def _make_connection(
                 "SOLUTION",
                 interval.get("exdosfrq", "QD"),
                 interval.get("exroute", "ORAL GAVAGE"),
-                "GAVAGE",
+                interval.get("exmethod", "GAVAGE"),
                 interval.get("extrtv", "0.5% METHOCEL"),
                 str(interval.get("exstdy", "")),
                 str(interval.get("exendy", "")),
@@ -303,14 +321,14 @@ def _create_lb(con, subjects, lab):
             STUDYID VARCHAR, USUBJID VARCHAR, LBTESTCD VARCHAR, LBTEST VARCHAR,
             LBDY VARCHAR, LBDTC VARCHAR, LBSEQ VARCHAR, LBBLFL VARCHAR,
             LBEXCLFL VARCHAR, LBSTRESN VARCHAR, LBSTRESU VARCHAR, LBORRES VARCHAR,
-            LBORRESU VARCHAR, LBSPEC VARCHAR
+            LBORRESU VARCHAR, LBSPEC VARCHAR, LBMETHOD VARCHAR, LBCAT VARCHAR
         )
         """
     )
     rows = lab if lab is not None else _default_lb(subjects)
     for r in rows:
         con.execute(
-            "INSERT INTO lb VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            "INSERT INTO lb VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
             (
                 r["study_id"],
                 r.get("usubjid", f"{r['study_id']}-{r['subject_id']}"),
@@ -326,6 +344,8 @@ def _create_lb(con, subjects, lab):
                 str(r["value"]),
                 r.get("unit", "L/L"),
                 r.get("specimen", "BLOOD"),
+                r.get("method"),
+                r.get("category"),
             ),
         )
 

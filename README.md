@@ -4,21 +4,13 @@
 measurements as pandas DataFrames. It accepts local VCGen queries and saved
 Grit42 queries. It does not train models or generate virtual controls.
 
-**Status:** public alpha (`0.4.0a0`).
+**Status:** public alpha (`0.5.0a0`).
 
 ## Vocabulary
 
-| Term | Meaning in this package |
-|---|---|
-| SEND | Standard for Exchange of Nonclinical Data. SEND stores nonclinical study data in named tables called domains. |
-| Subject | An animal in a source study. |
-| Domain | A SEND table. For example, `DM` contains subject information, `BW` contains body weight, `LB` contains laboratory results, and `TS` contains study summaries. |
-| Endpoint | A measurement requested from the source data, such as body weight or haematocrit. |
-| Predicate | The filter rules that select subjects. |
-| Cohort | The subjects selected by a predicate. |
-| Observation | One recorded measurement for one subject. |
-| Grit42 | The VICT3R system that stores SEND data and supports saved subject queries. |
-| UCUM | The Unified Code for Units of Measure, used to identify units and valid conversions. |
+The [glossary](GLOSSARY.md) defines the domain terms of this package: SEND,
+subject query, predicate, membership, observation, endpoint, endpoint
+catalogue, catalogue lock, data decision, and others.
 
 ## Install
 
@@ -27,18 +19,13 @@ repository. Pin the release tag so that a later change to `main` cannot change
 the installed package:
 
 ```bash
-python -m pip install "vcgen-query @ git+https://github.com/VICT3Rproject/vcgen-query.git@v0.4.0a0"
+python -m pip install "vcgen-query @ git+https://github.com/VICT3Rproject/vcgen-query.git@v0.5.0a0"
 # or, in a uv project
-uv add "vcgen-query @ git+https://github.com/VICT3Rproject/vcgen-query.git@v0.4.0a0"
+uv add "vcgen-query @ git+https://github.com/VICT3Rproject/vcgen-query.git@v0.5.0a0"
 ```
 
-For development:
-
-```bash
-git clone https://github.com/VICT3Rproject/vcgen-query.git
-cd vcgen-query
-uv sync --extra dev
-```
+For development, clone `https://github.com/VICT3Rproject/vcgen-query.git` and
+use the commands in [AGENTS.md](AGENTS.md#development-commands).
 
 ## Getting started
 
@@ -56,7 +43,8 @@ query_resource = files("vcgen_query").joinpath(
 with as_file(query_resource) as query_path:
     query = vq.load_cohort_query(query_path)
 
-result = vq.execute_query("/data/rodent_db_export.zip", query)
+membership = vq.evaluate_membership("/data/rodent_db_export.zip", query.subject_query)
+result = vq.execute_query("/data/rodent_db_export.zip", query, membership=membership)
 
 result.subjects.head()       # one row per selected animal
 result.observations.head()   # one row per matching source measurement
@@ -70,9 +58,15 @@ Set an explicit location when the cache must be isolated or stored on another
 volume:
 
 ```python
+membership = vq.evaluate_membership(
+    "/data/rodent_db_export.zip",
+    query.subject_query,
+    extract_dir="/scratch/vcgen-query/rodent-export",
+)
 result = vq.execute_query(
     "/data/rodent_db_export.zip",
     query,
+    membership=membership,
     extract_dir="/scratch/vcgen-query/rodent-export",
 )
 ```
@@ -80,53 +74,26 @@ result = vq.execute_query(
 The extraction cache is content-aware and is rebuilt when the archive changes.
 It is not a UV package cache and is not part of a wheel or source distribution.
 
-The observations table retains the source result, unit, status, and audit
-fields. It does not combine measurements that occur on the same study day.
-
-Use `to_daily_frame()` when an analysis needs one column per endpoint and one
-row per subject and study day:
-
-```python
-daily = vq.to_daily_frame(result, on_conflict="raise")
-
-daily.values       # selected numeric values
-daily.states       # source-result states for the same endpoint cells
-daily.cell_audit   # unit conversion and duplicate-resolution details
-daily.receipt      # projection policy and counts
-```
-
-The daily tables keep `study_id`, `subject_id`, and `study_day` as ordinary
-columns. They do not set a pandas index.
-
 ## Define a query
 
 A cohort query is an ordered list of stage blocks. Each block carries display
-metadata (`info`: id, name, kind, origin, description) and its parameters.
+metadata (`info`: id, name, kind, origin, description) and its parameters, and
+each block writes one stage record into the query trace. The query library
+runs four blocks: `SubjectQuery` (`vcgen.subject_query.v1`), `StudyExclusion`
+(optional), `EndpointExclusion` (optional), and `EndpointObservations`.
+The `SubjectQuery` block is the Grit42-compatible layer: the package keeps it
+exactly as submitted, and its output membership is the Grit42 parity checkpoint.
+`evaluate_membership()` computes the membership; `execute_query()` takes it as
+its `membership` argument and does not evaluate the predicate itself. Endpoint
+selection is not part of the subject query.
 
-1. `SubjectQuery` (`vcgen.subject_query.v1`) selects the cohort. It is the
-   Grit42-compatible layer: Grit42 sends it over the API, and the package keeps
-   it exactly as submitted. Its output membership is the Grit42 parity
-   checkpoint.
-2. `StudyExclusion` (optional) removes the subjects of listed studies from the
-   matched cohort, each entry with a `ref` (an opaque public label) and a `note`
-   that says why. It runs after the subject query, so the Grit42 membership and
-   its hash are unchanged, and before subject context is built.
-3. `EndpointExclusion` (optional) records the endpoint selection as submitted and
-   removes listed endpoints from it, each with a `note`.
-4. `EndpointObservations` selects the canonical endpoints and extracts their
-   observations. Endpoint selection is not part of the subject query.
-
-`CohortQuery.compose(subject_query, ["BW", "LB_HCT"])` builds the standard
-plan. Pass `study_exclusions=` and `endpoint_exclusions=` (a list, possibly
-empty) to add the matching stage; the stage then records the review even when
-nothing applies. `CohortQuery.submitted_endpoints` keeps what was asked for,
-and `requested_endpoints` what is extracted. `execute_query()` runs the blocks
-in order and records one `StageRecord` per stage: `source`, `subject_query`,
-`study_exclusion`, `subject_context`, `endpoint_exclusion`, then
-`endpoint_observations`. Each record holds the subject, study and observation
-counts in and out. An endpoint exclusion counts the removed endpoints as a drop
-in the `endpoints` unit, which is not a flow unit. To add a query stage, add one
-block class in `query.py` and its runner in `result.py`.
+`CohortQuery.compose(subject_query, ["BW_BW", "LB_HCT_BLOOD"])` builds the
+standard plan. Pass `study_exclusions=` and `endpoint_exclusions=` (a list,
+possibly empty) to add the matching stage; the stage then records the review
+even when nothing applies. `CohortQuery.submitted_endpoints` keeps what was
+asked for, and `requested_endpoints` what is extracted. `execute_query()` runs
+the blocks in order and returns one `StageRecord` per stage in `result.trace`.
+When the caller passes a `StudySupport`, it adds a `support_selection` stage.
 
 An omitted predicate selects all subjects in the SEND Demographics (`DM`)
 domain.
@@ -158,25 +125,27 @@ contract: vcgen.cohort_query.v7
 subject_query: {contract: vcgen.subject_query.v1, query_id: wistar_han_28d}
 stages:
 - stage: endpoint_observations
-  requested_endpoints: [BW, LB_HCT]
+  requested_endpoints: [BW_BW, LB_HCT_BLOOD]
   endpoint_catalogue:
-    contract: vcgen.canonical_endpoint_catalogue.v4
-    catalogue_id: grit42-canonical-endpoints-2026-09-17-v4
-    sha256: 8ef29868c68b1b02f7dba9aa7790b70c046d4898aa04b3f3e784ea67ec7152e4
+    contract: vcgen.canonical_endpoint_catalogue.v6
+    catalogue_id: vcgen-endpoints-6b1a42fc119c
+    md5: 5e17fc402368d6d1e1d5b2a651ac4907
 ```
 
 Predicate groups keep their submitted child order, so explanation node paths
 match the document. Fingerprints use an order-free canonical form, so a
 reordered predicate has the same fingerprint.
 
-Endpoint names are uppercase canonical identifiers from the package endpoint
-catalogue. A request must contain at least one unique name. Empty does not mean
-all. SEND predicate domains, columns, and value types must exist in the separate
-Grit42 column catalogue. Raw predicate columns do not become output endpoints.
+Endpoint names are uppercase canonical identifiers from the active endpoint
+catalogue. The package bundles one locked endpoint catalogue; a caller can name
+another one ([endpoint catalogue and data decisions](src/vcgen_query/data/README.md#endpoint-catalogue-and-data-decisions)).
+A request must contain at least one unique name. Empty does not mean all. SEND
+predicate domains, columns, and value types must exist in the Grit42 column
+catalogue. Raw predicate columns do not become output endpoints.
 
-### Catalogue-owned source matching
+### Source matching by the endpoint catalogue
 
-The query YAML does not define source selectors. The package catalogue stores
+The query YAML does not define source selectors. The endpoint catalogue stores
 each endpoint's domain, test aliases, specimen and method rules, source units,
 canonical UCUM target unit, display label, primitive or deterministic-derived
 methodology, and provenance. Timing and parent-alignment choices belong to the
@@ -196,7 +165,7 @@ A missing specimen does not match any of these modes. Use `contains` only when
 the broader match is intentional. For example, configured `BLOOD` also matches
 `WHOLE BLOOD` and `ARTERIAL BLOOD` in `contains` mode. The bundled HCT example
 therefore uses exact `BLOOD` and `WHOLE BLOOD` values. These are distinct values
-in the [NCI/CDISC SEND Controlled Terminology](https://evs.nci.nih.gov/ftp1/CDISC/SEND/SEND%20Terminology.pdf).
+in the [NCI/CDISC SEND Controlled Terminology](https://evs.nci.nih.gov/ftp1/CDISC/SEND/SEND%20Terminology.html).
 
 ## How subject filters work
 
@@ -267,21 +236,15 @@ offset of `+00:00`.
 ## Unit conversion
 
 `source_units` lists the exact unit labels accepted from the source data.
-`target_unit` is an optional UCUM code for the returned daily values.
-
-VCGen includes a versioned catalogue of supported transformations based on
-UCUM. Its tests compare the catalogue with a UCUM reference implementation and
-with examples from the US National Library of Medicine UCUM service. The
-package performs a conversion only when the catalogue defines the source and
-target units as compatible. It raises an error instead of guessing when a unit
-or conversion is not defined.
-
-The query receipt and daily audit identify the catalogue and record which
-conversion was applied.
+`target_unit` is an optional UCUM code for the returned values. The package
+converts a value only through the unit catalogue and raises an error instead of
+guessing when a unit or conversion is not defined. The receipt identifies the
+unit catalogue and records each conversion. The files are indexed in the
+[data README](src/vcgen_query/data/README.md).
 
 ## Returned data structures
 
-`QueryResult` contains the selected cohort and its measurements:
+`QueryResult` contains the selected subjects and their measurements:
 
 | Attribute | Contents |
 |---|---|
@@ -303,26 +266,20 @@ subjects_schema.keys
 [(column.name, column.pandas_dtype, column.nullable) for column in subjects_schema.columns]
 ```
 
-The subjects table has one row per `(study_id, subject_id)`. Its normalized
-context collections, such as `routes`, are `list[str]` values in object-backed
-columns. Integer and numeric fields use pandas nullable `Int64` and `Float64`
-dtypes.
-
-The observations table has one row per matched source measurement. Repeated
-measurements are separate rows. `study_day` uses nullable `Int64`,
-`numeric_value` uses nullable `Float64`, and factual flags use nullable Boolean
-dtype. Optional text is object-backed and uses Python `None`; this keeps the
-pandas-to-record handoff convenient for applications. `source_order` is a
-tuple used for deterministic ordering, not a scientific value. Units remain
+The subjects table has one row per `(study_id, subject_id)`. The observations
+table has one row per matched source measurement. It retains the source result,
+unit, status, and audit fields. Repeated measurements are separate rows, and
+the package does not combine measurements of the same study day. Units remain
 source units in `observations`; canonical target units and conversion rules are
-available through `endpoint_facts`.
+available through `endpoint_facts`. `query_result_schema()` documents every
+column, dtype, and nullability. A missing text value is `pd.NA`; do not convert
+text with `astype(str)`, which writes `pd.NA` as `NaN`.
 
 `result.membership` is the supported parity handoff when an application needs
-the selected subject keys and complete source universe. It comes from the same
-predicate execution as `subjects` and `observations`. Prefer it over
-`evaluate_query_membership()`, which performs a separate evaluation for parity
-tools that cannot execute the full observation query. Subject keys are
-row-level data and must not be included in aggregate reports.
+the selected subject keys and complete source universe. It is the `membership`
+that was passed to `execute_query()`. `evaluate_membership()` evaluates the
+subject query alone, for tools that cannot execute the full observation query.
+Subject keys are row-level data and must not be included in aggregate reports.
 
 ### Source identity validation
 
@@ -330,7 +287,7 @@ VCGen validates identity columns before it evaluates a query. It validates DM,
 the active predicate and observation domains, and the source domains used for
 derived subject context. A subject-grain domain must contain valid `STUDYID`
 and `USUBJID` values. A study-grain predicate domain joins by `STUDYID` as
-declared by the versioned column catalogue. The columns that happen to be in a
+declared by the Grit42 column catalogue. The columns that happen to be in a
 source file do not change this grain.
 
 Execution raises `SourceDataError` when an active identity column is missing,
@@ -339,48 +296,21 @@ blank, padded with whitespace, or when DM contains duplicate
 domain that is absent still produces a warning. A present observation domain
 with invalid subject identity produces an error.
 
-Repeated observation rows remain in the long-form query result. The daily and
-model layers keep their existing duplicate audit and resolution policies.
-
-`DailyFrame` contains analysis-ready views:
-
-| Attribute | Contents |
-|---|---|
-| `values` | Numeric endpoint values in wide format. |
-| `states` | Labels such as `numeric_observed`, `censored_observed`, or `explicitly_failed`. |
-| `cell_audit` | Source values, units, conversions, duplicates, and conflicts. |
-| `receipt` | The projection policy and summary counts. |
-
-The daily tables are sparse because endpoints follow different collection
-schedules. `NaN` in `values` means that no numeric value was selected for that
-endpoint and day. A state can still be present when a source record contains a
-non-numeric, censored, or failed result.
-
 ## Saved Grit42 queries
 
 Use `import_grit42_subject_query()` with the complete saved-query record. The
 importer detects whether it is a form or advanced query, validates its filter
-rules, and records where the query came from.
-
-Download the query definition with
-`GET /api/v1/subject_queries/{id}`, save the complete JSON response, and pass
-the decoded response to `import_grit42_subject_query()`. Run the imported query
-against a local SEND ZIP archive or extracted CSV directory with
-`execute_query()`. The API download contains the query definition, not the SEND
-records that match it.
-
-The [saved-query guide](GRIT42_SAVED_QUERY_GUIDE.md) provides copyable code to
-download, save, import, and execute a query. The
-[membership-parity guide](GRIT42_MEMBERSHIP_PARITY.md) is a maintainer runbook
-for comparing local subject selection with live Grit42 results.
+rules, and records where the query came from. The
+[saved-query guide](GRIT42_SAVED_QUERY_GUIDE.md) gives the steps to download,
+import, and run a saved query.
 
 ## Included examples and notebooks
 
 | Resource | Use |
 |---|---|
 | [`all_subjects.yaml`](src/vcgen_query/data/examples/all_subjects.yaml) | Select every subject. |
-| [`wistar_han_28d_cohort.yaml`](src/vcgen_query/data/examples/wistar_han_28d_cohort.yaml) | Select a broad 28-day Wistar Han cohort. |
-| [`wistar_han_28d_with_observations.yaml`](src/vcgen_query/data/examples/wistar_han_28d_with_observations.yaml) | A cohort query (v7): the broad cohort, then body weight and haematocrit. |
+| [`wistar_han_28d_subjects.yaml`](src/vcgen_query/data/examples/wistar_han_28d_subjects.yaml) | A broad 28-day Wistar Han subject query. |
+| [`wistar_han_28d_with_observations.yaml`](src/vcgen_query/data/examples/wistar_han_28d_with_observations.yaml) | A cohort query (v7): the broad 28-day Wistar Han subject query, then body weight and haematocrit. |
 | [`wistar_han_28d_historical.yaml`](src/vcgen_query/data/queries/wistar_han_28d_historical.yaml) | A cohort query (v7) that finds candidate Wistar Han studies for source acquisition. |
 | [`hosted_debug_wistar_han_28d.yaml`](src/vcgen_query/data/queries/hosted_debug_wistar_han_28d.yaml) | The subject query compiled from the checked-in Grit42 form fixture. |
 | [`hosted_debug_wistar_han_28d.json`](src/vcgen_query/data/saved_grit42_queries/hosted_debug_wistar_han_28d.json) | Import an example Grit42 form record into a subject query. |
@@ -391,33 +321,18 @@ accepts durations stated in days or weeks. It does not infer an exact number of
 days from month or year units, and it does not convert observed EX follow-up
 into a planned duration.
 
-Files under `data/queries` are local query documents. Load a
-`vcgen.subject_query.v1` file with `load_subject_query()` and a
+Files under `data/examples` and `data/queries` are local query documents. Load
+a `vcgen.subject_query.v1` file with `load_subject_query()` and a
 `vcgen.cohort_query.v7` file with `load_cohort_query()`. Files under
 `data/saved_grit42_queries` are Grit42 source records for
-`import_grit42_subject_query()` only. The service does not accept raw Grit42
-records. A service request sends the subject query unchanged in `query` and
-the endpoint selection in its own `requested_endpoints` field.
+`import_grit42_subject_query()` only; they are not query documents.
 
-The first notebook uses a study-specific day 21-35 terminal window only for its
+The notebook uses a study-specific day 21-35 terminal window only for its
 display table. It does not remove or change observations in the query result.
 
-The notebooks are included in the source distribution and wheel under
-`vcgen_query/notebooks`. They accept `VCGEN_SEND_ARCHIVE` as the path to a SEND
+The wheel and the source distribution include the notebook under
+`vcgen_query/notebooks`. It accepts `VCGEN_SEND_ARCHIVE` as the path to a SEND
 ZIP archive or extracted CSV directory.
-
-## Development
-
-Run checks from the repository root:
-
-```bash
-uv run --extra dev ruff check .
-uv run --extra dev python -m pytest -q
-uv build --out-dir dist
-uv run python scripts/audit_release_artifacts.py dist/*
-```
-
-The test suite executes both notebooks against synthetic SEND data.
 
 ## License
 

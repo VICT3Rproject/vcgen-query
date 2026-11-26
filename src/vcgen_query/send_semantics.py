@@ -1,6 +1,6 @@
 """Central SEND-like column and endpoint parsing helpers.
 
-This module is a dependency-free port of the host project's SEND semantics. It
+This module holds the SEND semantics of the package without dependencies. It
 classifies raw SEND result cells, derives measurement identities, and selects
 baseline records deterministically. It depends only on the standard library so
 that the contract and parsing layers remain usable without DuckDB or pandas.
@@ -14,7 +14,7 @@ import unicodedata
 from collections.abc import Mapping
 from dataclasses import dataclass
 from functools import lru_cache
-from typing import Any, Literal, TypeAlias
+from typing import Any, Literal, TypeAlias, get_args
 
 ResultState: TypeAlias = Literal[
     "numeric_observed",
@@ -23,15 +23,7 @@ ResultState: TypeAlias = Literal[
     "qualitative_observed",
     "silently_absent",
 ]
-RESULT_STATES: frozenset[ResultState] = frozenset(
-    {
-        "numeric_observed",
-        "explicitly_failed",
-        "censored_observed",
-        "qualitative_observed",
-        "silently_absent",
-    }
-)
+RESULT_STATES: frozenset[ResultState] = frozenset(get_args(ResultState))
 
 DAY_COLUMN_SUFFIXES = (
     "DY",
@@ -97,6 +89,8 @@ _MISSING_CATEGORIES = {
     "NOT PROVIDED",
     "UNKNOWN",
 }
+# Unit labels that ``normalize_unit`` reads as a missing unit.
+MISSING_UNIT_LABELS = frozenset({*_MISSING_CATEGORIES, "NO UNITS"})
 _METHOD_TOKEN_ALIASES = {
     "COLOURIMETRIC": "COLORIMETRIC",
     "FLORESCENT": "FLUORESCENT",
@@ -169,6 +163,44 @@ def value_columns(domain: str, columns: tuple[str, ...]) -> tuple[str, ...]:
     return tuple(found)
 
 
+@lru_cache(maxsize=None)
+def _result_candidates(domain: str) -> dict[str, tuple[Any, ...]]:
+    """Return the candidate columns that :func:`parse_result` reads, by role.
+
+    ``numeric`` holds (value column, unit column) pairs in priority order.
+    """
+
+    return {
+        "excluded": (f"{domain}EXCLFL", "EXCLFL"),
+        "exclusion_reason": (f"{domain}REASEX", f"{domain}EXCLRSN", "REASEX", "EXCLRSN"),
+        "status": (f"{domain}STAT", "STAT"),
+        "failure_reason": (f"{domain}REASND", f"{domain}REASON", "REASND", "REASON"),
+        "numeric": (
+            (f"{domain}STRESN", f"{domain}STRESU"),
+            (f"{domain}ORRES", f"{domain}ORRESU"),
+            (f"{domain}STRESC", f"{domain}STRESU"),
+        ),
+    }
+
+
+def result_columns(domain: str, columns: tuple[str, ...]) -> tuple[str, ...]:
+    """Return the columns of ``columns`` whose values :func:`parse_result` reads.
+
+    Two rows with equal values in these columns parse to equal results, so a
+    caller can parse each distinct value tuple once.
+    """
+
+    candidates = _result_candidates(domain.upper())
+    names = [
+        *candidates["excluded"],
+        *candidates["exclusion_reason"],
+        *candidates["status"],
+        *candidates["failure_reason"],
+        *(name for pair in candidates["numeric"] for name in pair),
+    ]
+    return tuple(column for column in dict.fromkeys(names) if column in columns)
+
+
 def parse_result(
     domain: str,
     row: Mapping[str, Any],
@@ -182,37 +214,20 @@ def parse_result(
     """
 
     domain = domain.upper()
+    candidates = _result_candidates(domain)
     excluded = any(
         normalize_flag(row.get(column)) == "Y"
-        for column in _present_columns(
-            columns,
-            (f"{domain}EXCLFL", "EXCLFL"),
-        )
+        for column in _present_columns(columns, candidates["excluded"])
     )
     exclusion_reason = _first_normalized(
-        row,
-        _present_columns(
-            columns,
-            (f"{domain}REASEX", f"{domain}EXCLRSN", "REASEX", "EXCLRSN"),
-        ),
+        row, _present_columns(columns, candidates["exclusion_reason"])
     )
-    status = _first_normalized(
-        row,
-        _present_columns(columns, (f"{domain}STAT", "STAT")),
-    )
+    status = _first_normalized(row, _present_columns(columns, candidates["status"]))
     failure_reason = _first_normalized(
-        row,
-        _present_columns(
-            columns,
-            (f"{domain}REASND", f"{domain}REASON", "REASND", "REASON"),
-        ),
+        row, _present_columns(columns, candidates["failure_reason"])
     )
 
-    numeric_candidates = (
-        (f"{domain}STRESN", f"{domain}STRESU"),
-        (f"{domain}ORRES", f"{domain}ORRESU"),
-        (f"{domain}STRESC", f"{domain}STRESU"),
-    )
+    numeric_candidates = candidates["numeric"]
     for value_column, unit_column in numeric_candidates:
         if value_column not in columns:
             continue
@@ -253,6 +268,20 @@ def parse_result(
         )
 
     if status in {"NOT DONE", "NOT PERFORMED", "FAILED", "FAILURE"}:
+        if failure_reason is not None and _CENSORED_RESULT.match(failure_reason):
+            # A reason such as BELOW LINEARITY reports a value outside the assay
+            # range, not a failed test. It has no result value and no stated limit.
+            return ParsedResult(
+                state="censored_observed",
+                numeric_value=None,
+                raw_value=failure_reason,
+                value_column=None,
+                unit=None,
+                unit_column=None,
+                excluded=excluded,
+                exclusion_reason=exclusion_reason,
+                failure_reason=failure_reason,
+            )
         return ParsedResult(
             state="explicitly_failed",
             numeric_value=None,
@@ -369,17 +398,25 @@ def measurement_identity(
     *,
     parsed_result: ParsedResult | None = None,
     canonical_test_code: str | None = None,
+    specimen: str | None = None,
+    context: Mapping[str, str | None] | None = None,
 ) -> str:
-    """Return a canonical measurement identity for compatibility checks."""
+    """Return a canonical measurement identity for compatibility checks.
 
-    context = measurement_context(
-        domain,
-        row,
-        columns,
-        parsed_result=parsed_result,
+    ``specimen`` replaces the source label, for example with a resolved specimen class.
+    ``context`` is the row's :func:`measurement_context` for the same
+    ``parsed_result``, when the caller has it; it is copied, not changed.
+    """
+
+    context = dict(
+        context
+        if context is not None
+        else measurement_context(domain, row, columns, parsed_result=parsed_result)
     )
     if canonical_test_code:
         context["test_code"] = normalize_value(canonical_test_code)
+    if specimen is not None:
+        context["specimen"] = specimen
     fields = ["domain", "test_code", "specimen", "unit", "method"]
     if domain.upper() == "OM":
         fields.extend(("laterality", "portion_totality"))
@@ -481,6 +518,9 @@ def optional_float(value: Any) -> float | None:
 def present(value: Any) -> bool:
     """Return whether a raw value is semantically present."""
 
+    if type(value) is str:
+        # Same result as str(value).strip() != "", without building the stripped copy.
+        return value != "" and not value.isspace()
     return value is not None and str(value).strip() != ""
 
 
@@ -531,7 +571,7 @@ def normalize_unit(value: Any) -> str | None:
         return None
     unit = str(value).strip()
     missing_probe = _normalize_text(unit)
-    if missing_probe in _MISSING_CATEGORIES or missing_probe == "NO UNITS":
+    if missing_probe in MISSING_UNIT_LABELS:
         return None
     return unit
 
@@ -571,6 +611,13 @@ def _first_normalized(row: Mapping[str, Any], columns: tuple[str, ...]) -> str |
 
 
 def _present_columns(columns: tuple[str, ...], candidates: tuple[str, ...]) -> tuple[str, ...]:
+    # tuple() returns a tuple argument itself, and makes a list argument hashable.
+    return _present_columns_cached(tuple(columns), candidates)
+
+
+# A domain has one column tuple, so the present columns are computed once per pair.
+@lru_cache(maxsize=1 << 12)
+def _present_columns_cached(columns: tuple[str, ...], candidates: tuple[str, ...]) -> tuple[str, ...]:
     return tuple(column for column in candidates if column in columns)
 
 

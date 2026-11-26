@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Literal
 
+import numpy as np
 import pandas as pd
 
 
@@ -76,6 +77,7 @@ SUBJECTS_TABLE = ResultTable(
             "Relationship between planned duration and observed exposure evidence.",
         ),
         _column("suppliers", "object", False, "Distinct normalized suppliers.", nested_value="list[str]"),
+        _column("supplier_group", "string", True, "Company group of the supplier (one company per study)."),
         _column("study_types", "object", False, "Distinct normalized study types.", nested_value="list[str]"),
         _column("routes", "object", False, "Distinct normalized administration routes.", nested_value="list[str]"),
         _column("dose_frequencies", "object", False, "Distinct normalized dose frequencies.", nested_value="list[str]"),
@@ -112,10 +114,9 @@ _OPTIONAL_OBSERVATION_TEXT = {
 
 
 def _observation_text(name: str, meaning: str) -> ResultColumn:
-    # Nullable text intentionally stays object-backed. This preserves Python
-    # ``None`` at the pandas/application boundary instead of exposing pd.NA.
-    nullable = name in _OPTIONAL_OBSERVATION_TEXT
-    return _column(name, "object" if nullable else "string", nullable, meaning)
+    # A missing text value is pd.NA. An object column would hold float NaN, which
+    # readers can turn into the text "nan".
+    return _column(name, "string", name in _OPTIONAL_OBSERVATION_TEXT, meaning)
 
 
 OBSERVATIONS_TABLE = ResultTable(
@@ -152,6 +153,12 @@ OBSERVATIONS_TABLE = ResultTable(
         _observation_text("failure_reason", "Reason the source result is a failure."),
         _column("source_order", "object", False, "Deterministic source-row ordering key.", nested_value="tuple[Any, ...]"),
         _column("explicit_baseline", "boolean", False, "Whether SEND explicitly marks the row as baseline."),
+        _column(
+            "unit_inferred",
+            "boolean",
+            False,
+            "Whether the endpoint's implicit unit replaced a missing source unit.",
+        ),
     ),
 )
 
@@ -171,14 +178,22 @@ def query_result_schema(
 
 
 def normalize_result_table(frame: pd.DataFrame, schema: ResultTable) -> pd.DataFrame:
-    """Return a copy with the declared column order and stable pandas dtypes."""
+    """Return a copy with the declared columns and dtypes.
+
+    A null in a required column and a non-finite number are rejected.
+    """
 
     expected = [column.name for column in schema.columns]
     if frame.columns.tolist() != expected:
         raise ValueError(f"{schema.name} columns do not match the public table schema")
     normalized = frame.copy()
     for column in schema.columns:
-        normalized[column.name] = normalized[column.name].astype(column.pandas_dtype)
+        values = normalized[column.name].astype(column.pandas_dtype)
+        if not column.nullable and values.isna().any():
+            raise ValueError(f"{schema.name}.{column.name} has a null value")
+        if column.pandas_dtype == "Float64" and not np.isfinite(values.dropna()).all():
+            raise ValueError(f"{schema.name}.{column.name} has a non-finite value")
+        normalized[column.name] = values
     return normalized
 
 

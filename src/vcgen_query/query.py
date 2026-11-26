@@ -13,8 +13,9 @@ from __future__ import annotations
 
 import copy
 import re
-from collections.abc import Mapping, Sequence
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, field, replace
+from functools import cached_property
 from types import MappingProxyType
 from typing import Any, ClassVar, Literal, TypeAlias
 
@@ -33,7 +34,7 @@ from .contract import (
     rules,
     seq,
 )
-from .endpoint_catalogue import endpoint_catalogue_identity, resolve_endpoint_specs
+from .endpoint_catalogue import endpoint_catalogue_identity, resolve_endpoint_specs, specimen_panels
 from .fingerprint import fingerprint_predicate
 from .identities import COHORT_QUERY_CONTRACT, SUBJECT_QUERY_CONTRACT
 
@@ -42,6 +43,33 @@ StageKind: TypeAlias = Literal[
 ]
 StageOrigin: TypeAlias = Literal["grit42", "vcgen"]
 TraceUnit: TypeAlias = Literal["subjects", "studies", "observations", "cells", "rows", "endpoints"]
+TraceItem: TypeAlias = Mapping[str, Any]
+
+# Item fields, in sort order. An item is one small flat mapping that names the
+# thing a stage dropped or changed, and the values that were involved:
+# subjects {study, subject}; studies {study}; observations and cells {study,
+# subject, endpoint, day} plus ``value`` (drops) or ``before`` and ``after``
+# (changes of a value). Synonym merges use ``from`` and ``to`` endpoints.
+_ITEM_FIELDS = ("study", "subject", "endpoint", "day", "value", "before", "after", "from", "to", "detail")
+
+
+def _item_key(item: TraceItem) -> tuple[Any, ...]:
+    key: list[Any] = []
+    for name in _ITEM_FIELDS:
+        value = item.get(name)
+        if name not in item:
+            key.append((-1, 0.0, ""))
+        elif isinstance(value, (int, float)) and not isinstance(value, bool):
+            key.append((1, float(value), ""))
+        else:
+            key.append((2, 0.0, repr(value)))
+    return tuple(key)
+
+
+def trace_items(items: Iterable[TraceItem]) -> tuple[TraceItem, ...]:
+    """Return retained trace items in a deterministic order."""
+
+    return tuple(sorted((dict(item) for item in items), key=_item_key))
 
 
 @dataclass(frozen=True)
@@ -72,14 +100,19 @@ class StageDrop:
     unit: TraceUnit
     count: int
     by_study: Mapping[str, int] = field(default_factory=dict)
+    # ``None`` means the items are not retained (the default); production records never hold them.
+    items: tuple[TraceItem, ...] | None = None
 
     def to_dict(self) -> dict[str, Any]:
-        return {
+        data: dict[str, Any] = {
             "reason": self.reason,
             "unit": self.unit,
             "count": self.count,
             "by_study": dict(sorted(self.by_study.items())),
         }
+        if self.items is not None:
+            data["items"] = [dict(item) for item in self.items]
+        return data
 
 
 @dataclass(frozen=True)
@@ -90,11 +123,68 @@ class StageChange:
     unit: TraceUnit
     count: int
     by_study: Mapping[str, int] = field(default_factory=dict)
+    # ``None`` means the items are not retained (the default); production records never hold them.
+    items: tuple[TraceItem, ...] | None = None
+
+    def to_dict(self) -> dict[str, Any]:
+        data: dict[str, Any] = {
+            "effect": self.effect,
+            "unit": self.unit,
+            "count": self.count,
+            "by_study": dict(sorted(self.by_study.items())),
+        }
+        if self.items is not None:
+            data["items"] = [dict(item) for item in self.items]
+        return data
+
+
+# What a stage warns about. The codes are a closed set. A message is for the
+# user (a toxicologist or study director): it states counts and never names a
+# study, a subject, a query or a predicate value. Per-study counts stay in
+# ``by_study``, which the public trace removes.
+WARNING_CODES: tuple[str, ...] = (
+    "no_endpoints_requested",
+    "empty_cohort",
+    "endpoint_domain_unavailable",
+    "domain_without_observations",
+    "data_decisions_source_not_reviewed",
+    "source_identity_unknown",
+    "derived_view_unavailable",
+    "study_start_unavailable",
+    "dose_duration_declaration_unnormalized",
+    "dose_duration_ambiguous",
+    "dose_duration_unresolved",
+    "exposure_interval_gapped",
+    "exposure_interval_incomplete",
+    "terminal_day_from_necropsy",
+    "pathology_days_inconsistent",
+    "terminal_latest_day_selected",
+    "duplicates_resolved",
+    "incompatible_channels_dropped",
+)
+
+
+@dataclass(frozen=True)
+class StageWarning:
+    """A coded, user-readable warning of a stage, with the number of items it concerns."""
+
+    code: str
+    message: str
+    count: int = 1
+    by_study: Mapping[str, int] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        if self.code not in WARNING_CODES:
+            raise ValueError(f"unknown warning code {self.code!r}")
+        if not isinstance(self.message, str) or not self.message.strip():
+            raise ValueError("a warning needs a message")
+        if self.count < 1:
+            raise ValueError("a warning count must be positive")
 
     def to_dict(self) -> dict[str, Any]:
         return {
-            "effect": self.effect,
-            "unit": self.unit,
+            "code": self.code,
+            "message": self.message,
             "count": self.count,
             "by_study": dict(sorted(self.by_study.items())),
         }
@@ -110,6 +200,7 @@ REFUSAL_CODES: tuple[str, ...] = (
     "too_few_donor_studies",
     "too_few_eligible_studies",
     "too_few_completed_folds",
+    "specimen_not_supported",
 )
 
 
@@ -144,7 +235,7 @@ class StageRecord:
     n_in: Mapping[TraceUnit, int]
     n_out: Mapping[TraceUnit, int]
     details: Mapping[str, Any] = field(default_factory=dict)
-    warnings: tuple[str, ...] = ()
+    warnings: tuple[StageWarning, ...] = ()
     drops: tuple[StageDrop, ...] = ()
     refusal: StageRefusal | None = None
     n_changed: Mapping[TraceUnit, int] = field(default_factory=dict)
@@ -164,7 +255,7 @@ class StageRecord:
             "n_changed": dict(self.n_changed),
             "changes": [change.to_dict() for change in self.changes],
             "details": dict(self.details),
-            "warnings": list(self.warnings),
+            "warnings": [warning.to_dict() for warning in self.warnings],
             "outcome": self.outcome,
             "refusal": None if self.refusal is None else self.refusal.to_dict(),
         }
@@ -176,6 +267,13 @@ SOURCE_STAGE = StageInfo(
     "source",
     "vcgen",
     "Open the SEND source, validate subject identities, and form the DM subject universe.",
+)
+SUPPORT_SELECTION_STAGE = StageInfo(
+    "support_selection",
+    "Support selection",
+    "filter",
+    "vcgen",
+    "Remove the subjects of member studies that the support lookup excluded.",
 )
 SUBJECT_CONTEXT_STAGE = StageInfo(
     "subject_context",
@@ -195,11 +293,13 @@ def _freeze(value: Any) -> Any:
     return value
 
 
-def _thaw(value: Any) -> Any:
+def thaw(value: Any) -> Any:
+    """Return a frozen document as plain dicts and lists."""
+
     if isinstance(value, Mapping):
-        return {key: _thaw(item) for key, item in value.items()}
+        return {key: thaw(item) for key, item in value.items()}
     if isinstance(value, tuple):
-        return [_thaw(item) for item in value]
+        return [thaw(item) for item in value]
     return value
 
 
@@ -266,7 +366,7 @@ class SubjectQuery:
         )
 
     def to_dict(self) -> dict[str, Any]:
-        return _thaw(self.document)
+        return thaw(self.document)
 
     @property
     def fingerprint(self) -> str:
@@ -297,6 +397,10 @@ class EndpointObservations:
     )
 
     requested_endpoints: tuple[str, ...]
+    # Specimen classes that the query admits for a specimen panel with a user
+    # choice, for example {"blood_chemistry": ("SERUM",)}. A panel that is not
+    # named admits every class of the panel.
+    specimens: Mapping[str, tuple[str, ...]] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         if not seq(self.requested_endpoints) or not self.requested_endpoints:
@@ -309,36 +413,63 @@ class EndpointObservations:
             raise QueryError("requested_endpoints must contain unique names.")
         resolve_endpoint_specs(names)
         object.__setattr__(self, "requested_endpoints", names)
+        object.__setattr__(self, "specimens", MappingProxyType(_specimen_subsets(self.specimens)))
 
     @classmethod
     def from_mapping(cls, value: Any) -> EndpointObservations:
         raw = mapping(value, "endpoint_observations")
-        keys(raw, {"stage", "requested_endpoints", "endpoint_catalogue"}, "endpoint_observations")
+        keys(raw, {"stage", "requested_endpoints", "endpoint_catalogue", "specimens"}, "endpoint_observations")
         if dict(mapping(raw.get("endpoint_catalogue"), "endpoint_catalogue")) != (
             endpoint_catalogue_identity()
         ):
             raise QueryError(
-                "endpoint_catalogue identity does not match the installed package catalogue."
+                "endpoint_catalogue identity does not match the locked endpoint catalogue."
             )
         requested = raw.get("requested_endpoints")
-        return cls(tuple(requested) if seq(requested) else requested)
+        return cls(tuple(requested) if seq(requested) else requested, raw.get("specimens", {}))
 
-    @property
+    @cached_property
     def resolved_endpoints(self) -> tuple[EndpointSpec, ...]:
-        return resolve_endpoint_specs(self.requested_endpoints)
+        return tuple(
+            replace(spec, specimens=self.specimens[spec.specimen_panel])
+            if spec.specimen_panel in self.specimens else spec
+            for spec in resolve_endpoint_specs(self.requested_endpoints)
+        )
 
     def to_dict(self) -> dict[str, Any]:
-        return {
+        output: dict[str, Any] = {
             "stage": self.info.id,
             "requested_endpoints": list(self.requested_endpoints),
             "endpoint_catalogue": endpoint_catalogue_identity(),
         }
+        if self.specimens:
+            output["specimens"] = {panel: list(classes) for panel, classes in self.specimens.items()}
+        return output
 
     def params(self) -> dict[str, Any]:
         return {
             "requested_endpoints": list(self.requested_endpoints),
             "endpoint_catalogue": endpoint_catalogue_identity()["catalogue_id"],
+            "specimens": {panel: list(classes) for panel, classes in self.specimens.items()},
         }
+
+
+def _specimen_subsets(value: Any) -> dict[str, tuple[str, ...]]:
+    raw = mapping(value, "endpoint_observations.specimens")
+    panels = specimen_panels()
+    output: dict[str, tuple[str, ...]] = {}
+    for panel_id in sorted(raw):
+        panel = panels.get(panel_id)
+        if panel is None or not panel.user_choice:
+            raise QueryError(f"specimens.{panel_id} must name a specimen panel with a specimen choice.")
+        classes = raw[panel_id]
+        if not seq(classes) or not classes:
+            raise QueryError(f"specimens.{panel_id} must be a non-empty array.")
+        chosen = tuple(sorted(set(classes)))
+        if len(chosen) != len(classes) or not set(chosen) <= set(panel.classes):
+            raise QueryError(f"specimens.{panel_id} must list distinct classes of the panel: {list(panel.classes)}.")
+        output[panel_id] = chosen
+    return output
 
 
 _EXCLUSION_REF = re.compile(r"^[a-z][a-z0-9-]{1,31}$")
@@ -358,8 +489,9 @@ def _note(value: Any, location: str, *, hidden: tuple[str, ...] = ()) -> str:
 class StudyExclusionEntry:
     """One excluded source study: its identifier, a public opaque reference, and why.
 
-    ``study_id`` is the raw source StudyID and stays in the full trace and
-    manifests. ``ref`` and ``note`` are the only parts a public view may show.
+    ``study_id`` is the raw source StudyID. It stays in the full trace, which only
+    the tests keep; every persisted trace is in the public form and does not hold
+    it. ``ref`` and ``note`` are the only parts a public view may show.
     """
 
     study_id: str
@@ -580,6 +712,7 @@ class CohortQuery:
         *,
         study_exclusions: Sequence[StudyExclusionEntry] | None = None,
         endpoint_exclusions: Sequence[EndpointExclusionEntry] | None = None,
+        specimens: Mapping[str, Sequence[str]] | None = None,
     ) -> CohortQuery:
         """Build the standard plan: subject query, then endpoint observations.
 
@@ -600,7 +733,7 @@ class CohortQuery:
                 )
             stages.append(exclusion)
             names = exclusion.retained_endpoints
-        stages.append(EndpointObservations(names))
+        stages.append(EndpointObservations(names, dict(specimens or {})))
         return cls(subject_query, tuple(stages))
 
     @classmethod
@@ -662,7 +795,8 @@ class CohortQuery:
 
     def with_requested_endpoints(self, names: Sequence[str]) -> CohortQuery:
         """Replace the endpoint selection; membership stays unchanged."""
-        return replace(self, stages=(*self.stages[:-1], EndpointObservations(tuple(names))))
+        stage = EndpointObservations(tuple(names), dict(self.endpoint_stage.specimens))
+        return replace(self, stages=(*self.stages[:-1], stage))
 
 
 def parse_subject_query(raw: Mapping[str, Any]) -> SubjectQuery:
@@ -676,6 +810,7 @@ def parse_cohort_query(raw: Mapping[str, Any]) -> CohortQuery:
 __all__ = [
     "SOURCE_STAGE",
     "SUBJECT_CONTEXT_STAGE",
+    "SUPPORT_SELECTION_STAGE",
     "CohortQuery",
     "EndpointExclusion",
     "EndpointExclusionEntry",
@@ -684,6 +819,8 @@ __all__ = [
     "StageInfo",
     "StageKind",
     "StageChange",
+    "StageWarning",
+    "WARNING_CODES",
     "StageDrop",
     "StageOrigin",
     "StageRecord",
@@ -693,4 +830,5 @@ __all__ = [
     "TraceUnit",
     "parse_cohort_query",
     "parse_subject_query",
+    "thaw",
 ]

@@ -2,19 +2,18 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 from decimal import Decimal, InvalidOperation
-import hashlib
-from importlib import resources
 import json
 import math
 from typing import Any
 
-from .contract_helpers import QueryError
+from .contract_helpers import QueryError, packaged_data
 
 
-CATALOGUE_FILENAME = "unit_catalogue.v2.json"
-CATALOGUE_ID = "vcgen.unit_catalogue.v2"
+CATALOGUE_FILENAME = "unit_catalogue.v3.json"
+CATALOGUE_ID = "vcgen.unit_catalogue.v3"
 
 
 @dataclass(frozen=True)
@@ -67,9 +66,7 @@ def _decimal(value: Any, location: str, *, positive: bool = False) -> Decimal:
 
 
 def _load_catalogue() -> _UnitCatalogue:
-    raw_bytes = resources.files("vcgen_query").joinpath(
-        f"data/{CATALOGUE_FILENAME}"
-    ).read_bytes()
+    raw_bytes, sha256 = packaged_data(CATALOGUE_FILENAME)
     payload = json.loads(raw_bytes)
     if payload.get("catalogue_id") != CATALOGUE_ID:
         raise RuntimeError("unit catalogue has an unexpected catalogue_id")
@@ -98,7 +95,7 @@ def _load_catalogue() -> _UnitCatalogue:
         aliases[label] = code
     return _UnitCatalogue(
         catalogue_id=CATALOGUE_ID,
-        sha256=hashlib.sha256(raw_bytes).hexdigest(),
+        sha256=sha256,
         units=units,
         aliases=aliases,
     )
@@ -127,8 +124,13 @@ def unit_dimension(code: str) -> str:
 
 
 def compile_unit_rules(
-    source_units: tuple[str, ...], target_unit: str
+    source_units: tuple[str, ...], target_unit: str, readings: Mapping[str, str] | None = None
 ) -> tuple[_CompiledUnitRule, ...]:
+    """Compile one conversion rule per source label.
+
+    `readings` maps a source label to the unit code that the label means for
+    this endpoint (French "G/L" is 10^9/L on blood counts).
+    """
     target = _CATALOGUE.units.get(target_unit)
     if target is None:
         raise QueryError(
@@ -137,7 +139,11 @@ def compile_unit_rules(
         )
     rules: list[_CompiledUnitRule] = []
     for source_label in source_units:
-        source_code = source_label if source_label in _CATALOGUE.units else _CATALOGUE.aliases.get(source_label)
+        source_code = (readings or {}).get(source_label)
+        if source_code is not None and source_code not in _CATALOGUE.units:
+            raise QueryError(f"endpoint unit reading {source_code!r} of {source_label!r} is not a unit code.")
+        if source_code is None:
+            source_code = source_label if source_label in _CATALOGUE.units else _CATALOGUE.aliases.get(source_label)
         if source_code is None:
             raise QueryError(
                 f"endpoint.source_units contains unknown unit {source_label!r} for target "
@@ -170,9 +176,10 @@ def compile_unit_rules(
 
 
 def ratio_unit_scale(numerator: str, denominator: str, target: str) -> float:
-    """Resolve a dimensionless ratio scale from canonical unit definitions."""
-    if unit_dimension(numerator) != unit_dimension(denominator) or unit_dimension(target) != "fraction":
-        raise QueryError("ratio units require equal parent dimensions and a fraction target")
+    """Resolve a dimensionless ratio scale from canonical unit definitions.
+
+    The caller checks that the parents share a dimension and the target is a fraction.
+    """
     first, second, output = (_CATALOGUE.units[code] for code in (numerator, denominator, target))
     if first.offset or second.offset or output.offset:
         raise QueryError("ratio units cannot have affine offsets")

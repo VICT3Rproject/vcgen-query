@@ -62,7 +62,7 @@ def _query(predicate: dict[str, object] | None = None, **extra: object) -> dict[
     ("endpoints", "message"),
     [
         ([], "non-empty"),
-        (["BW", "BW"], "unique"),
+        (["BW_BW", "BW_BW"], "unique"),
         (["bw"], "uppercase"),
         (["NOT_A_CANONICAL_ENDPOINT"], "unknown canonical endpoint"),
     ],
@@ -225,6 +225,17 @@ def test_send_column_fields_are_closed_by_the_versioned_grit42_catalogue() -> No
         SendColumnField("LB", "LBSTRESN", "string")
 
 
+def test_identifier_columns_are_valid_filters_for_local_use() -> None:
+    # Failure mode: the query layer rejects identifier columns, which breaks local use and
+    # grit42 query parity. Only the public service refuses them.
+    predicate = {"group": "and", "children": [
+        _rule("eq", "S", field=_field(column="STUDYID")),
+        _rule("starts_with", "A", field=_field(domain="LB", column="USUBJID")),
+    ]}
+
+    assert parse_subject_query(_query(predicate)).query_id == "synthetic-subject-query"
+
+
 def test_predicate_fingerprint_ignores_query_and_import_provenance() -> None:
     predicate = {"group": "and", "children": [_rule("eq", "M")]}
     first = parse_subject_query(_query(predicate, query_id="first"))
@@ -272,7 +283,19 @@ def test_import_provenance_fails_closed(provenance: dict[str, str]) -> None:
 
 
 def test_observation_fingerprint_includes_catalogue_endpoint_semantics() -> None:
-    first = EndpointObservations(("LB_HGB",))
-    changed = EndpointObservations(("LB_HCT",))
+    first = EndpointObservations(("LB_HGB_BLOOD",))
+    changed = EndpointObservations(("LB_HCT_BLOOD",))
 
     assert fingerprint_observation_contract(first) != fingerprint_observation_contract(changed)
+
+
+def test_implicit_unit_requires_a_declared_source_unit_and_is_canonical() -> None:
+    from vcgen_query import EndpointSpec
+
+    with pytest.raises(QueryError, match="implicit_unit"):
+        EndpointSpec("LB_PH", "LB", ("PH",), source_units=("1{pH}",), target_unit="1{pH}", implicit_unit="1")
+    with pytest.raises(QueryError, match="implicit_unit"):
+        EndpointSpec("LB_PH", "LB", ("PH",), implicit_unit="1{pH}")
+    spec = EndpointSpec("LB_PH", "LB", ("PH",), source_units=("1{pH}",), target_unit="1{pH}", implicit_unit="1{pH}")
+    assert spec.to_canonical_dict()["implicit_unit"] == "1{pH}"
+    assert "implicit_unit" not in EndpointSpec("LB_X", "LB", ("X",)).to_canonical_dict()
