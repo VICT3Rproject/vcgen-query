@@ -1,0 +1,293 @@
+# Reviewed delivery routes for the `route` derived field.
+#
+# The archive records one delivery mechanism with many spellings of EXROUTE and
+# EXMETHOD ("ORAL GAVAGE", "Oral Gavage", and "ORAL" with EXMETHOD "GAVAGE" are
+# all oral gavage). Each entry gives one canonical route and the exact source
+# pairs that map to it. The `route` field selects a subject when one of its EX
+# rows maps to the requested canonical route. A subject of a study without EX
+# rows in a control arm takes the TS ROUTE values of its study instead; a TS
+# value is a pair without a method, and the same entries cover it.
+# `/vcgen/population` offers the canonical routes.
+#
+# Matching: EXROUTE and EXMETHOD are compared after whitespace collapse, trim,
+# and upper-casing. A blank or missing EXMETHOD is `exmethod: null`. Only the
+# exact (exroute, exmethod) pairs below match. A pair that is not in this file
+# maps to no route, so it matches no route request. A missing EXROUTE maps to
+# no route.
+#
+# `unmapped` lists pairs that were reviewed and must not map to a route, with
+# the reason. `evidence` records the EX subjects and studies of the pair, the
+# TS subjects and studies of the TS ROUTE value, and the raw spellings, in the
+# reviewed source; it is review evidence only and does not change matching.
+# The review covers every EX pair and every TS ROUTE value of the reviewed
+# source.
+#
+# Review rule: when the source archive changes (`rodent_db_export.zip.dvc`),
+# list the pairs that map to no route (see `route_alias_inventory`), add or
+# reject each one here, and update `reviewed_source`. The file hash is part of
+# the predicate fingerprint of each query that uses `route`.
+contract: vcgen.route_aliases.v1
+reviewed_source:
+  archive: rodent_db_export.zip
+  dvc_md5: 6b1a42fc119c2d537b6f4e0ec4cac262
+analysis:
+  inventory: >-
+    Distinct EXROUTE and EXMETHOD pairs of the EX domain and distinct TS ROUTE
+    values (a pair without a method), with EX and TS subject and study counts.
+  rule: >-
+    One canonical route per delivery mechanism. A route whose EXMETHOD names the
+    mechanism (GAVAGE, BOLUS, INFUSION) maps to that mechanism. An oral route
+    without a method maps to ORAL GAVAGE, by review decision: gavage is the
+    usual oral mechanism of these studies. An intravenous route without a
+    method maps to a separate "method not recorded" route, because bolus and
+    infusion are both common. A pair whose route and method disagree is not
+    mapped. A TS ROUTE value follows the same rule as a pair without a method.
+    A TS value that names several routes, that is not a route, or that names a
+    route without a canonical route here is not mapped.
+routes:
+- id: ROUTE-001
+  route: ORAL GAVAGE
+  note: >-
+    Oral administration through a gavage tube or cannula. An oral route without
+    EXMETHOD is included by review decision (the source does not record the method).
+  sources:
+  - {exroute: ORAL GAVAGE, exmethod: null, evidence: {ex_subjects: 10490, ex_studies: 468, ts_subjects: 35576, ts_studies: 1773, spellings: [ORAL GAVAGE | -, Oral Gavage | -]}}
+  - {exroute: ORAL GAVAGE, exmethod: GAVAGE, evidence: {ex_subjects: 7544, ex_studies: 274, ts_subjects: 0, ts_studies: 0, spellings: [ORAL GAVAGE | GAVAGE, ORAL GAVAGE | Gavage, Oral Gavage | GAVAGE, Oral Gavage | Gavage]}}
+  - {exroute: ORAL GAVAGE, exmethod: RUBBER CATHETER AND DISPOSABLE SYRINGE, evidence: {ex_subjects: 10, ex_studies: 1, ts_subjects: 0, ts_studies: 0, spellings: [Oral Gavage | Rubber catheter and disposable syringe]}}
+  - {exroute: ORAL, exmethod: GAVAGE, evidence: {ex_subjects: 1207, ex_studies: 39, ts_subjects: 0, ts_studies: 0, spellings: [ORAL | GAVAGE, Oral | GAVAGE]}}
+  - {exroute: ORAL, exmethod: GAVAGE USING A PLASTIC CANNULA, evidence: {ex_subjects: 64, ex_studies: 1, ts_subjects: 0, ts_studies: 0, spellings: [ORAL | Gavage using a plastic cannula]}}
+  - {exroute: ORAL, exmethod: 'ORAL, GAVAGE', evidence: {ex_subjects: 94, ex_studies: 1, ts_subjects: 0, ts_studies: 0, spellings: ['Oral | Oral, Gavage']}}
+  - {exroute: ORAL, exmethod: null, evidence: {ex_subjects: 69, ex_studies: 6, ts_subjects: 19406, ts_studies: 1069, spellings: [ORAL | -, Oral | -]}}
+- id: ROUTE-003
+  route: SUBCUTANEOUS
+  note: Subcutaneous injection.
+  sources:
+  - {exroute: SUBCUTANEOUS, exmethod: null, evidence: {ex_subjects: 1284, ex_studies: 40, ts_subjects: 4881, ts_studies: 207, spellings: [SUBCUTANEOUS | -, Subcutaneous | -]}}
+  - {exroute: SUBCUTANEOUS, exmethod: INJECTION, evidence: {ex_subjects: 1244, ex_studies: 45, ts_subjects: 0, ts_studies: 0, spellings: [SUBCUTANEOUS | INJECTION, Subcutaneous | INJECTION]}}
+- id: ROUTE-004
+  route: INTRAMUSCULAR
+  note: Intramuscular injection.
+  sources:
+  - {exroute: INTRAMUSCULAR, exmethod: null, evidence: {ex_subjects: 495, ex_studies: 17, ts_subjects: 665, ts_studies: 24, spellings: [INTRAMUSCULAR | -]}}
+  - {exroute: INTRAMUSCULAR, exmethod: INJECTION, evidence: {ex_subjects: 214, ex_studies: 5, ts_subjects: 0, ts_studies: 0, spellings: [INTRAMUSCULAR | INJECTION]}}
+- id: ROUTE-005
+  route: INTRAVENOUS BOLUS
+  note: Intravenous bolus or slow-bolus injection. An intravenous injection without infusion is a bolus.
+  sources:
+  - {exroute: INTRAVENOUS BOLUS, exmethod: null, evidence: {ex_subjects: 315, ex_studies: 15, ts_subjects: 1145, ts_studies: 60, spellings: [INTRAVENOUS BOLUS | -]}}
+  - {exroute: INTRAVENOUS BOLUS, exmethod: INJECTION, evidence: {ex_subjects: 215, ex_studies: 8, ts_subjects: 0, ts_studies: 0, spellings: [INTRAVENOUS BOLUS | INJECTION]}}
+  - {exroute: INTRAVENOUS BOLUS, exmethod: CATHETER, evidence: {ex_subjects: 38, ex_studies: 1, ts_subjects: 0, ts_studies: 0, spellings: [INTRAVENOUS BOLUS | CATHETER]}}
+  - {exroute: INTRAVENOUS, exmethod: BOLUS, evidence: {ex_subjects: 115, ex_studies: 5, ts_subjects: 0, ts_studies: 0, spellings: [INTRAVENOUS | BOLUS, Intravenous | Bolus]}}
+  - {exroute: INTRAVENOUS, exmethod: SLOW BOLUS, evidence: {ex_subjects: 23, ex_studies: 3, ts_subjects: 0, ts_studies: 0, spellings: [INTRAVENOUS | SLOW BOLUS]}}
+  - {exroute: INTRAVENOUS, exmethod: SLOW BOLUS INJECTION, evidence: {ex_subjects: 34, ex_studies: 1, ts_subjects: 0, ts_studies: 0, spellings: [INTRAVENOUS | SLOW BOLUS INJECTION]}}
+  - {exroute: INTRAVENOUS, exmethod: INJECTION, evidence: {ex_subjects: 30, ex_studies: 1, ts_subjects: 0, ts_studies: 0, spellings: [Intravenous | INJECTION]}}
+- id: ROUTE-006
+  route: INTRAVENOUS INFUSION
+  note: Intravenous infusion. A TS INTRAVENOUS DRIP is an infusion.
+  sources:
+  - {exroute: INTRAVENOUS, exmethod: INFUSION, evidence: {ex_subjects: 288, ex_studies: 12, ts_subjects: 0, ts_studies: 0, spellings: [INTRAVENOUS | INFUSION, Intravenous | INFUSION]}}
+  - {exroute: INTRAVENOUS, exmethod: SLOW INFUSION, evidence: {ex_subjects: 4, ex_studies: 1, ts_subjects: 0, ts_studies: 0, spellings: [Intravenous | SLOW INFUSION]}}
+  - {exroute: INFUSION (INTRAVENOUS), exmethod: null, evidence: {ex_subjects: 8, ex_studies: 1, ts_subjects: 0, ts_studies: 0, spellings: [Infusion (intravenous) | -]}}
+  - {exroute: INTRAVENOUS DRIP, exmethod: null, evidence: {ex_subjects: 0, ex_studies: 0, ts_subjects: 531, ts_studies: 36, spellings: [INTRAVENOUS DRIP | -]}}
+- id: ROUTE-007
+  route: 'INTRAVENOUS, METHOD NOT RECORDED'
+  note: Intravenous route without EXMETHOD. The source does not say whether it is a bolus or an infusion.
+  sources:
+  - {exroute: INTRAVENOUS, exmethod: null, evidence: {ex_subjects: 590, ex_studies: 31, ts_subjects: 4701, ts_studies: 333, spellings: [INTRAVENOUS | -, Intravenous | -]}}
+- id: ROUTE-008
+  route: RESPIRATORY (INHALATION)
+  note: Nose-only (snout-only) inhalation exposure.
+  sources:
+  - {exroute: RESPIRATORY (INHALATION), exmethod: NOSEONLY, evidence: {ex_subjects: 75, ex_studies: 1, ts_subjects: 0, ts_studies: 0, spellings: [RESPIRATORY (INHALATION) | NOSEONLY]}}
+  - {exroute: RESPIRATORY (INHALATION), exmethod: SNOUT-ONLY, evidence: {ex_subjects: 40, ex_studies: 2, ts_subjects: 0, ts_studies: 0, spellings: [RESPIRATORY (INHALATION) | SNOUT-ONLY]}}
+- id: ROUTE-009
+  route: NASAL
+  note: Nasal instillation.
+  sources:
+  - {exroute: NASAL, exmethod: INSTILLATION, evidence: {ex_subjects: 25, ex_studies: 1, ts_subjects: 0, ts_studies: 0, spellings: [NASAL | INSTILLATION]}}
+- id: ROUTE-010
+  route: RECTAL
+  note: Rectal administration.
+  sources:
+  - {exroute: RECTAL, exmethod: null, evidence: {ex_subjects: 52, ex_studies: 2, ts_subjects: 52, ts_studies: 2, spellings: [RECTAL | -]}}
+unmapped:
+- exroute: INTRAVENOUS BOLUS
+  exmethod: INFUSION
+  reason: 'The route says bolus and the method says infusion, so the mechanism is not known.'
+  upstream: Record one intravenous mechanism in EXROUTE and EXMETHOD.
+  evidence: {ex_subjects: 22, ex_studies: 1, ts_subjects: 0, ts_studies: 0, spellings: [INTRAVENOUS BOLUS | INFUSION]}
+- exroute: NOT APPLICABLE
+  exmethod: null
+  reason: The source records no route.
+  upstream: 'Record the administration route, or leave EXROUTE blank when no dose is given.'
+  evidence: {ex_subjects: 56, ex_studies: 1, ts_subjects: 0, ts_studies: 0, spellings: [NOT APPLICABLE | -]}
+- exroute: ORAL FEEDING
+  exmethod: null
+  reason: 'Oral administration whose mechanism is not gavage by its words: feed (diet) or a translation of oral dosing. The oral-without-method rule does not cover a named method.'
+  upstream: Record the oral mechanism (EXMETHOD GAVAGE or DIET) in EX.
+  evidence: {ex_subjects: 0, ex_studies: 0, ts_subjects: 1825, ts_studies: 65, spellings: [ORAL FEEDING | -]}
+- exroute: INTRAPERITONEAL
+  exmethod: null
+  reason: A route without a canonical route in this table. The owner decides whether to add it.
+  upstream: Record the route in EX.
+  evidence: {ex_subjects: 0, ex_studies: 0, ts_subjects: 315, ts_studies: 23, spellings: [INTRAPERITONEAL | -]}
+- exroute: INHALATION
+  exmethod: null
+  reason: Inhalation without a method. The inhalation route of this table is nose-only exposure; whole-body exposure is another mechanism.
+  upstream: Record the exposure method (nose-only or whole-body) in EX.
+  evidence: {ex_subjects: 0, ex_studies: 0, ts_subjects: 276, ts_studies: 15, spellings: [INHALATION | -]}
+- exroute: NASAL
+  exmethod: null
+  reason: Nasal route without a method. The nasal route of this table is instillation; a spray is another mechanism.
+  upstream: Record the nasal method in EX.
+  evidence: {ex_subjects: 0, ex_studies: 0, ts_subjects: 236, ts_studies: 9, spellings: [NASAL | -]}
+- exroute: NO TREATMENT
+  exmethod: null
+  reason: 'Not a route: the study records that it gives no treatment.'
+  upstream: 'Leave TS ROUTE blank, or record the route of the vehicle.'
+  evidence: {ex_subjects: 0, ex_studies: 0, ts_subjects: 204, ts_studies: 1, spellings: [NO TREATMENT | -]}
+- exroute: 'INTRAVENOUS, SUBCUTANEOUS'
+  exmethod: null
+  reason: The value names several routes; the route of each animal is not known.
+  upstream: 'Record the route of each animal in EX, or one route per TS ROUTE record of a set.'
+  evidence: {ex_subjects: 0, ex_studies: 0, ts_subjects: 197, ts_studies: 11, spellings: ['INTRAVENOUS, SUBCUTANEOUS | -']}
+- exroute: 'INTRAVENOUS BOLUS, SUBCUTANEOUS'
+  exmethod: null
+  reason: The value names several routes; the route of each animal is not known.
+  upstream: 'Record the route of each animal in EX, or one route per TS ROUTE record of a set.'
+  evidence: {ex_subjects: 0, ex_studies: 0, ts_subjects: 128, ts_studies: 5, spellings: ['INTRAVENOUS BOLUS, SUBCUTANEOUS | -']}
+- exroute: 'INTRAVENOUS BOLUS, ORAL GAVAGE'
+  exmethod: null
+  reason: The value names several routes; the route of each animal is not known.
+  upstream: 'Record the route of each animal in EX, or one route per TS ROUTE record of a set.'
+  evidence: {ex_subjects: 0, ex_studies: 0, ts_subjects: 101, ts_studies: 5, spellings: ['INTRAVENOUS BOLUS, ORAL GAVAGE | -']}
+- exroute: INTRATRACHEAL
+  exmethod: null
+  reason: A route without a canonical route in this table. The owner decides whether to add it.
+  upstream: Record the route in EX.
+  evidence: {ex_subjects: 0, ex_studies: 0, ts_subjects: 94, ts_studies: 9, spellings: [INTRATRACHEAL | -]}
+- exroute: 'ORAL GAVAGE, INHALATION'
+  exmethod: null
+  reason: The value names several routes; the route of each animal is not known.
+  upstream: 'Record the route of each animal in EX, or one route per TS ROUTE record of a set.'
+  evidence: {ex_subjects: 0, ex_studies: 0, ts_subjects: 78, ts_studies: 9, spellings: ['ORAL GAVAGE, INHALATION | -']}
+- exroute: 'SUBCUTANEOUS, INTRAMUSCULAR'
+  exmethod: null
+  reason: The value names several routes; the route of each animal is not known.
+  upstream: 'Record the route of each animal in EX, or one route per TS ROUTE record of a set.'
+  evidence: {ex_subjects: 0, ex_studies: 0, ts_subjects: 74, ts_studies: 2, spellings: ['SUBCUTANEOUS, INTRAMUSCULAR | -']}
+- exroute: PARENTERAL
+  exmethod: null
+  reason: 'Any route outside the gut, not one mechanism.'
+  upstream: Record the parenteral route.
+  evidence: {ex_subjects: 0, ex_studies: 0, ts_subjects: 61, ts_studies: 10, spellings: [PARENTERAL | -]}
+- exroute: 'INTRAVENOUS, ORAL FEEDING, SUBCUTANEOUS'
+  exmethod: null
+  reason: The value names several routes; the route of each animal is not known.
+  upstream: 'Record the route of each animal in EX, or one route per TS ROUTE record of a set.'
+  evidence: {ex_subjects: 0, ex_studies: 0, ts_subjects: 60, ts_studies: 2, spellings: ['INTRAVENOUS, ORAL FEEDING, SUBCUTANEOUS | -']}
+- exroute: 'ORAL GAVAGE, SUBCUTANEOUS'
+  exmethod: null
+  reason: The value names several routes; the route of each animal is not known.
+  upstream: 'Record the route of each animal in EX, or one route per TS ROUTE record of a set.'
+  evidence: {ex_subjects: 0, ex_studies: 0, ts_subjects: 58, ts_studies: 3, spellings: ['ORAL GAVAGE, SUBCUTANEOUS | -']}
+- exroute: 'ORAL, INHALATION'
+  exmethod: null
+  reason: The value names several routes; the route of each animal is not known.
+  upstream: 'Record the route of each animal in EX, or one route per TS ROUTE record of a set.'
+  evidence: {ex_subjects: 0, ex_studies: 0, ts_subjects: 54, ts_studies: 5, spellings: ['ORAL, INHALATION | -']}
+- exroute: 'ORAL GAVAGE, INTRADERMAL'
+  exmethod: null
+  reason: The value names several routes; the route of each animal is not known.
+  upstream: 'Record the route of each animal in EX, or one route per TS ROUTE record of a set.'
+  evidence: {ex_subjects: 0, ex_studies: 0, ts_subjects: 53, ts_studies: 7, spellings: ['ORAL GAVAGE, INTRADERMAL | -']}
+- exroute: 'INTRAVENOUS, INHALATION'
+  exmethod: null
+  reason: The value names several routes; the route of each animal is not known.
+  upstream: 'Record the route of each animal in EX, or one route per TS ROUTE record of a set.'
+  evidence: {ex_subjects: 0, ex_studies: 0, ts_subjects: 52, ts_studies: 2, spellings: ['INTRAVENOUS, INHALATION | -']}
+- exroute: 'INTRAVENOUS, INTRAMUSCULAR'
+  exmethod: null
+  reason: The value names several routes; the route of each animal is not known.
+  upstream: 'Record the route of each animal in EX, or one route per TS ROUTE record of a set.'
+  evidence: {ex_subjects: 0, ex_studies: 0, ts_subjects: 42, ts_studies: 2, spellings: ['INTRAVENOUS, INTRAMUSCULAR | -']}
+- exroute: 'INTRAVENOUS, ORAL GAVAGE'
+  exmethod: null
+  reason: The value names several routes; the route of each animal is not known.
+  upstream: 'Record the route of each animal in EX, or one route per TS ROUTE record of a set.'
+  evidence: {ex_subjects: 0, ex_studies: 0, ts_subjects: 35, ts_studies: 6, spellings: ['INTRAVENOUS, ORAL GAVAGE | -']}
+- exroute: 'SUBCUTANEOUS, INTRAVENOUS BOLUS'
+  exmethod: null
+  reason: The value names several routes; the route of each animal is not known.
+  upstream: 'Record the route of each animal in EX, or one route per TS ROUTE record of a set.'
+  evidence: {ex_subjects: 0, ex_studies: 0, ts_subjects: 32, ts_studies: 1, spellings: ['SUBCUTANEOUS, INTRAVENOUS BOLUS | -']}
+- exroute: 'INTRAVENOUS DRIP, SUBCUTANEOUS'
+  exmethod: null
+  reason: The value names several routes; the route of each animal is not known.
+  upstream: 'Record the route of each animal in EX, or one route per TS ROUTE record of a set.'
+  evidence: {ex_subjects: 0, ex_studies: 0, ts_subjects: 26, ts_studies: 1, spellings: ['INTRAVENOUS DRIP, SUBCUTANEOUS | -']}
+- exroute: 'ORAL GAVAGE, ORAL FEEDING'
+  exmethod: null
+  reason: The value names several routes; the route of each animal is not known.
+  upstream: 'Record the route of each animal in EX, or one route per TS ROUTE record of a set.'
+  evidence: {ex_subjects: 0, ex_studies: 0, ts_subjects: 20, ts_studies: 1, spellings: ['ORAL GAVAGE, ORAL FEEDING | -']}
+- exroute: 'ORAL GAVAGE, INTRAPERITONEAL'
+  exmethod: null
+  reason: The value names several routes; the route of each animal is not known.
+  upstream: 'Record the route of each animal in EX, or one route per TS ROUTE record of a set.'
+  evidence: {ex_subjects: 0, ex_studies: 0, ts_subjects: 14, ts_studies: 2, spellings: ['ORAL GAVAGE, INTRAPERITONEAL | -']}
+- exroute: 'INTRAVENOUS DRIP, ORAL GAVAGE'
+  exmethod: null
+  reason: The value names several routes; the route of each animal is not known.
+  upstream: 'Record the route of each animal in EX, or one route per TS ROUTE record of a set.'
+  evidence: {ex_subjects: 0, ex_studies: 0, ts_subjects: 11, ts_studies: 2, spellings: ['INTRAVENOUS DRIP, ORAL GAVAGE | -']}
+- exroute: 'INTRAVENOUS, TOPICAL'
+  exmethod: null
+  reason: The value names several routes; the route of each animal is not known.
+  upstream: 'Record the route of each animal in EX, or one route per TS ROUTE record of a set.'
+  evidence: {ex_subjects: 0, ex_studies: 0, ts_subjects: 11, ts_studies: 1, spellings: ['INTRAVENOUS, TOPICAL | -']}
+- exroute: 'ORAL, INTRAVENOUS'
+  exmethod: null
+  reason: The value names several routes; the route of each animal is not known.
+  upstream: 'Record the route of each animal in EX, or one route per TS ROUTE record of a set.'
+  evidence: {ex_subjects: 0, ex_studies: 0, ts_subjects: 10, ts_studies: 1, spellings: ['ORAL, INTRAVENOUS | -']}
+- exroute: 'SUBCUTANEOUS, INTRAVENOUS'
+  exmethod: null
+  reason: The value names several routes; the route of each animal is not known.
+  upstream: 'Record the route of each animal in EX, or one route per TS ROUTE record of a set.'
+  evidence: {ex_subjects: 0, ex_studies: 0, ts_subjects: 8, ts_studies: 1, spellings: ['SUBCUTANEOUS, INTRAVENOUS | -']}
+- exroute: 'SUBCUTANEOUS, INTRAPERITONEAL'
+  exmethod: null
+  reason: The value names several routes; the route of each animal is not known.
+  upstream: 'Record the route of each animal in EX, or one route per TS ROUTE record of a set.'
+  evidence: {ex_subjects: 0, ex_studies: 0, ts_subjects: 6, ts_studies: 1, spellings: ['SUBCUTANEOUS, INTRAPERITONEAL | -']}
+- exroute: 'SUBCUTANEOUS, INTRATRACHEAL'
+  exmethod: null
+  reason: The value names several routes; the route of each animal is not known.
+  upstream: 'Record the route of each animal in EX, or one route per TS ROUTE record of a set.'
+  evidence: {ex_subjects: 0, ex_studies: 0, ts_subjects: 6, ts_studies: 1, spellings: ['SUBCUTANEOUS, INTRATRACHEAL | -']}
+- exroute: TOPICAL
+  exmethod: null
+  reason: A route without a canonical route in this table. The owner decides whether to add it.
+  upstream: Record the route in EX.
+  evidence: {ex_subjects: 0, ex_studies: 0, ts_subjects: 6, ts_studies: 1, spellings: [TOPICAL | -]}
+- exroute: 'SUBCUTANEOUS, TOPICAL'
+  exmethod: null
+  reason: The value names several routes; the route of each animal is not known.
+  upstream: 'Record the route of each animal in EX, or one route per TS ROUTE record of a set.'
+  evidence: {ex_subjects: 0, ex_studies: 0, ts_subjects: 5, ts_studies: 1, spellings: ['SUBCUTANEOUS, TOPICAL | -']}
+- exroute: INTRAARTICULAR
+  exmethod: null
+  reason: A route without a canonical route in this table. The owner decides whether to add it.
+  upstream: Record the route in EX.
+  evidence: {ex_subjects: 0, ex_studies: 0, ts_subjects: 3, ts_studies: 1, spellings: [INTRAARTICULAR | -]}
+- exroute: OPHTHALMIC
+  exmethod: null
+  reason: A route without a canonical route in this table. The owner decides whether to add it.
+  upstream: Record the route in EX.
+  evidence: {ex_subjects: 0, ex_studies: 0, ts_subjects: 3, ts_studies: 1, spellings: [OPHTHALMIC | -]}
+- exroute: INTRATHECAL
+  exmethod: null
+  reason: A route without a canonical route in this table. The owner decides whether to add it.
+  upstream: Record the route in EX.
+  evidence: {ex_subjects: 0, ex_studies: 0, ts_subjects: 2, ts_studies: 1, spellings: [INTRATHECAL | -]}

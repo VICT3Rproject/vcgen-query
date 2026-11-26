@@ -2,13 +2,15 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping, Sequence
+from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import date
 from functools import lru_cache
 from importlib.resources import files
 import json
-from typing import Any, Literal, TypeAlias, cast
+from typing import Literal, TypeAlias, cast
+
+from .catalogue_values import catalogue_mapping, catalogue_sequence
 
 
 CATALOGUE_CONTRACT = "vcgen.grit42_endpoint_catalogue.v1"
@@ -36,22 +38,10 @@ class Grit42Catalogue:
     columns: Mapping[tuple[str, str], Grit42Column]
 
 
-def _mapping(value: Any, location: str) -> Mapping[str, Any]:
-    if not isinstance(value, Mapping):
-        raise RuntimeError(f"{location} must be an object")
-    return value
-
-
-def _sequence(value: Any, location: str) -> Sequence[Any]:
-    if not isinstance(value, Sequence) or isinstance(value, (str, bytes, bytearray)):
-        raise RuntimeError(f"{location} must be an array")
-    return value
-
-
 @lru_cache(maxsize=1)
 def load_grit42_catalogue() -> Grit42Catalogue:
     resource = files("vcgen_query").joinpath("data", GRIT42_CATALOGUE_FILENAME)
-    payload = _mapping(json.loads(resource.read_text(encoding="utf-8")), "catalogue")
+    payload = catalogue_mapping(json.loads(resource.read_text(encoding="utf-8")), "catalogue")
     if payload.get("contract") != CATALOGUE_CONTRACT:
         raise RuntimeError(f"catalogue contract must be {CATALOGUE_CONTRACT!r}")
     if payload.get("catalogue_id") != GRIT42_CATALOGUE_ID:
@@ -65,16 +55,16 @@ def load_grit42_catalogue() -> Grit42Catalogue:
         raise RuntimeError("catalogue captured_on must be an ISO date") from error
 
     columns: dict[tuple[str, str], Grit42Column] = {}
-    domains = _sequence(payload.get("domains"), "catalogue.domains")
+    domains = catalogue_sequence(payload.get("domains"), "catalogue.domains")
     for domain_index, domain_raw in enumerate(domains):
-        domain = _mapping(domain_raw, f"catalogue.domains[{domain_index}]")
+        domain = catalogue_mapping(domain_raw, f"catalogue.domains[{domain_index}]")
         domain_code = domain.get("code")
         if not isinstance(domain_code, str) or not domain_code:
             raise RuntimeError(f"catalogue.domains[{domain_index}].code is invalid")
         for column_index, column_raw in enumerate(
-            _sequence(domain.get("columns"), f"catalogue.domains[{domain_index}].columns")
+            catalogue_sequence(domain.get("columns"), f"catalogue.domains[{domain_index}].columns")
         ):
-            column = _mapping(
+            column = catalogue_mapping(
                 column_raw,
                 f"catalogue.domains[{domain_index}].columns[{column_index}]",
             )
@@ -105,7 +95,7 @@ def load_grit42_catalogue() -> Grit42Catalogue:
                 cast(AdvancedQueryDatetimeSource | None, datetime_source),
             )
 
-    counts = _mapping(payload.get("counts"), "catalogue.counts")
+    counts = catalogue_mapping(payload.get("counts"), "catalogue.counts")
     if counts.get("domains") != len(domains):
         raise RuntimeError("catalogue domain count is inconsistent")
     if counts.get("domain_endpoint_occurrences") != len(columns):
@@ -130,17 +120,6 @@ def grit42_domain_grain(domain: str) -> CatalogueDomainGrain:
     return "subject" if (domain, "USUBJID") in catalogue.columns else "study"
 
 
-def grit42_catalogue_identity() -> dict[str, str]:
-    """Return the stable catalogue identity used for parser validation."""
-
-    catalogue = load_grit42_catalogue()
-    return {
-        "catalogue_id": catalogue.catalogue_id,
-        "captured_on": catalogue.captured_on,
-        "resource": GRIT42_CATALOGUE_FILENAME,
-    }
-
-
 __all__ = [
     "GRIT42_CATALOGUE_FILENAME",
     "GRIT42_CATALOGUE_ID",
@@ -148,7 +127,6 @@ __all__ = [
     "CatalogueDomainGrain",
     "Grit42Catalogue",
     "Grit42Column",
-    "grit42_catalogue_identity",
     "grit42_column",
     "grit42_domain_grain",
     "load_grit42_catalogue",

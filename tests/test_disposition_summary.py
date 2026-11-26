@@ -2,9 +2,8 @@
 
 from __future__ import annotations
 
-from test_cohort import _members, _query, _rule
-
-from vcgen_query import execute_query
+from conftest import members, run_query
+from test_cohort import _query, _rule
 
 
 def _derived(name: str, value_type: str) -> dict[str, str]:
@@ -77,7 +76,7 @@ def test_terminal_offset_window_requires_an_in_window_value(make_connection) -> 
         field=_derived("terminal_sacrifice_offset_days", "number"),
     )
 
-    assert _members(execute_query(con, _query(window))) == {("S1", "S1-1"), ("S1", "S1-2")}
+    assert members(run_query(con, _query(window))) == {("S1", "S1-1"), ("S1", "S1-2")}
 
 
 def test_excluded_categories_drop_the_whole_subject(make_connection) -> None:
@@ -88,7 +87,7 @@ def test_excluded_categories_drop_the_whole_subject(make_connection) -> None:
         field=_derived("disposition_categories", "string"),
     )
 
-    assert _members(execute_query(con, _query(excluded))) == {("S1", "S1-4"), ("S1", "S1-5")}
+    assert members(run_query(con, _query(excluded))) == {("S1", "S1-4"), ("S1", "S1-5")}
 
     not_excluded = {
         "group": "and",
@@ -100,7 +99,7 @@ def test_excluded_categories_drop_the_whole_subject(make_connection) -> None:
             }
         ],
     }
-    assert _members(execute_query(con, _query(not_excluded))) == {
+    assert members(run_query(con, _query(not_excluded))) == {
         ("S1", "S1-1"),
         ("S1", "S1-2"),
         ("S1", "S1-3"),
@@ -144,7 +143,7 @@ def test_terminal_window_group_matches_committed_query_semantics(
     # Recovery/unscheduled subjects drop via the exclusion arm; terminal
     # subjects survive only with an in-window offset; subjects with no
     # terminal record pass through.
-    assert _members(execute_query(con, _query(predicate))) == {
+    assert members(run_query(con, _query(predicate))) == {
         ("S1", "S1-1"),
         ("S1", "S1-2"),
         ("S1", "S1-6"),
@@ -161,4 +160,4 @@ def test_subjects_without_a_ds_table_match_no_disposition_rules(
         field=_derived("disposition_categories", "string"),
     )
 
-    assert _members(execute_query(con, _query(excluded))) == set()
+    assert members(run_query(con, _query(excluded))) == set()

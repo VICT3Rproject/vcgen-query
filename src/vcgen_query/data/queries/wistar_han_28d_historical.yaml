@@ -46,79 +46,77 @@ subject_query:
         kind: derived
         name: route
         value_type: string
-      operator: in
-      value:
-      - ORAL
-      - ORAL GAVAGE
+      operator: eq
+      value: ORAL GAVAGE
 stages:
 - stage: endpoint_observations
   requested_endpoints:
-  - LB_RBC
-  - LB_HGB
-  - LB_HCT
-  - LB_MCH
-  - LB_MCHC
-  - LB_MCV
-  - LB_RETI
-  - LB_PLAT
-  - LB_WBC
-  - LB_LYM
-  - LB_NEUT
-  - LB_BASO
-  - LB_EOS
-  - LB_MONO
-  - LB_ALT
-  - LB_AST
-  - LB_ALP
-  - LB_GLDH
-  - LB_GGT
-  - LB_CK
-  - LB_GLUC
-  - LB_CHOL
-  - LB_TRIG
-  - LB_CREAT
-  - LB_UREA
-  - LB_PROT
-  - LB_ALB
-  - LB_SODIUM
-  - LB_K
-  - LB_CL
-  - LB_CA
-  - LB_PHOS
-  - BW
-  - BW_TERMINAL
+  - LB_RBC_BLOOD
+  - LB_HGB_BLOOD
+  - LB_HCT_BLOOD
+  - LB_MCH_BLOOD
+  - LB_MCHC_BLOOD
+  - LB_MCV_BLOOD
+  - LB_RETI_BLOOD
+  - LB_PLAT_BLOOD
+  - LB_WBC_BLOOD
+  - LB_LYM_BLOOD
+  - LB_NEUT_BLOOD
+  - LB_BASO_BLOOD
+  - LB_EOS_BLOOD
+  - LB_MONO_BLOOD
+  - LB_ALT_BLOOD
+  - LB_AST_BLOOD
+  - LB_ALP_BLOOD
+  - LB_GLDH_BLOOD
+  - LB_GGT_BLOOD
+  - LB_CK_BLOOD
+  - LB_GLUC_BLOOD
+  - LB_CHOL_BLOOD
+  - LB_TRIG_BLOOD
+  - LB_CREAT_BLOOD
+  - LB_UREA_BLOOD
+  - LB_PROT_BLOOD
+  - LB_ALB_BLOOD
+  - LB_SODIUM_BLOOD
+  - LB_K_BLOOD
+  - LB_CL_BLOOD
+  - LB_CA_BLOOD
+  - LB_PHOS_BLOOD
+  - BW_BW
+  - BW_TERMBW
   - OM_WEIGHT_BRAIN
   - OM_WEIGHT_HEART
   - OM_WEIGHT_LIVER
   - OM_WEIGHT_KIDNEY
   - OM_WEIGHT_TESTIS
   - OM_WEIGHT_EPIDIDYMIS
-  - OM_WEIGHT_PROSTATE
-  - OM_WEIGHT_SEMINAL_VESICLE
-  - OM_WEIGHT_ADRENAL
+  - OM_WEIGHT_GLAND_PROSTATE
+  - OM_WEIGHT_GLAND_SEMINAL_VESICLE
+  - OM_WEIGHT_GLAND_ADRENAL
   - OM_WEIGHT_SPLEEN
   - OM_WEIGHT_THYMUS
   - OM_WEIGHT_OVARY
   - OM_WEIGHT_UTERUS
-  - LB_APTT
-  - LB_BILI
-  - LB_FIBRINO
-  - LB_PT
+  - LB_APTT_BLOOD
+  - LB_BILI_BLOOD
+  - LB_FIBRINO_BLOOD
+  - LB_PT_BLOOD
   - OM_OWBW_BRAIN
   - OM_OWBW_HEART
   - OM_OWBW_LIVER
   - OM_OWBW_KIDNEY
   - OM_OWBW_TESTIS
   - OM_OWBW_EPIDIDYMIS
-  - OM_OWBW_PROSTATE
-  - OM_OWBW_SEMINAL_VESICLE
-  - OM_OWBW_ADRENAL
+  - OM_OWBW_GLAND_PROSTATE
+  - OM_OWBW_GLAND_SEMINAL_VESICLE
+  - OM_OWBW_GLAND_ADRENAL
   - OM_OWBW_SPLEEN
   - OM_OWBW_THYMUS
   - OM_OWBW_OVARY
   - LB_VOLUME_URINE
   - LB_PROT_URINE
   endpoint_catalogue:
-    contract: vcgen.canonical_endpoint_catalogue.v4
-    catalogue_id: grit42-canonical-endpoints-2026-09-17-v4
-    sha256: 8ef29868c68b1b02f7dba9aa7790b70c046d4898aa04b3f3e784ea67ec7152e4
+    contract: vcgen.canonical_endpoint_catalogue.v6
+    catalogue_id: vcgen-endpoints-6b1a42fc119c
+    md5: 5e17fc402368d6d1e1d5b2a651ac4907

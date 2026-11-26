@@ -12,11 +12,12 @@ if TYPE_CHECKING:
 from .contract_helpers import SourceDataError
 from .grit42_catalogue import grit42_domain_grain
 from .send_columns import STUDY_ID, SUBJECT_ID
+from .sql_identifiers import quote_ident, table_columns
 
 SourceGrain: TypeAlias = Literal["study", "subject"]
 
 _DERIVED_SOURCE_COLUMNS: dict[str, tuple[str, ...]] = {
-    "DM": ("STUDYID", "USUBJID", "SPECIES", "STRAIN", "SEX", "AGE", "AGEU"),
+    "DM": ("STUDYID", "USUBJID", "SPECIES", "STRAIN", "SEX", "AGE", "AGEU", "ARM"),
     "TS": ("STUDYID", "TSPARMCD", "TSVAL"),
     "EX": ("STUDYID", "USUBJID", "EXSTDY", "EXROUTE", "EXDOSFRQ", "EXTRT"),
 }
@@ -51,16 +52,16 @@ def validate_derived_source_schema(con: Any) -> None:
     """Validate raw columns before DuckDB creates derived cohort views."""
 
     for domain, required in _DERIVED_SOURCE_COLUMNS.items():
-        columns = _relation_columns(con, domain.lower())
+        columns = table_columns(con, domain.lower())
         if not columns:
             raise SourceDataError(f"required source domain {domain} is not available")
         _require_columns(columns, required, domain)
 
     for domain, required in _OPTIONAL_DERIVED_SOURCE_COLUMNS.items():
-        columns = _relation_columns(con, domain.lower())
+        columns = table_columns(con, domain.lower())
         if columns:
             _require_columns(columns, required, domain)
-            _require_columns(_relation_columns(con, "dm"), ("RFSTDTC",), "DM")
+            _require_columns(table_columns(con, "dm"), ("RFSTDTC",), "DM")
 
 
 def validate_active_source(
@@ -71,7 +72,7 @@ def validate_active_source(
     requirements: dict[str, tuple[SourceGrain, bool]] = {"DM": ("subject", True)}
 
     for domain, grain in _CONTEXT_GRAINS.items():
-        if _relation_columns(con, domain.lower()):
+        if table_columns(con, domain.lower()):
             requirements[domain] = (grain, requirements.get(domain, (grain, False))[1])
 
     for rule in rules(query.predicate):
@@ -93,7 +94,7 @@ def validate_active_source(
         _merge_requirement(requirements, endpoint.domain, "subject", required=False)
 
     for domain, (grain, required) in sorted(requirements.items()):
-        columns = _relation_columns(con, domain.lower())
+        columns = table_columns(con, domain.lower())
         if not columns:
             if required:
                 raise SourceDataError(f"required source domain {domain} is not available")
@@ -125,16 +126,16 @@ def _merge_requirement(
 
 def _validate_identity_values(con: Any, domain: str, columns: Sequence[str]) -> None:
     invalid = " OR ".join(
-        f"{_quote(column)} IS NULL OR trim(cast({_quote(column)} AS VARCHAR)) = ''"
+        f"{quote_ident(column)} IS NULL OR trim(cast({quote_ident(column)} AS VARCHAR)) = ''"
         for column in columns
     )
     padded = " OR ".join(
-        f"cast({_quote(column)} AS VARCHAR) <> trim(cast({_quote(column)} AS VARCHAR))"
+        f"cast({quote_ident(column)} AS VARCHAR) <> trim(cast({quote_ident(column)} AS VARCHAR))"
         for column in columns
     )
     invalid_count, padded_count = con.execute(
         f"SELECT count(*) FILTER (WHERE {invalid}), "
-        f"count(*) FILTER (WHERE {padded}) FROM {_quote(domain.lower())}"
+        f"count(*) FILTER (WHERE {padded}) FROM {quote_ident(domain.lower())}"
     ).fetchone()
     names = "/".join(columns)
     if invalid_count:
@@ -153,9 +154,9 @@ def _validate_unique_dm_subjects(con: Any) -> None:
     duplicate_groups, excess_rows = con.execute(
         f"""
         WITH duplicates AS (
-            SELECT {_quote(STUDY_ID)}, {_quote(SUBJECT_ID)}, count(*) AS row_count
+            SELECT {quote_ident(STUDY_ID)}, {quote_ident(SUBJECT_ID)}, count(*) AS row_count
             FROM dm
-            GROUP BY {_quote(STUDY_ID)}, {_quote(SUBJECT_ID)}
+            GROUP BY {quote_ident(STUDY_ID)}, {quote_ident(SUBJECT_ID)}
             HAVING count(*) > 1
         )
         SELECT count(*), coalesce(sum(row_count - 1), 0)
@@ -179,18 +180,6 @@ def _require_columns(
         names = ", ".join(missing)
         raise SourceDataError(f"{relation} does not provide required column(s): {names}")
     return tuple(available[column.casefold()] for column in required)
-
-
-def _relation_columns(con: Any, relation: str) -> tuple[str, ...]:
-    try:
-        cursor = con.execute(f"SELECT * FROM {_quote(relation)} LIMIT 0")
-    except Exception:  # noqa: BLE001 - relation existence probe
-        return ()
-    return tuple(item[0] for item in cursor.description)
-
-
-def _quote(identifier: str) -> str:
-    return '"' + identifier.replace('"', '""') + '"'
 
 
 __all__ = [

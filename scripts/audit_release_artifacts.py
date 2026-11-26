@@ -21,7 +21,6 @@ _FORBIDDEN_PARTS = {
 _SDIST_ALLOWED_ROOTS = {
     ".gitignore",
     ".vscode",
-    "GRIT42_MEMBERSHIP_PARITY.md",
     "GRIT42_SAVED_QUERY_GUIDE.md",
     "notebooks",
     "PKG-INFO",

@@ -3,14 +3,13 @@
 from __future__ import annotations
 
 
+from conftest import run_query
 from vcgen_query import (
     CohortQuery,
-    compare_membership,
-    execute_query,
     fingerprint_predicate,
     parse_subject_query,
 )
-from vcgen_query.set_execution import membership_hash
+from vcgen_query.fingerprint import membership_hash
 
 
 def _query():
@@ -35,22 +34,20 @@ def _query():
             },
         }
     )
-    return CohortQuery.compose(subject, ["BW"])
+    return CohortQuery.compose(subject, ["BW_BW"])
 
 
 def test_execute_query_returns_a_provenance_complete_membership_receipt(
     make_connection,
 ) -> None:
     query = _query()
-    result = execute_query(
-        make_connection(
-            [
-                {"study_id": "S", "subject_id": "1", "sex": "M"},
-                {"study_id": "S", "subject_id": "2", "sex": "F"},
-            ]
-        ),
-        query,
-    )
+    result = run_query(make_connection(
+        [
+            {"study_id": "S", "subject_id": "1", "sex": "M"},
+            {"study_id": "S", "subject_id": "2", "sex": "F"},
+        ]
+    ),
+    query,)
 
     assert {
         "predicate_contract",
@@ -72,7 +69,7 @@ def test_execute_query_returns_a_provenance_complete_membership_receipt(
     assert result.receipt["membership_hash"]
     assert result.receipt["warnings"] == list(result.warnings)
     assert result.receipt["source_identity"] is None
-    assert result.receipt["unit_catalogue"]["catalogue_id"] == "vcgen.unit_catalogue.v2"
+    assert result.receipt["unit_catalogue"]["catalogue_id"] == "vcgen.unit_catalogue.v3"
     assert result.receipt["dose_duration_evidence"]["status_counts"] == {
         "declared_only": 0,
         "corroborated": 1,
@@ -89,8 +86,6 @@ def test_execute_query_returns_a_provenance_complete_membership_receipt(
         "unavailable": 0,
     }
     assert any("source identity is unknown" in warning for warning in result.warnings)
-    comparison = compare_membership(result.subjects, result.subjects)
-    assert comparison["local_hash"] == result.receipt["membership_hash"]
     assert len(result.subjects) == result.metadata["subject_count"]
     assert len(result.subjects) == result.receipt["subject_count"]
     assert not result.subjects.duplicated(["study_id", "subject_id"]).any()

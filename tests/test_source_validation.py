@@ -4,12 +4,11 @@ from __future__ import annotations
 
 import pytest
 
+from conftest import run_query
 from vcgen_query import (
     SourceDataError,
     CohortQuery,
-    execute_query,
     parse_subject_query,
-    to_daily_frame,
 )
 
 
@@ -40,7 +39,7 @@ def _query(
         "query_id": "source-validation",
         "predicate": predicate or _rule("DM", "SEX", "M"),
     }
-    requested = ["LB_HCT"] if endpoints is not None else ["BW"]
+    requested = ["LB_HCT_BLOOD"] if endpoints is not None else ["BW_BW"]
     return CohortQuery.compose(parse_subject_query(raw), requested)
 
 
@@ -62,7 +61,7 @@ def test_subject_grain_predicate_requires_usubjid(make_connection, predicate) ->
     con.execute("ALTER TABLE lb DROP COLUMN USUBJID")
 
     with pytest.raises(SourceDataError, match="LB.*USUBJID"):
-        execute_query(con, _query(predicate))
+        run_query(con, _query(predicate))
 
 
 def test_present_observation_domain_requires_usubjid(make_connection) -> None:
@@ -70,23 +69,19 @@ def test_present_observation_domain_requires_usubjid(make_connection) -> None:
     con.execute("ALTER TABLE lb DROP COLUMN USUBJID")
 
     with pytest.raises(SourceDataError, match="LB.*USUBJID"):
-        execute_query(
-            con,
-            _query(endpoints=[{"name": "HCT", "domain": "LB", "test_codes": ["HCT"]}]),
-        )
+        run_query(con,
+        _query(endpoints=[{"name": "HCT", "domain": "LB", "test_codes": ["HCT"]}]),)
 
 
 def test_absent_observation_domain_keeps_warning(make_connection) -> None:
     con = make_connection([{"study_id": "S", "subject_id": "1", "sex": "M"}])
     con.execute("DROP TABLE lb")
 
-    result = execute_query(
-        con,
-        _query(endpoints=[{"name": "HCT", "domain": "LB", "test_codes": ["HCT"]}]),
-    )
+    result = run_query(con,
+    _query(endpoints=[{"name": "HCT", "domain": "LB", "test_codes": ["HCT"]}]),)
 
     assert result.observations.empty
-    assert any("LB: configured endpoint domain is not available" in item for item in result.warnings)
+    assert any("no LB domain" in item for item in result.warnings)
 
 
 @pytest.mark.parametrize(
@@ -108,7 +103,7 @@ def test_active_subject_domains_reject_padded_identity_values(
     )
 
     with pytest.raises(SourceDataError, match=f"{domain}.*surrounding whitespace"):
-        execute_query(con, query)
+        run_query(con, query)
 
 
 def test_active_subject_domain_rejects_blank_identity_values(make_connection) -> None:
@@ -116,10 +111,8 @@ def test_active_subject_domain_rejects_blank_identity_values(make_connection) ->
     con.execute("UPDATE lb SET USUBJID = ''")
 
     with pytest.raises(SourceDataError, match="LB.*whitespace-only"):
-        execute_query(
-            con,
-            _query(endpoints=[{"name": "HCT", "domain": "LB", "test_codes": ["HCT"]}]),
-        )
+        run_query(con,
+        _query(endpoints=[{"name": "HCT", "domain": "LB", "test_codes": ["HCT"]}]),)
 
 
 @pytest.mark.parametrize(
@@ -134,7 +127,7 @@ def test_duplicate_dm_subject_keys_reject_execution(make_connection, duplicate_s
     con.execute(duplicate_sql)
 
     with pytest.raises(SourceDataError, match="duplicate STUDYID/USUBJID"):
-        execute_query(con, _query())
+        run_query(con, _query())
 
 
 def test_declared_study_grain_ignores_unexpected_usubjid_column(make_connection) -> None:
@@ -147,7 +140,7 @@ def test_declared_study_grain_ignores_unexpected_usubjid_column(make_connection)
     con.execute("ALTER TABLE ts ADD COLUMN USUBJID VARCHAR")
     con.execute("UPDATE ts SET USUBJID = 'not-a-DM-subject'")
 
-    result = execute_query(con, _query(_rule("TS", "TSVAL", "28")))
+    result = run_query(con, _query(_rule("TS", "TSVAL", "28")))
 
     assert result.subjects["subject_id"].tolist() == ["S-1", "S-2"]
 
@@ -158,7 +151,7 @@ def test_pooldef_is_declared_subject_grain(make_connection) -> None:
     con.execute("INSERT INTO pooldef VALUES ('S', 'P1')")
 
     with pytest.raises(SourceDataError, match="POOLDEF.*USUBJID"):
-        execute_query(con, _query(_rule("POOLDEF", "POOLID", "P1")))
+        run_query(con, _query(_rule("POOLDEF", "POOLID", "P1")))
 
 
 def test_duplicate_subject_context_rows_reject_execution(make_connection) -> None:
@@ -173,7 +166,7 @@ def test_duplicate_subject_context_rows_reject_execution(make_connection) -> Non
     )
 
     with pytest.raises(SourceDataError, match="context assembly produced duplicate"):
-        execute_query(con, _query())
+        run_query(con, _query())
 
 
 # Failure mode: pruning context construction to selected subjects hides a
@@ -188,10 +181,10 @@ def test_unselected_subject_context_integrity_still_rejects_execution(make_conne
     changed = (projection + " UNION ALL " + projection + " WHERE USUBJID = 'S-2'") if duplicate else (projection + " WHERE USUBJID = 'S-1'")
     con.execute("CREATE OR REPLACE VIEW subject_demographics AS " + changed)
     with pytest.raises(SourceDataError, match="context assembly produced duplicate|context keys do not match"):
-        execute_query(con, _query(_rule("DM", "USUBJID", "S-1")))
+        run_query(con, _query(_rule("DM", "USUBJID", "S-1")))
 
 
-def test_repeated_observations_remain_available_for_daily_resolution(make_connection) -> None:
+def test_repeated_observations_remain_in_the_long_form_result(make_connection) -> None:
     row = {
         "study_id": "S",
         "subject_id": "1",
@@ -206,12 +199,7 @@ def test_repeated_observations_remain_available_for_daily_resolution(make_connec
         [{"study_id": "S", "subject_id": "1", "sex": "M"}],
         lab=[row, row],
     )
-    result = execute_query(
-        con,
-        _query(endpoints=[{"name": "HCT", "domain": "LB", "test_codes": ["HCT"]}]),
-    )
+    result = run_query(con,
+    _query(endpoints=[{"name": "HCT", "domain": "LB", "test_codes": ["HCT"]}]),)
 
     assert len(result.observations) == 2
-    daily = to_daily_frame(result)
-    assert daily.receipt["duplicate_count"] == 1
-    assert daily.cell_audit.loc[0, "resolution"] == "equivalent_duplicate_collapsed"

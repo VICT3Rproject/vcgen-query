@@ -1,0 +1,244 @@
+# Reviewed dose frequencies for the `dose_frequency` derived field.
+#
+# The archive records one dosing frequency with several spellings (EXDOSFRQ
+# "QD" and "QD – Once daily"; TS PDOSFRQ "DAILY" and "Once daily"). Each entry
+# gives one canonical frequency and the exact source spellings that map to it.
+# The `dose_frequency` field selects a subject when one of its exposure
+# frequencies (EX rows, or the TS PDOSFRQ values of a subject without EX rows)
+# maps to the requested canonical frequency. `/vcgen/population` offers the
+# canonical frequencies.
+#
+# Matching: spellings are compared after whitespace collapse, trim, and
+# upper-casing. Only the spellings below match. A spelling that is not in this
+# file maps to no frequency, so it matches no frequency request.
+#
+# `unmapped` lists spellings that were reviewed and must not map to a
+# frequency, with the reason. `evidence` records the EX and TS subjects and
+# studies of the spelling in the reviewed source; it is review evidence only
+# and does not change matching.
+#
+# Review rule: when the source archive changes (`rodent_db_export.zip.dvc`),
+# list the spellings that map to no frequency (see `frequency_alias_inventory`),
+# add or reject each one here, and update `reviewed_source`. The file hash is
+# part of the predicate fingerprint of each query that uses `dose_frequency`.
+contract: vcgen.dose_frequency_aliases.v1
+reviewed_source:
+  archive: rodent_db_export.zip
+  dvc_md5: 6b1a42fc119c2d537b6f4e0ec4cac262
+analysis:
+  inventory: Distinct EXDOSFRQ and TS PDOSFRQ spellings, with subject and study counts per source.
+  rule: >-
+    One canonical frequency per dosing schedule, spelled as the most frequent
+    EXDOSFRQ value of that schedule. A SEND abbreviation, an English phrase and
+    an ISO 8601 period (P7D, P14D, P4W) of the same schedule map to it. TWICE
+    and THRICE count administrations in the study and stay apart from BID and
+    TID. A value that lists dosing days, combines frequencies, or describes a
+    changing schedule is not mapped.
+frequencies:
+- id: FREQ-001
+  frequency: QD
+  note: Once daily.
+  sources:
+  - {value: QD, evidence: {ex_subjects: 18317, ex_studies: 737, ts_subjects: 13727, ts_studies: 514}}
+  - {value: QD – ONCE DAILY, evidence: {ex_subjects: 13, ex_studies: 1, ts_subjects: 0, ts_studies: 0}}
+  - {value: DAILY, evidence: {ex_subjects: 0, ex_studies: 0, ts_subjects: 440, ts_studies: 27}}
+  - {value: ONCE DAILY, evidence: {ex_subjects: 0, ex_studies: 0, ts_subjects: 260, ts_studies: 10}}
+  - {value: DAILY (MG/KG/DAY SCHEDULE), evidence: {ex_subjects: 0, ex_studies: 0, ts_subjects: 6, ts_studies: 1}}
+- id: FREQ-002
+  frequency: BID
+  note: Twice daily.
+  sources:
+  - {value: BID, evidence: {ex_subjects: 1889, ex_studies: 73, ts_subjects: 1580, ts_studies: 48}}
+  - {value: TWICE DAILY, evidence: {ex_subjects: 0, ex_studies: 0, ts_subjects: 38, ts_studies: 2}}
+- id: FREQ-003
+  frequency: TID
+  note: Three times daily.
+  sources:
+  - {value: TID, evidence: {ex_subjects: 16, ex_studies: 2, ts_subjects: 14, ts_studies: 2}}
+- id: FREQ-004
+  frequency: QID
+  note: Four times daily.
+  sources:
+  - {value: QID, evidence: {ex_subjects: 0, ex_studies: 0, ts_subjects: 38, ts_studies: 2}}
+- id: FREQ-005
+  frequency: QOD
+  note: Every other day.
+  sources:
+  - {value: QOD, evidence: {ex_subjects: 311, ex_studies: 10, ts_subjects: 173, ts_studies: 6}}
+- id: FREQ-006
+  frequency: Q3D
+  note: Every third day.
+  sources:
+  - {value: Q3D, evidence: {ex_subjects: 346, ex_studies: 4, ts_subjects: 322, ts_studies: 3}}
+- id: FREQ-007
+  frequency: Q5D
+  note: Every fifth day.
+  sources:
+  - {value: Q5D, evidence: {ex_subjects: 270, ex_studies: 1, ts_subjects: 270, ts_studies: 1}}
+- id: FREQ-008
+  frequency: Q6D
+  note: Every sixth day.
+  sources:
+  - {value: Q6D, evidence: {ex_subjects: 25, ex_studies: 1, ts_subjects: 25, ts_studies: 1}}
+- id: FREQ-009
+  frequency: 1 TIME PER WEEK
+  note: Once weekly.
+  sources:
+  - {value: 1 TIME PER WEEK, evidence: {ex_subjects: 1191, ex_studies: 39, ts_subjects: 940, ts_studies: 35}}
+  - {value: QW, evidence: {ex_subjects: 0, ex_studies: 0, ts_subjects: 49, ts_studies: 3}}
+  - {value: EVERY WEEK, evidence: {ex_subjects: 0, ex_studies: 0, ts_subjects: 32, ts_studies: 1}}
+  - {value: ONCE A WEEK, evidence: {ex_subjects: 0, ex_studies: 0, ts_subjects: 5, ts_studies: 1}}
+  - {value: P7D, evidence: {ex_subjects: 0, ex_studies: 0, ts_subjects: 32, ts_studies: 2}}
+- id: FREQ-010
+  frequency: 2 TIMES PER WEEK
+  note: Twice weekly.
+  sources:
+  - {value: 2 TIMES PER WEEK, evidence: {ex_subjects: 244, ex_studies: 8, ts_subjects: 313, ts_studies: 9}}
+  - {value: BIW, evidence: {ex_subjects: 0, ex_studies: 0, ts_subjects: 54, ts_studies: 3}}
+  - {value: TWICE WEEKLY, evidence: {ex_subjects: 0, ex_studies: 0, ts_subjects: 44, ts_studies: 2}}
+- id: FREQ-011
+  frequency: 3 TIMES PER WEEK
+  note: Three times weekly.
+  sources:
+  - {value: 3 TIMES PER WEEK, evidence: {ex_subjects: 56, ex_studies: 2, ts_subjects: 72, ts_studies: 2}}
+  - {value: THREE TIMES PER WEEK, evidence: {ex_subjects: 0, ex_studies: 0, ts_subjects: 30, ts_studies: 1}}
+- id: FREQ-012
+  frequency: 5 TIMES PER WEEK
+  note: Five times weekly.
+  sources:
+  - {value: 5 TIMES PER WEEK, evidence: {ex_subjects: 26, ex_studies: 1, ts_subjects: 26, ts_studies: 1}}
+- id: FREQ-013
+  frequency: EVERY 2 WEEKS
+  note: Once every two weeks.
+  sources:
+  - {value: EVERY 2 WEEKS, evidence: {ex_subjects: 259, ex_studies: 9, ts_subjects: 363, ts_studies: 13}}
+  - {value: ONCE EVERY 2 WEEKS, evidence: {ex_subjects: 0, ex_studies: 0, ts_subjects: 90, ts_studies: 3}}
+  - {value: ONCE EVERY TWO WEEKS, evidence: {ex_subjects: 0, ex_studies: 0, ts_subjects: 30, ts_studies: 1}}
+  - {value: P14D, evidence: {ex_subjects: 0, ex_studies: 0, ts_subjects: 42, ts_studies: 3}}
+- id: FREQ-014
+  frequency: EVERY 3 WEEKS
+  note: Once every three weeks.
+  sources:
+  - {value: EVERY 3 WEEKS, evidence: {ex_subjects: 51, ex_studies: 2, ts_subjects: 51, ts_studies: 2}}
+- id: FREQ-015
+  frequency: EVERY 4 WEEKS
+  note: Once every four weeks.
+  sources:
+  - {value: EVERY 4 WEEKS, evidence: {ex_subjects: 288, ex_studies: 6, ts_subjects: 200, ts_studies: 4}}
+  - {value: P4W, evidence: {ex_subjects: 0, ex_studies: 0, ts_subjects: 36, ts_studies: 1}}
+- id: FREQ-016
+  frequency: QM
+  note: Once monthly.
+  sources:
+  - {value: QM, evidence: {ex_subjects: 0, ex_studies: 0, ts_subjects: 18, ts_studies: 1}}
+  - {value: ONCE A MONTH, evidence: {ex_subjects: 0, ex_studies: 0, ts_subjects: 18, ts_studies: 1}}
+- id: FREQ-017
+  frequency: ONCE
+  note: A single administration.
+  sources:
+  - {value: ONCE, evidence: {ex_subjects: 623, ex_studies: 47, ts_subjects: 701, ts_studies: 44}}
+  - {value: SINGLE DOSE, evidence: {ex_subjects: 0, ex_studies: 0, ts_subjects: 24, ts_studies: 3}}
+- id: FREQ-018
+  frequency: TWICE
+  note: Two administrations in the study; not twice daily.
+  sources:
+  - {value: TWICE, evidence: {ex_subjects: 85, ex_studies: 4, ts_subjects: 132, ts_studies: 5}}
+- id: FREQ-019
+  frequency: THRICE
+  note: Three administrations in the study; not three times daily.
+  sources:
+  - {value: THRICE, evidence: {ex_subjects: 48, ex_studies: 3, ts_subjects: 48, ts_studies: 3}}
+- id: FREQ-020
+  frequency: CONTINUOUS
+  note: Continuous administration.
+  sources:
+  - {value: CONTINUOUS, evidence: {ex_subjects: 111, ex_studies: 7, ts_subjects: 68, ts_studies: 5}}
+- id: FREQ-021
+  frequency: INTERMITTENT
+  note: Intermittent administration without a stated schedule.
+  sources:
+  - {value: INTERMITTENT, evidence: {ex_subjects: 132, ex_studies: 6, ts_subjects: 222, ts_studies: 10}}
+- id: FREQ-022
+  frequency: 3 TIMES PER CYCLE
+  note: Three administrations per dosing cycle.
+  sources:
+  - {value: 3 TIMES PER CYCLE, evidence: {ex_subjects: 46, ex_studies: 1, ts_subjects: 46, ts_studies: 1}}
+- id: FREQ-023
+  frequency: QD FOR 5 DAYS EVERY 28 DAYS
+  note: A cyclic daily schedule.
+  sources:
+  - {value: QD FOR 5 DAYS EVERY 28 DAYS, evidence: {ex_subjects: 60, ex_studies: 1, ts_subjects: 60, ts_studies: 1}}
+- id: FREQ-024
+  frequency: QD FOR 3 DAYS EVERY 9 DAYS
+  note: A cyclic daily schedule.
+  sources:
+  - {value: QD FOR 3 DAYS EVERY 9 DAYS, evidence: {ex_subjects: 40, ex_studies: 1, ts_subjects: 0, ts_studies: 0}}
+unmapped:
+- value: ONCE;QD
+  reason: Two frequencies in one value.
+  upstream: Record one frequency per value.
+  evidence: {ex_subjects: 0, ex_studies: 0, ts_subjects: 12, ts_studies: 1}
+- value: QD 1-7, QW
+  reason: A schedule that changes frequency, not one frequency.
+  upstream: Record the schedule in the trial design; record each frequency separately.
+  evidence: {ex_subjects: 0, ex_studies: 0, ts_subjects: 40, ts_studies: 1}
+- value: DAILY 1-7, THEN WEEKLY
+  reason: A schedule that changes frequency, not one frequency.
+  upstream: Record the schedule in the trial design; record each frequency separately.
+  evidence: {ex_subjects: 0, ex_studies: 0, ts_subjects: 40, ts_studies: 1}
+- value: QD, 14, 21, 28
+  reason: A frequency mixed with dosing days.
+  upstream: Record the frequency in PDOSFRQ and the dosing days in the trial design.
+  evidence: {ex_subjects: 0, ex_studies: 0, ts_subjects: 40, ts_studies: 1}
+- value: 'SPECIAL (DAY ONE:ONCE, DAY 2-5: TWICE)'
+  reason: A schedule that changes frequency, not one frequency.
+  upstream: Record the schedule in the trial design.
+  evidence: {ex_subjects: 0, ex_studies: 0, ts_subjects: 20, ts_studies: 1}
+- value: 1, 2, 3, 10, 11, 12
+  reason: A list of dosing days, not a frequency.
+  upstream: Record the frequency in PDOSFRQ and the dosing days in the trial design.
+  evidence: {ex_subjects: 0, ex_studies: 0, ts_subjects: 76, ts_studies: 2}
+- value: 1, 5, 8, 12, 15
+  reason: A list of dosing days, not a frequency.
+  upstream: Record the frequency in PDOSFRQ and the dosing days in the trial design.
+  evidence: {ex_subjects: 0, ex_studies: 0, ts_subjects: 34, ts_studies: 1}
+- value: 1, 14
+  reason: A list of dosing days, not a frequency.
+  upstream: Record the frequency in PDOSFRQ and the dosing days in the trial design.
+  evidence: {ex_subjects: 0, ex_studies: 0, ts_subjects: 12, ts_studies: 1}
+- value: '14'
+  reason: A dosing day or a period without a unit, not a frequency.
+  upstream: Record a controlled-terminology frequency.
+  evidence: {ex_subjects: 0, ex_studies: 0, ts_subjects: 10, ts_studies: 1}
+- value: 3 DAYS TREATMENT / 6 DAYS OFF-TREATMENT, TWO CYCLES
+  reason: A cyclic schedule described in free text.
+  upstream: Record the schedule in the trial design.
+  evidence: {ex_subjects: 0, ex_studies: 0, ts_subjects: 40, ts_studies: 1}
+- value: 3 DAY TREATMENT, 6 DAY OFF TREATMENT, 2 EEKS IN TOTAL
+  reason: A cyclic schedule described in free text.
+  upstream: Record the schedule in the trial design.
+  evidence: {ex_subjects: 0, ex_studies: 0, ts_subjects: 36, ts_studies: 1}
+- value: 2-3 CYCLES / WEEK WITH WASHOUT
+  reason: A range of frequencies, not one frequency.
+  upstream: Record one frequency.
+  evidence: {ex_subjects: 0, ex_studies: 0, ts_subjects: 6, ts_studies: 1}
+- value: 7 TIMES PER CYCLE
+  reason: A count per cycle without the cycle length.
+  upstream: Record the cycle length or a controlled-terminology frequency.
+  evidence: {ex_subjects: 0, ex_studies: 0, ts_subjects: 48, ts_studies: 1}
+- value: SEE PROTOCOLE
+  reason: A reference to the protocol, not a frequency.
+  upstream: Record the frequency.
+  evidence: {ex_subjects: 0, ex_studies: 0, ts_subjects: 32, ts_studies: 1}
+- value: QIW
+  reason: Not a SEND frequency term; four times weekly or four times a day is not known.
+  upstream: Record a controlled-terminology frequency.
+  evidence: {ex_subjects: 0, ex_studies: 0, ts_subjects: 12, ts_studies: 2}
+- value: P12D
+  reason: An ISO 8601 period of 12 days with no matching frequency term.
+  upstream: Record a controlled-terminology frequency.
+  evidence: {ex_subjects: 0, ex_studies: 0, ts_subjects: 10, ts_studies: 1}
+- value: P4D
+  reason: An ISO 8601 period of 4 days with no matching frequency term.
+  upstream: Record a controlled-terminology frequency.
+  evidence: {ex_subjects: 0, ex_studies: 0, ts_subjects: 16, ts_studies: 1}

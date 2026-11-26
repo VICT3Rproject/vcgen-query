@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from vcgen_query import CohortQuery, execute_query, parse_subject_query
+from conftest import members, run_query
+from vcgen_query import CohortQuery, parse_subject_query
 
 
 def _send(
@@ -40,15 +41,11 @@ def _query(predicate: dict[str, object] | None, **extra: object) -> object:
     }
     if predicate is not None:
         raw["predicate"] = predicate
-    return CohortQuery.compose(parse_subject_query(raw), ["BW"])
-
-
-def _members(result) -> set[tuple[str, str]]:
-    return {(row["study_id"], row["subject_id"]) for row in result.subjects.to_dict("records")}
+    return CohortQuery.compose(parse_subject_query(raw), ["BW_BW"])
 
 
 def _run(con, predicate: dict[str, object] | None):
-    return execute_query(con, _query(predicate))
+    return run_query(con, _query(predicate))
 
 
 @pytest.fixture
@@ -125,7 +122,7 @@ def test_operator_truth_table_uses_typed_values_and_never_matches_missing_values
 ) -> None:
     result = _run(operator_source, _rule(operator, value, field=field))
 
-    assert {study_id for study_id, _ in _members(result)} == studies
+    assert {study_id for study_id, _ in members(result)} == studies
 
 
 def test_empty_operators_distinguish_zero_length_strings_from_null(
@@ -144,10 +141,10 @@ def test_empty_operators_distinguish_zero_length_strings_from_null(
     con.execute("UPDATE dm SET STRAIN = ' ' WHERE STUDYID = ?", ["WHITESPACE"])
 
     assert {
-        study for study, _ in _members(_run(con, _rule("is_empty", field=_send("STRAIN"))))
+        study for study, _ in members(_run(con, _rule("is_empty", field=_send("STRAIN"))))
     } == {"EMPTY", "NULL"}
     assert {
-        study for study, _ in _members(_run(con, _rule("is_not_empty", field=_send("STRAIN"))))
+        study for study, _ in members(_run(con, _rule("is_not_empty", field=_send("STRAIN"))))
     } == {"VALUE", "WHITESPACE"}
 
 
@@ -181,7 +178,7 @@ def test_offset_aware_datetime_rules_compare_normalized_instants(make_connection
         ),
     )
 
-    assert _members(result) == {("OFFSET", "OFFSET-1"), ("UTC", "UTC-1")}
+    assert members(result) == {("OFFSET", "OFFSET-1"), ("UTC", "UTC-1")}
 
 
 def test_aware_datetime_rule_does_not_coerce_naive_source_timestamp(
@@ -211,7 +208,7 @@ def test_aware_datetime_rule_does_not_coerce_naive_source_timestamp(
         ),
     )
 
-    assert _members(result) == {("AWARE", "AWARE-1")}
+    assert members(result) == {("AWARE", "AWARE-1")}
 
 
 @pytest.mark.parametrize(
@@ -245,9 +242,9 @@ def test_imported_grit42_rfstdtc_uses_catalogued_calendar_date_source(
         },
     )
 
-    result = execute_query(con, query)
+    result = run_query(con, query)
 
-    assert bool(_members(result)) is matches
+    assert bool(members(result)) is matches
     assert any("calendar_date_midnight" in item for item in result.receipt["assumptions"])
 
 
@@ -281,7 +278,7 @@ def test_aware_datetime_ranges_normalize_each_bound(make_connection) -> None:
         ),
     )
 
-    assert _members(result) == {("LOW", "LOW-1"), ("HIGH", "HIGH-1")}
+    assert members(result) == {("LOW", "LOW-1"), ("HIGH", "HIGH-1")}
 
 
 def test_datetime_rule_rejects_mixed_aware_and_naive_values(make_connection) -> None:
@@ -312,7 +309,7 @@ def test_nested_boolean_algebra_uses_dm_universe_for_not(make_connection) -> Non
         ],
     }
 
-    assert _members(_run(con, predicate)) == {("S1", "S1-1"), ("S2", "S2-3")}
+    assert members(_run(con, predicate)) == {("S1", "S1-1"), ("S2", "S2-3")}
 
 
 def test_study_grain_rule_propagates_to_every_dm_subject(make_connection) -> None:
@@ -326,7 +323,7 @@ def test_study_grain_rule_propagates_to_every_dm_subject(make_connection) -> Non
 
     result = _run(con, _rule("eq", "28", field=_send("TSVAL", "string", "TS")))
 
-    assert _members(result) == {("MATCH", "MATCH-1"), ("MATCH", "MATCH-2")}
+    assert members(result) == {("MATCH", "MATCH-1"), ("MATCH", "MATCH-2")}
 
 
 def test_planned_dose_duration_selector_respects_source_duration_units(
@@ -357,7 +354,7 @@ def test_planned_dose_duration_selector_respects_source_duration_units(
         },
     )
 
-    assert _members(_run(con, predicate)) == {
+    assert members(_run(con, predicate)) == {
         ("DAYS", "DAYS-1"),
         ("WEEKS_EQUIVALENT", "WEEKS_EQUIVALENT-1"),
         ("MULTIPLE", "MULTIPLE-1"),
@@ -393,7 +390,7 @@ def test_planned_dose_duration_between_bounds_match_one_subject_value(
         },
     )
 
-    assert _members(_run(con, predicate)) == {("MATCH", "MATCH-1")}
+    assert members(_run(con, predicate)) == {("MATCH", "MATCH-1")}
 
 
 def test_cross_domain_rules_compose_as_subject_key_sets(make_connection) -> None:
@@ -412,7 +409,7 @@ def test_cross_domain_rules_compose_as_subject_key_sets(make_connection) -> None
         ],
     }
 
-    assert _members(_run(con, predicate)) == {("S1", "S1-1")}
+    assert members(_run(con, predicate)) == {("S1", "S1-1")}
 
 
 def test_same_group_same_domain_rules_must_match_one_source_row(
@@ -433,7 +430,7 @@ def test_same_group_same_domain_rules_must_match_one_source_row(
         ],
     }
 
-    assert _members(_run(con, predicate)) == set()
+    assert members(_run(con, predicate)) == set()
 
 
 def test_nested_same_domain_groups_lift_to_independent_subject_sets(
@@ -460,7 +457,7 @@ def test_nested_same_domain_groups_lift_to_independent_subject_sets(
         ],
     }
 
-    assert _members(_run(con, predicate)) == {("S", "S-1")}
+    assert members(_run(con, predicate)) == {("S", "S-1")}
 
 
 def test_direct_rule_and_nested_same_domain_group_are_independent_subject_sets(
@@ -484,7 +481,7 @@ def test_direct_rule_and_nested_same_domain_group_are_independent_subject_sets(
         ],
     }
 
-    assert _members(_run(con, predicate)) == {("S", "S-1")}
+    assert members(_run(con, predicate)) == {("S", "S-1")}
 
 
 def test_same_domain_or_group_matches_any_source_row(make_connection) -> None:
@@ -508,7 +505,7 @@ def test_same_domain_or_group_matches_any_source_row(make_connection) -> None:
         ],
     }
 
-    assert _members(_run(con, predicate)) == {("S", "S-AST"), ("S", "S-ALT")}
+    assert members(_run(con, predicate)) == {("S", "S-AST"), ("S", "S-ALT")}
 
 
 def test_study_grain_same_domain_group_requires_one_ts_row(make_connection) -> None:
@@ -543,7 +540,7 @@ def test_study_grain_same_domain_group_requires_one_ts_row(make_connection) -> N
         ],
     }
 
-    assert _members(_run(con, predicate)) == {
+    assert members(_run(con, predicate)) == {
         ("MATCH", "MATCH-1"),
         ("MATCH", "MATCH-2"),
     }
@@ -569,7 +566,7 @@ def test_same_row_scope_pairs_measurement_name_and_value(make_connection) -> Non
         ],
     }
 
-    assert _members(_run(con, predicate)) == {("S", "S-MATCH")}
+    assert members(_run(con, predicate)) == {("S", "S-MATCH")}
 
 
 def test_negated_same_row_group_negates_each_row_before_subject_lift(make_connection) -> None:
@@ -594,7 +591,7 @@ def test_negated_same_row_group_negates_each_row_before_subject_lift(make_connec
         ],
     }
 
-    assert _members(_run(con, predicate)) == {("S", "S-SPLIT")}
+    assert members(_run(con, predicate)) == {("S", "S-SPLIT")}
 
 
 def test_injected_value_is_bound_as_data_not_executed_sql(make_connection) -> None:
@@ -602,24 +599,23 @@ def test_injected_value_is_bound_as_data_not_executed_sql(make_connection) -> No
 
     result = _run(con, _rule("eq", "M' OR 1=1 --"))
 
-    assert _members(result) == set()
+    assert members(result) == set()
     assert con.execute("SELECT count(*) FROM dm").fetchone()[0] == 1
 
 
 def test_absent_predicate_returns_the_dm_universe(make_connection, basic_subjects) -> None:
     result = _run(make_connection(basic_subjects), None)
 
-    assert len(_members(result)) == len(basic_subjects)
+    assert len(members(result)) == len(basic_subjects)
 
 
-def test_null_exposure_cells_never_crash_and_never_match(make_connection) -> None:
-    """EX rows with NULL route/frequency/treatment must not raise QueryError.
-
-    ``subject_exposure_summary`` aggregates raw EX columns as lists without
-    NULL guards; the regression is a ``None`` element reaching the categorical
-    normalizer. Missing cells fail the selector instead of crashing execution.
-    """
-
+# Failure modes of the exposure selectors:
+# - An EX row with a NULL route, frequency or vehicle raises QueryError: the summary
+#   aggregates raw EX columns as lists, and a None element reaches the normalizer.
+# - The vehicle is read from the treatment name (EXTRT). A zero-dose row names the
+#   vehicle in EXTRTV; its EXTRT is empty, redacted, CONTROL, or a compound name. A
+#   vehicle selector then matches a treatment name and misses the subjects of the vehicle.
+def test_exposure_selectors_read_their_own_column_and_never_match_a_missing_cell(make_connection) -> None:
     con = make_connection(
         [
             {
@@ -627,9 +623,11 @@ def test_null_exposure_cells_never_crash_and_never_match(make_connection) -> Non
                 "subject_id": "1",
                 "exroute": None,
                 "exdosfrq": None,
-                "extrt": None,
+                # The treatment name must not stand for the missing vehicle.
+                "extrt": "0.5% METHOCEL",
+                "extrtv": None,
             },
-            {"study_id": "S2", "subject_id": "1"},
+            {"study_id": "S2", "subject_id": "1", "extrt": "CONTROL"},
         ]
     )
 
@@ -659,4 +657,29 @@ def test_null_exposure_cells_never_crash_and_never_match(make_connection) -> Non
                 ],
             },
         )
-        assert _members(result) == expected
+        assert members(result) == expected
+
+
+# Failure modes of the optional readers for source values (isolated test: the SQL
+# of the subject view already turns non-finite text into NULL, so no public query
+# can reach them with such a value):
+# - _optional_int raises ValueError for NaN and OverflowError for infinity.
+# - optional_float returns infinity, which the result table later rejects.
+# - A fractional value must keep giving None in _optional_int.
+@pytest.mark.parametrize("value", [float("nan"), float("inf"), float("-inf"), "nan", "inf"])
+def test_optional_readers_give_none_for_non_finite_source_values(value) -> None:
+    from vcgen_query.cohort import _optional_int
+    from vcgen_query.send_semantics import optional_float
+
+    assert _optional_int(value) is None
+    assert optional_float(value) is None
+
+
+def test_optional_readers_keep_finite_values() -> None:
+    from vcgen_query.cohort import _optional_int
+    from vcgen_query.send_semantics import optional_float
+
+    assert _optional_int("28") == 28
+    assert _optional_int(28.0) == 28
+    assert _optional_int(28.5) is None
+    assert optional_float("2.5") == 2.5

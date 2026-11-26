@@ -58,9 +58,9 @@ subject_query:
 stages:
 - stage: endpoint_observations
   requested_endpoints:
-  - BW
-  - LB_HCT
+  - BW_BW
+  - LB_HCT_BLOOD
   endpoint_catalogue:
-    contract: vcgen.canonical_endpoint_catalogue.v4
-    catalogue_id: grit42-canonical-endpoints-2026-09-17-v4
-    sha256: 8ef29868c68b1b02f7dba9aa7790b70c046d4898aa04b3f3e784ea67ec7152e4
+    contract: vcgen.canonical_endpoint_catalogue.v6
+    catalogue_id: vcgen-endpoints-6b1a42fc119c
+    md5: 5e17fc402368d6d1e1d5b2a651ac4907

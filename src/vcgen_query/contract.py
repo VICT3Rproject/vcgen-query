@@ -13,6 +13,9 @@ from typing import Any, Literal, TypeAlias, cast
 from .contract_helpers import QueryError
 from .send_semantics import normalize_human_category, normalize_unit
 from .facility import canonical_facility_group
+from .frequency_aliases import canonical_frequency
+from .route_aliases import canonical_route
+from .specimen import real_specimen_classes, specimen_panel_id
 from .unit_catalogue import _CompiledUnitRule, compile_unit_rules
 from .identities import (
     GRIT42_ADVANCED_SUBJECT_QUERY_CONTRACT,
@@ -22,7 +25,8 @@ from .identities import (
 from .grit42_catalogue import GRIT42_CATALOGUE_ID, grit42_column
 
 ValueType: TypeAlias = Literal["string", "number", "datetime"]
-SpecimenMatch: TypeAlias = Literal["exact", "contains", "not"]
+SpecimenMatch: TypeAlias = Literal["exact", "contains", "class"]
+MethodMatch: TypeAlias = Literal["exact", "contains", "not"]
 DerivedFieldName: TypeAlias = Literal[
     "supplier",
     "study_type",
@@ -184,28 +188,20 @@ def text(v: Any, location: str, nonempty: bool = False) -> str:
     return v
 
 
-def ident(v: Any, location: str) -> str:
+def ident(v: Any, location: str, label: str = "SEND") -> str:
     if not isinstance(v, str) or not ID.fullmatch(v):
-        raise QueryError(f"{location} must be an uppercase SEND identifier.")
+        raise QueryError(f"{location} must be an uppercase {label} identifier.")
     return v
 
 
 def machine_ident(v: Any, location: str) -> str:
-    if not isinstance(v, str) or not ID.fullmatch(v):
-        raise QueryError(f"{location} must be an uppercase machine identifier.")
-    return v
+    return ident(v, location, "machine")
 
 
 def typ(v: Any, location: str) -> ValueType:
     if not isinstance(v, str) or v not in {"string", "number", "datetime"}:
         raise QueryError(f"{location} must be string, number, or datetime.")
     return cast(ValueType, v)
-
-
-def texts(v: Any, location: str) -> tuple[str, ...]:
-    if not seq(v):
-        raise QueryError(f"{location} must be an array.")
-    return tuple(sorted({text(item, f"{location}[{index}]", True) for index, item in enumerate(v)}))
 
 
 def normalized_texts(v: Any, location: str) -> tuple[str, ...]:
@@ -220,36 +216,10 @@ def normalized_texts(v: Any, location: str) -> tuple[str, ...]:
     return tuple(sorted(normalized))
 
 
-@dataclass(frozen=True)
-class DayWindow:
-    min: int | None = None
-    max: int | None = None
+def sex_in_scope(sexes: Sequence[str], sex: str | None) -> bool:
+    """Return whether a sex is in the sexes of an endpoint; no sexes means all."""
 
-    def __post_init__(self) -> None:
-        if self.min is None and self.max is None:
-            raise QueryError("day_window requires at least one bound.")
-        if not all(value is None or type(value) is int for value in (self.min, self.max)):
-            raise QueryError("day_window bounds must be integers.")
-        if self.min is not None and self.max is not None and self.min > self.max:
-            raise QueryError("day_window minimum must not exceed maximum.")
-
-    @classmethod
-    def from_mapping(cls, v: Any, *, location: str = "day_window"):
-        if v is None:
-            return None
-        raw = mapping(v, location)
-        keys(raw, {"min", "max"}, location)
-        return cls(raw.get("min"), raw.get("max"))
-
-    def contains(self, value: Any) -> bool:
-        return (
-            type(value) is int
-            and (self.min is None or value >= self.min)
-            and (self.max is None or value <= self.max)
-        )
-
-    def to_canonical_dict(self):
-        return {k: v for k, v in (("min", self.min), ("max", self.max)) if v is not None}
+    return not sexes or normalize_human_category(sex) in sexes
 
 
 @dataclass(frozen=True)
@@ -262,10 +232,18 @@ class EndpointSpec:
     specimens: tuple[str, ...] = ()
     specimen_match: SpecimenMatch = "exact"
     sexes: tuple[str, ...] = ()
-    day_window: DayWindow | None = None
     target_unit: str | None = None
     methods: tuple[str, ...] = ()
-    method_match: SpecimenMatch = "exact"
+    method_match: MethodMatch = "exact"
+    # Unit of a numeric row that reports no unit, for endpoints whose scale the
+    # endpoint itself defines (pH, specific gravity). Rows with a unit are unaffected.
+    implicit_unit: str | None = None
+    # The specimen panel (tests that a study measures on one specimen draw) of an
+    # endpoint with a class rule. Data decisions are keyed by study and panel.
+    specimen_panel: str | None = None
+    # Source label -> the unit code that the label means for this endpoint
+    # (French "G/L" is 10^9/L on blood counts). Each label is one of source_units.
+    unit_readings: tuple[tuple[str, str], ...] = ()
     compiled_unit_rules: tuple[_CompiledUnitRule, ...] = field(
         init=False, repr=False, compare=False, default=()
     )
@@ -290,7 +268,7 @@ class EndpointSpec:
         if not isinstance(self.specimen_match, str) or self.specimen_match not in {
             "exact",
             "contains",
-            "not",
+            "class",
         }:
             raise QueryError("endpoint.specimen_match is invalid.")
         if not isinstance(self.method_match, str) or self.method_match not in {
@@ -299,10 +277,18 @@ class EndpointSpec:
             "not",
         }:
             raise QueryError("endpoint.method_match is invalid.")
-        if self.day_window is not None:
-            if not isinstance(self.day_window, DayWindow):
-                raise QueryError("endpoint.day_window must be DayWindow when supplied.")
         source_units = tuple(sorted(units))
+        readings = self.unit_readings.items() if isinstance(self.unit_readings, Mapping) else self.unit_readings
+        unit_readings = tuple(sorted(
+            (text(label, "endpoint.unit_readings", True), text(code, "endpoint.unit_readings", True))
+            for label, code in readings
+        ))
+        if len({label for label, _ in unit_readings}) != len(unit_readings):
+            raise QueryError("endpoint.unit_readings has duplicate labels.")
+        if unit_readings and (
+            self.target_unit is None or not {label for label, _ in unit_readings} <= set(source_units)
+        ):
+            raise QueryError("endpoint.unit_readings labels must be source_units of an endpoint with a target_unit.")
         target_unit = None
         compiled_unit_rules: tuple[_CompiledUnitRule, ...] = ()
         if self.target_unit is not None:
@@ -311,7 +297,14 @@ class EndpointSpec:
                 raise QueryError(
                     "endpoint.source_units must be non-empty when target_unit is supplied."
                 )
-            compiled_unit_rules = compile_unit_rules(source_units, target_unit)
+            compiled_unit_rules = compile_unit_rules(source_units, target_unit, dict(unit_readings))
+        implicit_unit = None
+        if self.implicit_unit is not None:
+            implicit_unit = normalize_unit(text(self.implicit_unit, "endpoint.implicit_unit", True))
+            if target_unit is None or implicit_unit not in source_units:
+                raise QueryError(
+                    "endpoint.implicit_unit must be one of source_units of an endpoint with a target_unit."
+                )
         object.__setattr__(self, "name", name)
         object.__setattr__(self, "domain", ident(self.domain, "endpoint.domain"))
         object.__setattr__(self, "test_codes", test_codes)
@@ -321,55 +314,28 @@ class EndpointSpec:
         object.__setattr__(self, "source_units", source_units)
         object.__setattr__(self, "target_unit", target_unit)
         object.__setattr__(self, "compiled_unit_rules", compiled_unit_rules)
-        object.__setattr__(
-            self, "specimens", normalized_texts(self.specimens, "endpoint.specimens")
-        )
+        object.__setattr__(self, "unit_readings", unit_readings)
+        object.__setattr__(self, "implicit_unit", implicit_unit)
+        if self.specimen_match == "class":
+            specimens = tuple(sorted(text(item, "endpoint.specimens[]", True) for item in self.specimens))
+            unknown = sorted(set(specimens) - real_specimen_classes())
+            if not specimens or unknown:
+                raise QueryError(f"endpoint.specimens has an unknown specimen class: {unknown}.")
+            if self.specimen_panel is None:
+                raise QueryError("endpoint.specimen_panel is required for a class specimen rule.")
+            object.__setattr__(self, "specimens", specimens)
+            object.__setattr__(self, "specimen_panel", specimen_panel_id(self.specimen_panel, "endpoint.specimen_panel"))
+        else:
+            if self.specimen_panel is not None:
+                raise QueryError("endpoint.specimen_panel needs a class specimen rule.")
+            object.__setattr__(
+                self, "specimens", normalized_texts(self.specimens, "endpoint.specimens")
+            )
         object.__setattr__(self, "methods", normalized_texts(self.methods, "endpoint.methods"))
         object.__setattr__(self, "sexes", normalized_texts(self.sexes, "endpoint.sexes"))
 
-    @classmethod
-    def from_mapping(cls, v: Any, *, index: int = 0, location: str | None = None):
-        endpoint_location = location or f"observation_contract.endpoints[{index}]"
-        r = mapping(v, endpoint_location)
-        req = {"name", "domain", "test_codes"}
-        if req - set(r):
-            raise QueryError(
-                f"{endpoint_location} is missing required key(s): {sorted(req - set(r))}."
-            )
-        keys(
-            r,
-            req
-            | {
-                "test_names",
-                "source_units",
-                "specimens",
-                "specimen_match",
-                "sexes",
-                "day_window",
-                "target_unit",
-                "methods",
-                "method_match",
-            },
-            endpoint_location,
-        )
-        return cls(
-            r["name"],
-            r["domain"],
-            r["test_codes"],
-            r.get("test_names", ()),
-            r.get("source_units", ()),
-            r.get("specimens", ()),
-            r.get("specimen_match", "exact"),
-            r.get("sexes", ()),
-            DayWindow.from_mapping(r.get("day_window"), location=f"{endpoint_location}.day_window"),
-            r.get("target_unit"),
-            r.get("methods", ()),
-            r.get("method_match", "exact"),
-        )
-
     def applies_to_sex(self, sex):
-        normalized = normalize_human_category(sex)
-        return not self.sexes or normalized in self.sexes
+        return sex_in_scope(self.sexes, sex)
 
     def to_canonical_dict(self):
         o = {
@@ -384,10 +350,14 @@ class EndpointSpec:
             o["specimen_match"] = self.specimen_match
         if self.method_match != "exact":
             o["method_match"] = self.method_match
-        if self.day_window:
-            o["day_window"] = self.day_window.to_canonical_dict()
         if self.target_unit is not None:
             o["target_unit"] = self.target_unit
+        if self.implicit_unit is not None:
+            o["implicit_unit"] = self.implicit_unit
+        if self.specimen_panel is not None:
+            o["specimen_panel"] = self.specimen_panel
+        if self.unit_readings:
+            o["unit_readings"] = dict(self.unit_readings)
         return o
 
 
@@ -620,6 +590,15 @@ class PredicateRule:
                     self, "value",
                     tuple(sorted({canonical_facility_group(value) for value in self.value})),
                 )
+        # The route and dose frequency fields resolve canonical values; a raw spelling would select no subject.
+        canonical = {"route": canonical_route, "dose_frequency": canonical_frequency}.get(
+            self.field.name if isinstance(self.field, DerivedField) else ""
+        )
+        if canonical is not None:
+            if self.operator in {"eq", "ne"}:
+                object.__setattr__(self, "value", canonical(self.value))
+            elif self.operator in {"in", "not_in"}:
+                object.__setattr__(self, "value", tuple(sorted({canonical(value) for value in self.value})))
 
     @classmethod
     def from_mapping(cls, v, *, location="predicate"):
@@ -629,17 +608,16 @@ class PredicateRule:
             raise QueryError(f"{location} requires field and operator.")
         f = parse_field(r["field"], location=f"{location}.field")
         o = normalize_operator(r["operator"], location=f"{location}.operator")
-        if o not in (STR_OPS if f.value_type == "string" else ORD_OPS):
-            raise QueryError(f"{location}.operator {o!r} is invalid for {f.value_type}.")
-        if o in ZERO:
-            if r.get("value") is not None:
-                raise QueryError(f"{location}.value must be omitted or null for {o}.")
-            x = None
-        else:
-            if "value" not in r:
-                raise QueryError(f"{location}.value is required for {o}.")
-            x = ruleval(r["value"], f.value_type, o, f"{location}.value")
-        return cls(f, o, x)
+        try:
+            return cls(f, o, r.get("value"))
+        except QueryError as error:
+            # The checks of __post_init__ name the field "predicate"; name its location.
+            message = str(error)
+            if not message.startswith("predicate."):
+                raise
+            if "value" not in r and message.startswith("predicate.value"):
+                raise QueryError(f"{location}.value is required for {o}.") from None
+            raise QueryError(message.replace("predicate.", f"{location}.")) from None
 
     @property
     def value_type(self):
@@ -799,7 +777,6 @@ def normalize_category(v: Any) -> str:
 
 __all__ = [
     "CanonicalOperator",
-    "DayWindow",
     "DERIVED_FIELD_TYPES",
     "DerivedFieldName",
     "DerivedField",

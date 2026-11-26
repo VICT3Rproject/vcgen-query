@@ -22,7 +22,7 @@ from .identities import (
 
 # libyaml parses the same documents several times faster than the pure-Python loader.
 # Both loaders share one resolver and constructor, so loaded values are identical.
-_YAML_LOADER = getattr(yaml, "CSafeLoader", yaml.SafeLoader)
+YAML_LOADER = getattr(yaml, "CSafeLoader", yaml.SafeLoader)
 
 SCHEMA_RESOURCES = {
     GRIT42_FORM_SUBJECT_QUERY_CONTRACT: "data/grit42.form_subject_query.v1.schema.json",
@@ -47,7 +47,7 @@ def load_query_mapping(path: str | Path) -> Mapping[str, Any]:
             raise QueryError(f"invalid JSON query file {path}: {error}") from error
     elif path.suffix.lower() in {".yaml", ".yml"}:
         try:
-            raw = yaml.load(text, Loader=_YAML_LOADER)
+            raw = yaml.load(text, Loader=YAML_LOADER)
         except yaml.YAMLError as error:
             raise QueryError(f"invalid YAML query file {path}: {error}") from error
     else:

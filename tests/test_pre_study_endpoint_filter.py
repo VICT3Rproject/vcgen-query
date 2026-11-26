@@ -2,25 +2,22 @@
 
 from __future__ import annotations
 
-from vcgen_query import CohortQuery, execute_query, parse_subject_query
+from conftest import members, run_query
+from vcgen_query import CohortQuery, parse_subject_query
 
 
 def _query(predicate: dict[str, object]):
     subject = parse_subject_query(
         {"contract": "vcgen.subject_query.v1", "query_id": "synthetic-pre-study", "predicate": predicate}
     )
-    return CohortQuery.compose(subject, ["BW"])
-
-
-def _members(result) -> set[tuple[str, str]]:
-    return {(row["study_id"], row["subject_id"]) for row in result.subjects.to_dict("records")}
+    return CohortQuery.compose(subject, ["BW_BW"])
 
 
 def _endpoint(operator: str, value: object) -> dict[str, object]:
     return {
         "field": {
             "kind": "pre_study_endpoint",
-            "endpoint": "LB_HGB",
+            "endpoint": "LB_HGB_BLOOD",
             "value_type": "number",
         },
         "operator": operator,
@@ -37,7 +34,7 @@ def test_pre_study_endpoint_uses_latest_value_strictly_before_exposure(
             {
                 "study_id": "S",
                 "subject_id": "1",
-                "test_code": "HGB",
+                "test_code": "HGB", "test_name": "HEMOGLOBIN",
                 "day": 0,
                 "value": 6,
                 "unit": "mmol/L",
@@ -45,7 +42,7 @@ def test_pre_study_endpoint_uses_latest_value_strictly_before_exposure(
             {
                 "study_id": "S",
                 "subject_id": "1",
-                "test_code": "HGB",
+                "test_code": "HGB", "test_name": "HEMOGLOBIN",
                 "day": 1,
                 "value": 8,
                 "unit": "mmol/L",
@@ -53,7 +50,7 @@ def test_pre_study_endpoint_uses_latest_value_strictly_before_exposure(
             {
                 "study_id": "S",
                 "subject_id": "1",
-                "test_code": "HGB",
+                "test_code": "HGB", "test_name": "HEMOGLOBIN",
                 "day": 2,
                 "value": 20,
                 "unit": "mmol/L",
@@ -61,8 +58,8 @@ def test_pre_study_endpoint_uses_latest_value_strictly_before_exposure(
         ],
     )
 
-    assert _members(execute_query(con, _query(_endpoint("gte", 8)))) == {("S", "S-1")}
-    assert _members(execute_query(con, _query(_endpoint("gt", 8)))) == set()
+    assert members(run_query(con, _query(_endpoint("gte", 8)))) == {("S", "S-1")}
+    assert members(run_query(con, _query(_endpoint("gt", 8)))) == set()
 
 
 def test_pre_study_endpoint_ties_and_missing_values_fail_even_negative_rules(
@@ -74,7 +71,7 @@ def test_pre_study_endpoint_ties_and_missing_values_fail_even_negative_rules(
             {
                 "study_id": "TIE",
                 "subject_id": "1",
-                "test_code": "HGB",
+                "test_code": "HGB", "test_name": "HEMOGLOBIN",
                 "day": None,
                 "datetime": "2020-01-01T12:00:00",
                 "value": 20,
@@ -87,8 +84,8 @@ def test_pre_study_endpoint_ties_and_missing_values_fail_even_negative_rules(
         lab=[],
     )
 
-    assert _members(execute_query(tied, _query(_endpoint("not_between", [7, 15])))) == set()
-    assert _members(execute_query(missing, _query(_endpoint("not_between", [7, 15])))) == set()
+    assert members(run_query(tied, _query(_endpoint("not_between", [7, 15])))) == set()
+    assert members(run_query(missing, _query(_endpoint("not_between", [7, 15])))) == set()
 
 
 def test_pre_study_endpoint_rules_are_independent_subject_sets(make_connection) -> None:
@@ -98,7 +95,7 @@ def test_pre_study_endpoint_rules_are_independent_subject_sets(make_connection) 
             {
                 "study_id": "S",
                 "subject_id": "1",
-                "test_code": "HGB",
+                "test_code": "HGB", "test_name": "HEMOGLOBIN",
                 "day": 0,
                 "value": 8,
                 "unit": "mmol/L",
@@ -107,7 +104,7 @@ def test_pre_study_endpoint_rules_are_independent_subject_sets(make_connection) 
             {
                 "study_id": "S",
                 "subject_id": "1",
-                "test_code": "WBC",
+                "test_code": "WBC", "test_name": "LEUKOCYTES",
                 "day": 0,
                 "value": 12,
                 "unit": "10^9/L",
@@ -122,7 +119,7 @@ def test_pre_study_endpoint_rules_are_independent_subject_sets(make_connection) 
             {
                 "field": {
                     "kind": "pre_study_endpoint",
-                    "endpoint": "LB_WBC",
+                    "endpoint": "LB_WBC_BLOOD",
                     "value_type": "number",
                 },
                 "operator": "lte",
@@ -131,7 +128,7 @@ def test_pre_study_endpoint_rules_are_independent_subject_sets(make_connection) 
         ],
     }
 
-    assert _members(execute_query(con, _query(predicate))) == {("S", "S-1")}
+    assert members(run_query(con, _query(predicate))) == {("S", "S-1")}
 
 
 # Failure modes: repeated bounds change subject-set semantics; resolved values
@@ -142,10 +139,10 @@ def test_repeated_endpoint_bounds_keep_source_values_local_to_execution(make_con
     for value in (8, 12):
         con = make_connection(
             [{"study_id": "S", "subject_id": "1"}],
-            lab=[{"study_id": "S", "subject_id": "1", "test_code": "HGB",
+            lab=[{"study_id": "S", "subject_id": "1", "test_code": "HGB", "test_name": "HEMOGLOBIN",
                   "day": 0, "value": value, "unit": "mmol/L", "specimen": "BLOOD"}],
         )
-        results.append(_members(execute_query(con, query)))
+        results.append(members(run_query(con, query)))
     assert results == [{("S", "S-1")}, set()]
 
 
@@ -159,17 +156,17 @@ def test_pre_study_day_priority_and_timestamp_fallback(make_connection):
          {"study_id": "S", "subject_id": "2", "sex": "M", "exstdy": 2,
           "rfstdtc": "2020-01-01T12:00:00"}],
         lab=[
-            {"study_id": "S", "subject_id": "1", "test_code": "HGB", "day": 1,
+            {"study_id": "S", "subject_id": "1", "test_code": "HGB", "test_name": "HEMOGLOBIN", "day": 1,
              "datetime": "2020-01-02T12:00:00", "value": 8, "unit": "mmol/L"},
-            {"study_id": "S", "subject_id": "1", "test_code": "HGB", "day": 2,
+            {"study_id": "S", "subject_id": "1", "test_code": "HGB", "test_name": "HEMOGLOBIN", "day": 2,
              "datetime": "2019-12-31T12:00:00", "value": 100, "unit": "mmol/L"},
-            {"study_id": "S", "subject_id": "1", "test_code": "HGB", "day": None,
+            {"study_id": "S", "subject_id": "1", "test_code": "HGB", "test_name": "HEMOGLOBIN", "day": None,
              "datetime": "2020-01-01T11:00:00", "value": 7, "unit": "mmol/L"},
-            {"study_id": "S", "subject_id": "2", "test_code": "HGB", "day": None,
+            {"study_id": "S", "subject_id": "2", "test_code": "HGB", "test_name": "HEMOGLOBIN", "day": None,
              "datetime": "2020-01-01T11:00:00", "value": 9, "unit": "mmol/L"},
-            {"study_id": "S", "subject_id": "2", "test_code": "HGB", "day": None,
+            {"study_id": "S", "subject_id": "2", "test_code": "HGB", "test_name": "HEMOGLOBIN", "day": None,
              "datetime": "2020-01-01T12:00:00", "value": 99, "unit": "mmol/L"},
         ],
     )
-    assert _members(execute_query(con, _query(_endpoint("eq", 8)))) == {("S", "S-1")}
-    assert _members(execute_query(con, _query(_endpoint("eq", 9)))) == {("S", "S-2")}
+    assert members(run_query(con, _query(_endpoint("eq", 8)))) == {("S", "S-1")}
+    assert members(run_query(con, _query(_endpoint("eq", 9)))) == {("S", "S-2")}

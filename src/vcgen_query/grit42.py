@@ -10,11 +10,11 @@ import hashlib
 import json
 import math
 import re
-from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Mapping, Sequence
 from datetime import datetime
 from typing import Any
 
-from .contract import QueryError
+from .contract import QueryError, mapping
 from .identities import (
     GRIT42_ADVANCED_SUBJECT_QUERY_CONTRACT,
     GRIT42_FORM_SUBJECT_QUERY_CONTRACT,
@@ -100,10 +100,10 @@ _FORM_RANGES = {
         "study_start_year",
     ),
     "age_days": ("age_init_min", "age_init_max", "age_days"),
-    "PRE_STUDY_BODY_TEMPERATURE_C": (
+    "VS_TEMP": (
         "bodytemp_init_min",
         "bodytemp_init_max",
-        "PRE_STUDY_BODY_TEMPERATURE_C",
+        "VS_TEMP",
     ),
 }
 _FORM_BW = {
@@ -113,19 +113,19 @@ _FORM_BW = {
 _FORM_ENDPOINTS = {
     name: (f"{prefix}_init_min", f"{prefix}_init_max")
     for name, prefix in {
-        "LB_UREA": "urea",
-        "LB_GGT": "gamma",
-        "LB_ALT": "alanine",
-        "LB_ALP": "alkaline",
-        "LB_AST": "aspartate",
-        "LB_GLDH": "glutamate",
-        "LB_HCT": "hematocrit",
-        "LB_HGB": "hemoglobin",
-        "LB_WBC": "leukocytes",
-        "LB_LYM": "lymphocyte",
-        "LB_RBC": "erythrocytes",
-        "LB_PLAT": "thrombocytes",
-        "LB_RETI": "reticulocytes",
+        "LB_UREA_BLOOD": "urea",
+        "LB_GGT_BLOOD": "gamma",
+        "LB_ALT_BLOOD": "alanine",
+        "LB_ALP_BLOOD": "alkaline",
+        "LB_AST_BLOOD": "aspartate",
+        "LB_GLDH_BLOOD": "glutamate",
+        "LB_HCT_BLOOD": "hematocrit",
+        "LB_HGB_BLOOD": "hemoglobin",
+        "LB_WBC_BLOOD": "leukocytes",
+        "LB_LYM_BLOOD": "lymphocyte",
+        "LB_RBC_BLOOD": "erythrocytes",
+        "LB_PLAT_BLOOD": "thrombocytes",
+        "LB_RETI_BLOOD": "reticulocytes",
     }.items()
 }
 _INACTIVE = frozenset({"ecg_init_min", "ecg_init_max", "lbtest", "pretestvalues", "trtvcat"})
@@ -144,7 +144,7 @@ def import_grit42_subject_query(raw: Mapping[str, Any]) -> SubjectQuery:
     The result is membership only. Endpoint selection is a later query stage.
     """
 
-    payload = _mapping(raw, "grit42 subject query")
+    payload = mapping(raw, "grit42 subject query")
     if payload.get("query_type") == "form":
         return import_grit42_form_subject_query(payload)
     return import_grit42_advanced_subject_query(payload)
@@ -153,13 +153,13 @@ def import_grit42_subject_query(raw: Mapping[str, Any]) -> SubjectQuery:
 def import_grit42_form_subject_query(raw: Mapping[str, Any]) -> SubjectQuery:
     """Import one complete saved Grit42 form subject query."""
 
-    payload = _mapping(raw, "grit42 form subject query")
+    payload = mapping(raw, "grit42 form subject query")
     if payload.get("query_type") != "form":
         raise QueryError("grit42 form subject query requires query_type 'form'")
     if "form_values" not in payload:
         raise QueryError("grit42 form subject query requires form_values")
     return _compile_form_values(
-        _mapping(payload["form_values"], "grit42 saved form_values"),
+        mapping(payload["form_values"], "grit42 saved form_values"),
         raw_payload=payload,
     )
 
@@ -167,7 +167,7 @@ def import_grit42_form_subject_query(raw: Mapping[str, Any]) -> SubjectQuery:
 def import_grit42_advanced_subject_query(raw: Mapping[str, Any]) -> SubjectQuery:
     """Import one complete saved Grit42 advanced subject query."""
 
-    payload = _mapping(raw, "grit42 advanced subject query")
+    payload = mapping(raw, "grit42 advanced subject query")
     if payload.get("query_type") == "form":
         raise QueryError("grit42 advanced subject query rejects query_type 'form'")
 
@@ -208,7 +208,7 @@ def _compile_form_values(
         if _active(payload.get(source)):
             rules.append(_rule(_derived(name, "string"), "in", _strings(payload[source], source)))
     for endpoint, (low, high, derived_name) in _FORM_RANGES.items():
-        if endpoint == "PRE_STUDY_BODY_TEMPERATURE_C":
+        if endpoint == "VS_TEMP":
             field = _endpoint(endpoint, "number")
             if _active(payload.get(low)) or _active(payload.get(high)):
                 endpoints.add(endpoint)
@@ -248,26 +248,6 @@ def _compile_form_values(
     )
 
 
-def compare_membership(
-    local_membership: Iterable[Any], reference_membership: Iterable[Any]
-) -> dict[str, Any]:
-    """Return deterministic hashes and exact membership-key differences."""
-    local, reference = (
-        set(_keys(local_membership, "local_membership")),
-        set(_keys(reference_membership, "reference_membership")),
-    )
-    missing, extra = tuple(sorted(reference - local)), tuple(sorted(local - reference))
-    return {
-        "local_count": len(local),
-        "reference_count": len(reference),
-        "local_hash": _key_hash(local),
-        "reference_hash": _key_hash(reference),
-        "missing_keys": missing,
-        "extra_keys": extra,
-        "matches": not missing and not extra,
-    }
-
-
 def _query(
     query_id: str,
     predicate: dict[str, Any] | None,
@@ -294,12 +274,12 @@ def _node(
     endpoints: set[str],
     location: str,
 ) -> dict[str, Any]:
-    node = _mapping(raw, location)
+    node = mapping(raw, location)
     if node.get("type") == "rule":
         return _advanced_rule(node, inventory, endpoints, location)
     if node.get("type") != "group":
         raise QueryError(f"{location}.type must be 'group' or 'rule'")
-    props = _mapping(node.get("properties"), f"{location}.properties")
+    props = mapping(node.get("properties"), f"{location}.properties")
     conjunction, negated = props.get("conjunction"), props.get("not", False)
     if (
         not isinstance(conjunction, str)
@@ -336,7 +316,7 @@ def _advanced_rule(
     endpoints: set[str],
     location: str,
 ) -> dict[str, Any]:
-    props = _mapping(node.get("properties"), f"{location}.properties")
+    props = mapping(node.get("properties"), f"{location}.properties")
     name = _canonical_field_name(props.get("field"), location)
     if name not in inventory:
         raise QueryError(f"{location}.properties.field must be a columns-inventory field")
@@ -691,59 +671,6 @@ def _raw_hash(payload: Mapping[str, Any]) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
-def _keys(values: Iterable[Any], location: str) -> tuple[tuple[str, str], ...]:
-    columns = getattr(values, "columns", None)
-    rows = getattr(values, "itertuples", None)
-    if columns is not None and callable(rows):
-        lookup: dict[str, Any] = {}
-        for column in columns:
-            normalized = str(column).upper()
-            if normalized in lookup:
-                raise QueryError(f"{location} contains duplicate identity columns")
-            lookup[normalized] = column
-        study_column = lookup.get("STUDYID", lookup.get("STUDY_ID"))
-        subject_column = lookup.get("USUBJID", lookup.get("SUBJECT_ID"))
-        if study_column is None or subject_column is None:
-            raise QueryError(
-                f"{location} DataFrame must contain STUDYID/USUBJID or study_id/subject_id columns"
-            )
-        values = values[[study_column, subject_column]].itertuples(index=False, name=None)
-    elif isinstance(values, Mapping):
-        raise QueryError(f"{location} must contain subject-key rows, not mapping keys")
-    if isinstance(values, (str, bytes)):
-        raise QueryError(f"{location} must be an iterable of subject keys, not a string")
-    try:
-        return tuple(_key(value, location) for value in values)
-    except TypeError as error:
-        raise QueryError(f"{location} must be iterable") from error
-
-
-def _key(value: Any, location: str) -> tuple[str, str]:
-    if (
-        isinstance(value, Sequence)
-        and not isinstance(value, (str, bytes))
-        and len(value) == 2
-        and all(isinstance(part, str) and part for part in value)
-    ):
-        return value[0], value[1]
-    raise QueryError(f"{location} contains an invalid subject key")
-
-
-def _key_hash(keys: set[tuple[str, str]]) -> str:
-    payload = json.dumps(
-        sorted(keys),
-        ensure_ascii=False,
-        separators=(",", ":"),
-    ).encode("utf-8")
-    return hashlib.sha256(payload).hexdigest()
-
-
-def _mapping(value: Any, location: str) -> Mapping[str, Any]:
-    if not isinstance(value, Mapping):
-        raise QueryError(f"{location} must be an object")
-    return value
-
-
 def _number(value: Any, field: str) -> float:
     if isinstance(value, bool):
         raise QueryError(f"{field} must be a finite number")
@@ -761,7 +688,6 @@ def _active(value: Any) -> bool:
 
 
 __all__ = [
-    "compare_membership",
     "import_grit42_advanced_subject_query",
     "import_grit42_form_subject_query",
     "import_grit42_subject_query",

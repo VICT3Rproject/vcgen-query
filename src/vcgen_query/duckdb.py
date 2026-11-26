@@ -23,31 +23,42 @@ from __future__ import annotations
 
 import hashlib
 import shutil
+import uuid
 import zlib
-from collections.abc import Iterable
+from collections.abc import Iterable, Iterator
+from contextlib import contextmanager
 from dataclasses import dataclass
+from functools import lru_cache
 from pathlib import Path
 from typing import Any
 from zipfile import ZipFile, ZipInfo
 
 import duckdb
 
+from .control_arm import control_arm_sql
+from .endpoint_catalogue import canonical_endpoint
 from .facility import facility_group
+from .send_semantics import MISSING_UNIT_LABELS, day_columns
 from .source_validation import validate_derived_source_schema
+from .sql_identifiers import quote_ident, table_columns
 from .send_columns import (
     AGE,
     AGE_UNIT,
+    ARM,
     DOSE_DURATION_PARAMETER_CODE,
+    DOSE_FREQUENCY_PARAMETER_CODE,
     EX_DOSE_FREQUENCY,
     EX_END,
     EX_END_DAY,
+    EX_METHOD,
     EX_ROUTE,
     EX_SEQUENCE,
     EX_START,
     EX_START_DAY,
-    EX_TREATMENT,
+    EX_TREATMENT_VALUE,
     GLP_STATUS_PARAMETER_CODE,
     RAW_DOMAIN_ORDER,
+    ROUTE_PARAMETER_CODE,
     SEX,
     SPECIES,
     STRAIN,
@@ -59,6 +70,7 @@ from .send_columns import (
     TEST_FACILITY_PARAMETER_CODE,
     TS_PARAMETER_CODE,
     TS_VALUE,
+    VEHICLE_PARAMETER_CODE,
 )
 
 
@@ -102,6 +114,16 @@ def archive_sha256(archive: str | Path) -> str:
                 digest.update(chunk)
         _ARCHIVE_DIGESTS[key] = digest.hexdigest()
     return _ARCHIVE_DIGESTS[key]
+
+
+def archive_source_identity(archive: str | Path) -> str:
+    """The DVC identity of a SEND archive, ``dvc-md5:<md5>``: the key that every source record uses."""
+
+    digest = hashlib.md5()
+    with Path(archive).open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1 << 20), b""):
+            digest.update(chunk)
+    return f"dvc-md5:{digest.hexdigest()}"
 
 
 def ensure_extracted(
@@ -173,12 +195,16 @@ def _member_matches_cache(target: Path, member: ZipInfo) -> bool:
 
 
 def _csv_source_sql(path: Path, domain: str, *, all_varchar: bool = True) -> str:
+    # Fix the quote rule: the sniffer reads only the first rows, and turns quoting
+    # off when none of them is quoted.
     parallel = "false" if domain == "CO" else "true"
     return f"""
             SELECT *
             FROM read_csv_auto(
                 {quote_literal(path)},
                 header = true,
+                quote = '"',
+                escape = '"',
                 all_varchar = {str(all_varchar).lower()},
                 null_padding = true,
                 parallel = {parallel}
@@ -219,7 +245,7 @@ def register_csv_views(
 # domain records and the derived SQL match. Change the format when the CSV read
 # options change.
 _SOURCE_TABLES = "__vcgen_source_tables"
-_SOURCE_TABLE_FORMAT = "vcgen.source_table.v1:read_csv_auto(header,all_varchar,null_padding)"
+_SOURCE_TABLE_FORMAT = "vcgen.source_table.v2:read_csv_auto(header,quote,escape,all_varchar,null_padding)"
 _DERIVED_RECORD = "__derived__"
 
 
@@ -239,6 +265,12 @@ def _source_table_records(con: Any) -> dict[str, tuple[str, int, int, str]]:
         "domain VARCHAR PRIMARY KEY, archive_sha256 VARCHAR, member_crc BIGINT, "
         "member_size BIGINT, table_format VARCHAR)"
     )
+    return _read_source_records(con)
+
+
+def _read_source_records(con: Any) -> dict[str, tuple[str, int, int, str]]:
+    """Read the stored source records; unlike the caller above, it never creates the table."""
+
     return {
         str(domain): (str(digest), int(crc), int(size), str(table_format))
         for domain, digest, crc, size, table_format in con.execute(
@@ -256,10 +288,11 @@ def _set_record(con: Any, domain: str, values: tuple[str, int, int, str]) -> Non
 
 
 def _relation_kind(con: Any, name: str) -> str | None:
+    # The catalogue functions are much faster than information_schema.tables.
     row = con.execute(
-        "SELECT table_type FROM information_schema.tables "
-        "WHERE table_schema = 'main' AND table_name = ?",
-        [name],
+        "SELECT 'BASE TABLE' FROM duckdb_tables() WHERE schema_name = 'main' AND table_name = ? "
+        "UNION ALL SELECT 'VIEW' FROM duckdb_views() WHERE schema_name = 'main' AND view_name = ? AND NOT internal",
+        [name, name],
     ).fetchone()
     return None if row is None else str(row[0])
 
@@ -360,18 +393,106 @@ def _derived_view_statements(con: Any) -> tuple[tuple[str, str], ...]:
         ("subject_exposure_summary", _exposure_summary_sql()),
     ]
     if table_columns(con, "bw"):
-        statements.append(("subject_baseline_body_weight", _baseline_body_weight_sql()))
-    if table_columns(con, "ds"):
-        statements.append(("subject_disposition_summary", _subject_disposition_sql()))
+        statements.append((
+            "subject_baseline_body_weight",
+            _baseline_body_weight_sql(table_columns(con, "bw"), table_columns(con, "dm")),
+        ))
+    necropsy_sources = tuple(
+        (table, column) for table, column in NECROPSY_DAY_COLUMNS if column in table_columns(con, table)
+    )
+    if table_columns(con, "ds") or necropsy_sources:
+        statements.append((
+            "subject_disposition_summary",
+            _subject_disposition_sql(bool(table_columns(con, "ds")), necropsy_sources),
+        ))
     return tuple(statements)
 
 
 def create_derived_views(con: Any) -> None:
-    """Create derived views needed for canonical cohort selection."""
+    """Create derived views needed for canonical cohort selection.
+
+    Views have no stored Python-derived tables; queries compute those values.
+    """
 
     register_facility_group_function(con)
+    for name in PYTHON_DERIVED_TABLES:
+        _drop_relation(con, name)
     for _name, statement in _derived_view_statements(con):
         con.execute(statement)
+
+
+# Two derived tables are computed in Python from the derived views: the
+# normalized context of every subject, and the strict latest pre-study value
+# of every catalogue endpoint for every subject. Queries read them only while
+# the derived record names the current domain records, derived SQL and
+# Python-derived identity. The identity hashes every module and data file of
+# this package (such as the specimen vocabulary) and the identity of the active
+# endpoint catalogue, so a moved function, an edited vocabulary or another
+# catalogue cannot leave stale tables. Change the tag when their content
+# changes for a reason that the hashed sources do not show.
+SUBJECT_CONTEXT_TABLE = "subject_context"
+PRE_STUDY_ENDPOINT_TABLE = "pre_study_endpoint_values"
+PYTHON_DERIVED_TABLES = (SUBJECT_CONTEXT_TABLE, PRE_STUDY_ENDPOINT_TABLE)
+_PYTHON_DERIVED_TAG = "vcgen.python_derived.v1"
+
+
+@lru_cache(maxsize=1)
+def _package_source_digests() -> tuple[tuple[str, str], ...]:
+    """Return the digest of every module and data file of this package; the code is fixed per process."""
+
+    package = Path(__file__).parent
+    return tuple(
+        (path.relative_to(package).as_posix(), hashlib.sha256(path.read_bytes()).hexdigest())
+        for path in sorted([*package.glob("*.py"), *package.glob("data/*.yaml"), *package.glob("data/*.json")])
+    )
+
+
+def _python_derived_identity() -> str:
+    """Return the identity of the code and the active endpoint catalogue behind the Python tables.
+
+    The catalogue is not part of the package, and ``VCGEN_ENDPOINT_CATALOGUE`` can
+    name another one, so its identity is read at each call and never cached here.
+    """
+
+    from .endpoint_catalogue import endpoint_catalogue_identity
+
+    return hashlib.sha256(
+        repr((_PYTHON_DERIVED_TAG, sorted(endpoint_catalogue_identity().items()), _package_source_digests())).encode(
+            "utf-8"
+        )
+    ).hexdigest()
+
+
+def _derived_record(
+    records: dict[str, tuple[str, int, int, str]], statements: tuple[tuple[str, str], ...]
+) -> tuple[str, int, int, str]:
+    """Return the derived record for these domain records and derived SQL."""
+
+    identity = hashlib.sha256(
+        repr((
+            sorted((domain, record) for domain, record in records.items() if domain != _DERIVED_RECORD),
+            statements,
+            _python_derived_identity(),
+        )).encode("utf-8")
+    ).hexdigest()
+    return (identity, 0, 0, _SOURCE_TABLE_FORMAT)
+
+
+def python_derived_tables_current(con: Any) -> bool:
+    """Return whether the stored Python-derived tables match this code and the domain tables.
+
+    This only reads, so it works on a read-only connection. A connection
+    without stored tables, such as one from :func:`open_directory`, returns
+    false.
+    """
+
+    try:
+        records = _read_source_records(con)
+    except duckdb.CatalogException:
+        return False
+    return records.get(_DERIVED_RECORD) == _derived_record(
+        records, _derived_view_statements(con)
+    ) and all(_relation_kind(con, name) == "BASE TABLE" for name in PYTHON_DERIVED_TABLES)
 
 
 _DERIVED_VIEWS = (
@@ -387,27 +508,28 @@ _DERIVED_VIEWS = (
 def materialize_derived_tables(con: Any) -> bool:
     """Store each derived view as a table computed from the domain tables.
 
-    The tables are reused while the domain records and the derived SQL are
-    unchanged. A view that reads another derived view is computed after it.
-    Returns whether the tables were rebuilt.
+    The tables are reused while the domain records, the derived SQL, and the
+    Python-derived identity are unchanged. A view that reads another derived
+    view is computed after it. The Python-derived tables are computed last,
+    from the derived tables. Returns whether the tables were rebuilt.
     """
+
+    from .cohort import create_pre_study_endpoint_table, create_subject_context_table
 
     register_facility_group_function(con)
     statements = _derived_view_statements(con)
     records = _source_table_records(con)
-    identity = hashlib.sha256(
-        repr((
-            sorted((domain, record) for domain, record in records.items() if domain != _DERIVED_RECORD),
-            statements,
-        )).encode("utf-8")
-    ).hexdigest()
-    expected = (identity, 0, 0, _SOURCE_TABLE_FORMAT)
-    if records.get(_DERIVED_RECORD) == expected and all(
-        _relation_kind(con, name) == "BASE TABLE" for name, _ in statements
+    expected = _derived_record(records, statements)
+    if (
+        records.get(_DERIVED_RECORD) == expected
+        and all(
+            _relation_kind(con, name) == "BASE TABLE"
+            for name in (*(name for name, _ in statements), *PYTHON_DERIVED_TABLES)
+        )
     ):
         return False
     con.execute("BEGIN TRANSACTION")
-    for name in _DERIVED_VIEWS:
+    for name in (*_DERIVED_VIEWS, *PYTHON_DERIVED_TABLES):
         _drop_relation(con, name)
     for _name, statement in statements:
         con.execute(statement)
@@ -416,6 +538,8 @@ def materialize_derived_tables(con: Any) -> bool:
         con.execute(f"CREATE TABLE {quote_ident(building)} AS SELECT * FROM {quote_ident(name)}")
         con.execute(f"DROP VIEW {quote_ident(name)}")
         con.execute(f"ALTER TABLE {quote_ident(building)} RENAME TO {quote_ident(name)}")
+    create_subject_context_table(con, SUBJECT_CONTEXT_TABLE)
+    create_pre_study_endpoint_table(con, PRE_STUDY_ENDPOINT_TABLE)
     _set_record(con, _DERIVED_RECORD, expected)
     con.execute("COMMIT")
     return True
@@ -436,10 +560,27 @@ def open_archive(
     service image builds its reference database with this function.
     """
 
+    con = open_source_tables(archive, extract_dir, database=database, overwrite_extract=overwrite_extract)
+    materialize_derived_tables(con)
+    return con
+
+
+def open_source_tables(
+    archive: str | Path,
+    extract_dir: str | Path,
+    *,
+    database: str | Path | None = None,
+    overwrite_extract: bool = False,
+) -> Any:
+    """Open the raw domain tables of a SEND archive, without the derived tables.
+
+    The derived tables read the endpoint catalogue. The step that produces the
+    catalogue reads the archive with this function, so it needs no catalogue.
+    """
+
     con = connect(database)
     materialize_archive_tables(con, archive, extract_dir, overwrite_extract=overwrite_extract)
     validate_derived_source_schema(con)
-    materialize_derived_tables(con)
     return con
 
 
@@ -468,20 +609,6 @@ def open_directory(
     return con
 
 
-def table_columns(con: Any, table: str) -> tuple[str, ...]:
-    """Return the column names of a table or view, or ``()`` if absent.
-
-    DuckDB raises a binder/catalog exception (subclass varies by version) when
-    the relation is missing, so the existence probe is intentionally broad.
-    """
-
-    try:
-        cursor = con.execute(f"SELECT * FROM {quote_ident(table)} LIMIT 0")
-    except Exception:  # noqa: BLE001 - missing relation probe, see docstring
-        return ()
-    return tuple(item[0] for item in cursor.description)
-
-
 def normalize_domain(domain: str) -> str:
     value = domain.strip().upper()
     if not value.replace("_", "").isalnum():
@@ -493,8 +620,20 @@ def domain_view_name(domain: str) -> str:
     return normalize_domain(domain).lower()
 
 
-def quote_ident(identifier: str) -> str:
-    return '"' + identifier.replace('"', '""') + '"'
+@contextmanager
+def registered_frame(con: Any, frame: Any) -> Iterator[str]:
+    """Register ``frame`` on ``con`` for the block and yield its quoted name.
+
+    The name is unique, so calls that share the connection do not replace
+    each other's frames.
+    """
+
+    name = f"_vcgen_frame_{uuid.uuid4().hex}"
+    con.register(name, frame)
+    try:
+        yield quote_ident(name)
+    finally:
+        con.unregister(name)
 
 
 def quote_literal(value: str | Path) -> str:
@@ -564,6 +703,14 @@ def _duration_days_sql(value_expression: str) -> str:
     """
 
 
+def _declared_values(code: str) -> str:
+    """Return the sorted distinct non-blank TS values of one parameter code, per study."""
+    return (
+        f"list(DISTINCT {q(TS_VALUE)} ORDER BY {q(TS_VALUE)}) FILTER (WHERE "
+        f"upper({q(TS_PARAMETER_CODE)}) = {quote_literal(code)} AND nullif(trim({q(TS_VALUE)}), '') IS NOT NULL)"
+    )
+
+
 def _study_design_summary_sql() -> str:
     duration_days = _duration_days_sql(q(TS_VALUE))
     study_length_row = (
@@ -620,22 +767,13 @@ def _study_design_summary_sql() -> str:
               AND {nonempty_ts_value}
               AND {duration_days} IS NULL
         ) > 0 AS dose_duration_declaration_incomplete,
-        list(DISTINCT {q(TS_VALUE)} ORDER BY {q(TS_VALUE)}) FILTER (
-            WHERE upper({q(TS_PARAMETER_CODE)}) = {quote_literal(SUPPLIER_PARAMETER_CODE)}
-                AND {nonempty_ts_value}
-        ) AS supplier_values,
-        list(DISTINCT {q(TS_VALUE)} ORDER BY {q(TS_VALUE)}) FILTER (
-            WHERE upper({q(TS_PARAMETER_CODE)}) = {quote_literal(STUDY_TYPE_PARAMETER_CODE)}
-                AND {nonempty_ts_value}
-        ) AS study_type_values,
-        list(DISTINCT {q(TS_VALUE)} ORDER BY {q(TS_VALUE)}) FILTER (
-            WHERE upper({q(TS_PARAMETER_CODE)}) = {quote_literal(TEST_FACILITY_PARAMETER_CODE)}
-                AND {nonempty_ts_value}
-        ) AS test_facility_values,
-        list(DISTINCT {q(TS_VALUE)} ORDER BY {q(TS_VALUE)}) FILTER (
-            WHERE upper({q(TS_PARAMETER_CODE)}) = {quote_literal(GLP_STATUS_PARAMETER_CODE)}
-                AND {nonempty_ts_value}
-        ) AS glp_status_values
+        {_declared_values(SUPPLIER_PARAMETER_CODE)} AS supplier_values,
+        {_declared_values(STUDY_TYPE_PARAMETER_CODE)} AS study_type_values,
+        {_declared_values(TEST_FACILITY_PARAMETER_CODE)} AS test_facility_values,
+        {_declared_values(GLP_STATUS_PARAMETER_CODE)} AS glp_status_values,
+        {_declared_values(ROUTE_PARAMETER_CODE)} AS declared_route_values,
+        {_declared_values(DOSE_FREQUENCY_PARAMETER_CODE)} AS declared_dose_frequency_values,
+        {_declared_values(VEHICLE_PARAMETER_CODE)} AS declared_treatment_values
     FROM ts
     GROUP BY {q(STUDY_ID)}
     """
@@ -655,6 +793,7 @@ def _exposure_intervals_sql(
         return f"cast(ex.{q(column)} AS VARCHAR)"
 
     sequence = raw(EX_SEQUENCE)
+    method = raw(EX_METHOD)
     start_datetime = raw(EX_START)
     end_datetime = raw(EX_END)
     start_day = raw(EX_START_DAY)
@@ -677,8 +816,9 @@ def _exposure_intervals_sql(
             {end_day} AS raw_end_day,
             {reference_datetime} AS raw_reference_datetime,
             ex.{q(EX_ROUTE)} AS route_value,
+            {method} AS method_value,
             ex.{q(EX_DOSE_FREQUENCY)} AS dose_frequency_value,
-            ex.{q(EX_TREATMENT)} AS treatment_value
+            {raw(EX_TREATMENT_VALUE)} AS treatment_value
         FROM ex
         INNER JOIN dm
             ON ex.{q(STUDY_ID)} = dm.{q(STUDY_ID)}
@@ -783,6 +923,7 @@ def _exposure_intervals_sql(
             ELSE 'invalid_interval'
         END AS interval_issue,
         route_value,
+        method_value,
         dose_frequency_value,
         treatment_value
     FROM normalized
@@ -790,8 +931,18 @@ def _exposure_intervals_sql(
 
 
 def _exposure_summary_sql() -> str:
-    """Resolve planned duration separately from complete observed EX coverage."""
+    """Resolve planned duration separately from complete observed EX coverage.
 
+    A subject of a study without EX rows (a control-only export) takes its route,
+    dose frequency and treatment lists from the TS ROUTE, PDOSFRQ and TRTV values
+    of its study when its DM ARM is empty or a control arm (`control_arm_sql`); a
+    TS route has no method. A subject of another arm in such a study takes no TS
+    values: the TS values describe the study, and a dosed animal must not pass as
+    a vehicle control. A subject without EX rows in a study that has EX rows takes
+    no TS values: its exposure is not known, and it can be a dosed animal. Every
+    other column stays EX evidence.
+    """
+    ts_fallback = f"(exposed.has_exposure_rows IS NULL AND {control_arm_sql(f'dm.{q(ARM)}')})"
     return f"""
     CREATE OR REPLACE VIEW subject_exposure_summary AS
     WITH raw_summary AS (
@@ -806,6 +957,8 @@ def _exposure_summary_sql() -> str:
                 ELSE 'study_day'
             END AS preferred_interval_source,
             list(route_value) AS route_values,
+            -- One (route, method) pair per EX row; the route field resolves it through the alias table.
+            list({{'route': route_value, 'method': method_value}}) AS route_method_values,
             list(dose_frequency_value) AS dose_frequency_values,
             list(treatment_value) AS treatment_values
         FROM subject_exposure_intervals
@@ -896,11 +1049,25 @@ def _exposure_summary_sql() -> str:
         LEFT JOIN merged_summary AS merged
             USING ({q(STUDY_ID)}, {q(SUBJECT_ID)})
     ),
+    exposed_studies AS (
+        SELECT DISTINCT {q(STUDY_ID)}, TRUE AS has_exposure_rows FROM raw_summary
+    ),
     candidate AS (
         SELECT
             dm.{q(STUDY_ID)},
             dm.{q(SUBJECT_ID)},
-            evidence.* EXCLUDE ({q(STUDY_ID)}, {q(SUBJECT_ID)}),
+            evidence.* EXCLUDE ({q(STUDY_ID)}, {q(SUBJECT_ID)}) REPLACE (
+                CASE WHEN {ts_fallback} THEN studies.declared_route_values
+                     ELSE evidence.route_values END AS route_values,
+                CASE WHEN {ts_fallback}
+                     THEN list_transform(studies.declared_route_values,
+                                         value -> {{'route': value, 'method': CAST(NULL AS VARCHAR)}})
+                     ELSE evidence.route_method_values END AS route_method_values,
+                CASE WHEN {ts_fallback} THEN studies.declared_dose_frequency_values
+                     ELSE evidence.dose_frequency_values END AS dose_frequency_values,
+                CASE WHEN {ts_fallback} THEN studies.declared_treatment_values
+                     ELSE evidence.treatment_values END AS treatment_values
+            ),
             studies.declared_dose_duration_values,
             studies.planned_dose_duration_day_values,
             studies.unparsed_dose_duration_values,
@@ -918,6 +1085,7 @@ def _exposure_summary_sql() -> str:
             END AS planned_dose_duration_days
         FROM dm
         LEFT JOIN evidence USING ({q(STUDY_ID)}, {q(SUBJECT_ID)})
+        LEFT JOIN exposed_studies AS exposed USING ({q(STUDY_ID)})
         LEFT JOIN study_design_summary AS studies USING ({q(STUDY_ID)})
     )
     SELECT
@@ -939,17 +1107,38 @@ def _exposure_summary_sql() -> str:
     """
 
 
-def _subject_disposition_sql() -> str:
+# Pathology domains whose study day dates the necropsy of a subject without a
+# DS record that has a DSDECOD.
+NECROPSY_DAY_COLUMNS = (("mi", "MIDY"), ("ma", "MADY"), ("om", "OMDY"))
+# The latest days of the pathology domains of one subject agree when they differ
+# by this number of days or less: the width of the terminal sacrifice window
+# above the planned dose duration (``config/population/base_query.yaml``).
+PATHOLOGY_DAY_TOLERANCE_DAYS = 4
+
+
+def _subject_disposition_sql(has_ds: bool, necropsy_sources: tuple[tuple[str, str], ...]) -> str:
     """Classify DS disposition evidence into canonical per-subject categories.
 
     ``terminal_sacrifice_offset_day_values`` holds every terminal-sacrifice
     study day minus the subject's planned dose duration, so window predicates
     resolve with ``any value`` semantics over the terminal rows.
+
+    A subject without a DS record that has a DSDECOD (a control-only export has
+    no DS) has one TERMINAL record dated by its necropsy: the earliest of the
+    latest MI, the latest MA and the latest OM study day. A pathology day can be
+    an evaluation or reporting date long after the necropsy (most often MIDY),
+    so the latest of all the days is not the necropsy. The offset then separates
+    main-study animals from recovery animals and early deaths, as a DS terminal
+    sacrifice does. A DS record with an unlisted DSDECOD is a disposition that
+    this code cannot classify: it gets no necropsy record.
+
+    ``terminal_record_source`` is ``disposition`` for a DS terminal record and
+    ``necropsy`` for this fallback. ``pathology_day_spread_days`` is, for a
+    fallback subject, the latest minus the earliest of the per-domain latest
+    days. The subject context stage makes its warnings from these two columns.
     """
 
-    return """
-    CREATE OR REPLACE VIEW subject_disposition_summary AS
-    WITH classified AS (
+    classified = """
         SELECT
             ds."STUDYID",
             ds."USUBJID",
@@ -967,13 +1156,52 @@ def _subject_disposition_sql() -> str:
                 WHEN 'ACCIDENTAL DEATH' THEN 'UNSCHEDULED_DEATH'
                 WHEN 'REMOVED FROM STUDY ALIVE' THEN 'REMOVED_ALIVE'
             END AS category,
-            try_cast(ds."DSSTDY" AS INTEGER) AS study_day,
-            exposure.planned_dose_duration_days
+            try_cast(ds."DSSTDY" AS INTEGER) AS study_day
         FROM ds
         INNER JOIN dm USING ("STUDYID", "USUBJID")
-        LEFT JOIN subject_exposure_summary AS exposure
-            USING ("STUDYID", "USUBJID")
         WHERE nullif(trim(ds."DSDECOD"), '') IS NOT NULL
+    """ if has_ds else """
+        SELECT CAST(NULL AS VARCHAR) AS "STUDYID", CAST(NULL AS VARCHAR) AS "USUBJID",
+               CAST(NULL AS VARCHAR) AS category, CAST(NULL AS INTEGER) AS study_day
+        WHERE FALSE
+    """
+    days = " UNION ALL ".join(
+        f'SELECT "STUDYID", "USUBJID", \'{table}\' AS pathology_domain, '
+        f"try_cast(nullif(trim(cast({q(column)} AS VARCHAR)), \'\') AS INTEGER) AS study_day FROM {table}"
+        for table, column in necropsy_sources
+    ) or (
+        'SELECT CAST(NULL AS VARCHAR) AS "STUDYID", CAST(NULL AS VARCHAR) AS "USUBJID", '
+        "CAST(NULL AS VARCHAR) AS pathology_domain, CAST(NULL AS INTEGER) AS study_day WHERE FALSE"
+    )
+    return f"""
+    CREATE OR REPLACE VIEW subject_disposition_summary AS
+    WITH decoded AS ({classified}),
+    classified AS (
+        SELECT * FROM decoded WHERE category IS NOT NULL
+    ),
+    pathology_latest AS (
+        SELECT pathology."STUDYID", pathology."USUBJID", pathology.pathology_domain,
+               max(pathology.study_day) AS latest_day
+        FROM ({days}) AS pathology
+        INNER JOIN dm USING ("STUDYID", "USUBJID")
+        WHERE pathology.study_day IS NOT NULL
+          AND NOT EXISTS (
+              SELECT 1 FROM decoded
+              WHERE decoded."STUDYID" = pathology."STUDYID" AND decoded."USUBJID" = pathology."USUBJID")
+        GROUP BY pathology."STUDYID", pathology."USUBJID", pathology.pathology_domain
+    ),
+    necropsy AS (
+        SELECT "STUDYID", "USUBJID", 'TERMINAL' AS category,
+               min(latest_day) AS study_day,
+               TRUE AS from_necropsy,
+               max(latest_day) - min(latest_day) AS pathology_day_spread_days
+        FROM pathology_latest
+        GROUP BY "STUDYID", "USUBJID"
+    ),
+    records AS (
+        SELECT records.*, exposure.planned_dose_duration_days
+        FROM (SELECT * FROM classified UNION ALL BY NAME SELECT * FROM necropsy) AS records
+        LEFT JOIN subject_exposure_summary AS exposure USING ("STUDYID", "USUBJID")
     )
     SELECT
         "STUDYID",
@@ -986,53 +1214,170 @@ def _subject_disposition_sql() -> str:
             WHERE category = 'TERMINAL'
               AND study_day IS NOT NULL
               AND planned_dose_duration_days IS NOT NULL
-        ) AS terminal_sacrifice_offset_day_values
-    FROM classified
-    WHERE category IS NOT NULL
+        ) AS terminal_sacrifice_offset_day_values,
+        CASE
+            WHEN coalesce(bool_or(from_necropsy), FALSE) THEN 'necropsy'
+            WHEN bool_or(category = 'TERMINAL') THEN 'disposition'
+        END AS terminal_record_source,
+        CAST(max(pathology_day_spread_days) AS INTEGER) AS pathology_day_spread_days
+    FROM records
     GROUP BY "STUDYID", "USUBJID"
     """
 
 
-def _baseline_body_weight_sql() -> str:
-    """Derive one strict pre-study baseline body weight per subject."""
+def pre_study_timing_sql(
+    domain: str, columns: tuple[str, ...], dm_columns: tuple[str, ...], alias: str
+) -> tuple[str, str, str]:
+    """Return study-day, measurement-time and reference-time SQL for one domain.
 
-    return """
+    The study day is the first readable day column, the measurement time is the
+    first readable timestamp column, and the reference time is DM ``RFSTDTC``.
+    """
+
+    day_terms = [
+        f"try_cast(nullif({alias}.{q(column)}, '') AS INTEGER)"
+        for column in day_columns(domain, columns)
+    ]
+    timestamp_terms = [
+        f"try_cast(nullif({alias}.{q(column)}, '') AS TIMESTAMP)"
+        for column in (f"{domain}DTC", f"{domain}STDTC", f"{domain}ENDTC", "DTC")
+        if column in columns
+    ]
+    reference = (
+        f"try_cast(nullif(dm.{q('RFSTDTC')}, '') AS TIMESTAMP)"
+        if "RFSTDTC" in dm_columns
+        else "NULL"
+    )
+    return (
+        f"coalesce({', '.join(day_terms)})" if day_terms else "NULL",
+        f"coalesce({', '.join(timestamp_terms)})" if timestamp_terms else "NULL",
+        reference,
+    )
+
+
+def _baseline_body_weight_sql(bw_columns: tuple[str, ...], dm_columns: tuple[str, ...]) -> str:
+    """Derive one strict pre-study baseline body weight per subject.
+
+    This is the SQL form of the pre-study endpoint rule in ``cohort.py`` for the
+    catalogue BW_BW endpoint: ``endpoint_matches_row`` selects the row, and
+    ``parse_result`` gives its value, unit and exclusion flag. Text is
+    normalized for ASCII whitespace and U+00A0 only, not for full NFKC.
+    """
+
+    spec = canonical_endpoint("BW_BW").spec
+    if spec.specimens or spec.methods or spec.sexes:
+        raise ValueError("the derived baseline body weight supports test and unit filters only")
+
+    def column(name: str) -> str:
+        return f"cast(rows.{q(name)} AS VARCHAR)" if name in bw_columns else "NULL"
+
+    space = r"[\s\x{00A0}]+"
+
+    def stripped(expr: str) -> str:
+        return f"regexp_replace({expr}, '^{space}|{space}$', '', 'g')"
+
+    def normalized(expr: str) -> str:
+        collapsed = f"regexp_replace({expr}, '{space}', ' ', 'g')"
+        return f"upper({stripped(collapsed)})"
+
+    def literals(values: Iterable[str]) -> str:
+        return ", ".join("'" + value.replace("'", "''") + "'" for value in sorted(set(values)))
+
+    def first_present(names: tuple[str, ...]) -> str:
+        # endpoint_rows reads the first column that is not NULL or exactly ''.
+        terms = [f"nullif({column(name)}, '')" for name in names if name in bw_columns]
+        value = f"coalesce({', '.join(terms)})" if terms else "NULL"
+        return f"coalesce(nullif({normalized(value)}, ''), 'UNKNOWN')"
+
+    def number(name: str) -> str:
+        value = f"try_cast(nullif({column(name)}, '') AS DOUBLE)"
+        return f"CASE WHEN isfinite({value}) THEN {value} END"
+
+    def unit(name: str) -> str:
+        value = stripped(column(name))
+        return (
+            f"CASE WHEN nullif({value}, '') IS NOT NULL "
+            f"AND {normalized(column(name))} NOT IN ({literals(MISSING_UNIT_LABELS)}) "
+            f"THEN {value} END"
+        )
+
+    flags = [
+        f"coalesce({normalized(column(name))} IN ('1', 'TRUE', 'Y', 'YES'), false)"
+        for name in ("BWEXCLFL", "EXCLFL")
+        if name in bw_columns
+    ]
+    excluded = " OR ".join(flags) if flags else "false"
+    test_code = first_present(("BWTESTCD", "BWTEST", "TESTCD", "TEST"))
+    test_name = first_present(("BWTEST", "TEST"))
+    stresn, orres, stresc = number("BWSTRESN"), number("BWORRES"), number("BWSTRESC")
+    stres_unit, orres_unit = unit("BWSTRESU"), unit("BWORRESU")
+    day, measured, reference = pre_study_timing_sql("BW", bw_columns, dm_columns, "rows")
+    name_filter = (
+        f"AND test_name IN ({literals(spec.test_names)})" if spec.test_names else ""
+    )
+    unit_filter = (
+        f"AND upper(source_unit) IN ({literals(u.upper() for u in spec.source_units)})"
+        if spec.source_units
+        else ""
+    )
+    return f"""
     CREATE OR REPLACE VIEW subject_baseline_body_weight AS
-    WITH candidates AS (
+    WITH parsed AS (
         SELECT
-            bw."STUDYID",
-            bw."USUBJID",
-            try_cast(bw."BWSTRESN" AS DOUBLE) AS baseline_body_weight_g,
-            try_cast(bw."BWDY" AS INTEGER) AS study_day,
-            try_cast(bw."BWDTC" AS TIMESTAMP) AS measurement_time,
-            rank() OVER (
-                PARTITION BY bw."STUDYID", bw."USUBJID"
-                ORDER BY
-                    try_cast(bw."BWDY" AS INTEGER) DESC NULLS LAST,
-                    try_cast(bw."BWDTC" AS TIMESTAMP) DESC NULLS LAST
-            ) AS candidate_rank
-        FROM bw
+            rows."STUDYID",
+            rows."USUBJID",
+            {day} AS study_day,
+            {measured} AS measurement_time,
+            {reference} AS reference_time,
+            exposure.first_exposure_day,
+            {test_code} AS test_code,
+            {test_name} AS test_name,
+            {excluded} AS excluded,
+            {stresn} AS stresn,
+            {orres} AS orres,
+            {stresc} AS stresc,
+            {stres_unit} AS stres_unit,
+            {orres_unit} AS orres_unit
+        FROM bw AS rows
         INNER JOIN dm USING ("STUDYID", "USUBJID")
-        LEFT JOIN subject_exposure_summary AS exposure
-            USING ("STUDYID", "USUBJID")
-        WHERE isfinite(try_cast(bw."BWSTRESN" AS DOUBLE))
-          AND upper(trim(bw."BWSTRESU")) = 'G'
+        LEFT JOIN subject_exposure_summary AS exposure USING ("STUDYID", "USUBJID")
+    ),
+    valued AS (
+        SELECT
+            *,
+            coalesce(stresn, orres, stresc) AS baseline_body_weight_g,
+            -- parse_result pairs each value with its own unit column and
+            -- borrows the other unit only when the other value is equal.
+            CASE
+                WHEN stresn IS NOT NULL
+                    THEN coalesce(stres_unit, CASE WHEN orres = stresn THEN orres_unit END)
+                WHEN orres IS NOT NULL
+                    THEN coalesce(orres_unit, CASE WHEN stresc = orres THEN stres_unit END)
+                ELSE stres_unit
+            END AS source_unit
+        FROM parsed
+    ),
+    candidates AS (
+        SELECT
+            "STUDYID",
+            "USUBJID",
+            baseline_body_weight_g,
+            rank() OVER (
+                PARTITION BY "STUDYID", "USUBJID"
+                ORDER BY
+                    study_day IS NOT NULL DESC,
+                    study_day DESC,
+                    measurement_time DESC NULLS LAST
+            ) AS candidate_rank
+        FROM valued
+        WHERE NOT excluded
+          AND baseline_body_weight_g IS NOT NULL
+          AND test_code IN ({literals(spec.test_codes)})
+          {name_filter}
+          {unit_filter}
           AND (
-              upper(trim(bw."BWTESTCD")) IN ('BW', 'AA01')
-              OR (
-                  nullif(trim(bw."BWTESTCD"), '') IS NULL
-                  AND nullif(trim(bw."BWTEST"), '') IS NULL
-              )
-          )
-          AND upper(trim(coalesce(bw."BWTESTCD", ''))) NOT IN ('TERMBW', 'RA13', 'TBW1')
-          AND upper(trim(coalesce(bw."BWTEST", ''))) <> 'TERMINAL BODY WEIGHT'
-          AND (
-              try_cast(bw."BWDY" AS INTEGER)
-                  < coalesce(exposure.first_exposure_day, 1)
-              OR (
-                  try_cast(bw."BWDY" AS INTEGER) IS NULL
-                  AND try_cast(bw."BWDTC" AS TIMESTAMP) < try_cast(dm."RFSTDTC" AS TIMESTAMP)
-              )
+              study_day < coalesce(first_exposure_day, 1)
+              OR (study_day IS NULL AND measurement_time < reference_time)
           )
     )
     SELECT
@@ -1055,17 +1400,23 @@ __all__ = [
     "QuerySpec",
     "archive_sha256",
     "connect",
+    "PRE_STUDY_ENDPOINT_TABLE",
+    "PYTHON_DERIVED_TABLES",
+    "SUBJECT_CONTEXT_TABLE",
     "create_derived_views",
     "domain_view_name",
     "ensure_extracted",
     "materialize_archive_tables",
     "materialize_derived_tables",
+    "python_derived_tables_current",
     "normalize_domain",
     "open_archive",
+    "open_source_tables",
     "open_directory",
     "q",
     "quote_ident",
     "quote_literal",
     "register_csv_views",
+    "registered_frame",
     "table_columns",
 ]

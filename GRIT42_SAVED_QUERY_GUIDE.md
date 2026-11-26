@@ -50,8 +50,9 @@ GET https://vict3r.upf.edu/api/v1/subject_queries/{id}
 Users manage API tokens in the **API token** tab of the Grit42 **User
 settings** dialog. The API sends the token in the `X-API-KEY` header.
 
-Keep the token out of source code, command arguments, notebooks, and chat. Use
-an operating-system secret store or an approved secret manager. For local
+Keep the token out of source code, command arguments, notebooks, and chat. The
+credential rule is in [AGENTS.md](AGENTS.md#code-conventions--common-patterns).
+Use an operating-system secret store or an approved secret manager. For local
 maintainer work, `.env` and `.grit42-api-token` are excluded by the repository
 `.gitignore`, but they must still remain machine-local.
 
@@ -173,10 +174,9 @@ print(query.import_provenance.source_contract)
 print(query.import_provenance.source_payload_sha256)
 ```
 
-The VCGen service accepts the resulting `vcgen.subject_query.v1` document, not
-the raw Grit42 record. Serialize `query.to_dict()` as JSON or YAML for service
-upload. Put the ordered endpoint selection in the request's own
-`requested_endpoints` field.
+To send the query to the VCG Service, serialize `query.to_dict()` as JSON or
+YAML. The service does not accept the raw Grit42 record; see the
+[request contract](../../docs/service/README.md).
 
 Use `import_grit42_subject_query()` for the raw VICT3R response. Do not pass
 that response to `load_subject_query()`, which reads the local
@@ -184,61 +184,26 @@ that response to `load_subject_query()`, which reads the local
 
 The imported query selects subjects only. Its membership is the Grit42 parity
 checkpoint. Endpoint selection is a later stage:
-`vq.CohortQuery.compose(query, ["BW", "LB_HCT"])`. Source selectors, units,
-specimen rules, and display facts come from the package endpoint catalogue.
-Predicate endpoint references do not become outputs unless they are also in
-the requested set.
+`vq.CohortQuery.compose(query, ["BW_BW", "LB_HCT_BLOOD"])`. Source selectors,
+units, specimen rules, and display facts come from the locked endpoint
+catalogue (see the
+[data README](src/vcgen_query/data/README.md#not-in-this-package)). Predicate
+endpoint references do not become outputs unless they are also in the requested set.
 
 ## 5. Run the query against local SEND data
 
-Pass a local SEND ZIP archive or extracted CSV directory to `execute_query()`:
-
-```python
-result = vq.execute_query(
-    "/data/rodent_db_export.zip",
-    query,
-    extract_dir="/scratch/vcgen-query/rodent-export",
-)
-
-subject_keys = result.subjects.loc[:, ["study_id", "subject_id"]]
-print(subject_keys.head())
-print(f"Matched subjects: {len(subject_keys)}")
-print(result.receipt)
-```
+Run the imported query with `evaluate_membership()` and `execute_query()`, as
+the [README](README.md#getting-started) shows. The
+[README](README.md#returned-data-structures) describes the membership and the
+result tables.
 
 Local execution reads the local SEND source. It does not contact the VICT3R
 API. The local result can differ from the current VICT3R result when the local
 source has a different database revision or contains only part of the source
 data.
 
-Use `explain_query()` when you need rule-level match counts or a stable
-membership hash:
+## Matching rules
 
-```python
-explanation = vq.explain_query(
-    "/data/rodent_db_export.zip",
-    query,
-    include_subject_keys=True,
-    extract_dir="/scratch/vcgen-query/rodent-export",
-)
-
-print(explanation["matched_subject_count"])
-print(explanation["membership_hash"])
-```
-
-`explain_query()` reports how many subjects match each rule or group.
-`execute_query()` returns the selected subjects and any measurements requested
-by the observation contract.
-
-## Matching rules to remember
-
-- Rules in the same group and SEND domain must match the same source row.
-- Rules in separate nested groups may match different rows for the same
-  subject.
-- Rules from different domains are combined at subject level.
-- A matching row in a study-level domain applies to all subjects in that study.
-- Unsupported fields, operators, value types, or malformed values stop the
-  import with an error.
-
-See the [main README](README.md#how-subject-filters-work) for the plain-language
-filter rules and unit behavior.
+The importer stops with an error on an unsupported field, operator, value
+type, or malformed value. The matching rules of the imported query are in
+[How subject filters work](README.md#how-subject-filters-work).

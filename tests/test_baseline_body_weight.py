@@ -2,18 +2,15 @@
 
 from __future__ import annotations
 
-from vcgen_query import CohortQuery, execute_query, parse_subject_query
+from conftest import members, run_query
+from vcgen_query import CohortQuery, parse_subject_query
 
 
 def _query(predicate: dict[str, object]):
     subject = parse_subject_query(
         {"contract": "vcgen.subject_query.v1", "query_id": "synthetic-derived", "predicate": predicate}
     )
-    return CohortQuery.compose(subject, ["BW"])
-
-
-def _members(result) -> set[tuple[str, str]]:
-    return {(row["study_id"], row["subject_id"]) for row in result.subjects.to_dict("records")}
+    return CohortQuery.compose(subject, ["BW_BW"])
 
 
 def test_derived_baseline_body_weight_reuses_latest_qualifying_pre_study_value(
@@ -37,7 +34,7 @@ def test_derived_baseline_body_weight_reuses_latest_qualifying_pre_study_value(
         "value": 260,
     }
 
-    assert _members(execute_query(con, _query(predicate))) == {("S", "S-1")}
+    assert members(run_query(con, _query(predicate))) == {("S", "S-1")}
 
 
 def test_derived_baseline_body_weight_missing_value_does_not_match_negative_predicate(
@@ -57,4 +54,4 @@ def test_derived_baseline_body_weight_missing_value_does_not_match_negative_pred
         "value": [200, 300],
     }
 
-    assert _members(execute_query(con, _query(predicate))) == set()
+    assert members(run_query(con, _query(predicate))) == set()

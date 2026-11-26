@@ -25,6 +25,7 @@ classifiers = [
 dependencies = [
     "duckdb>=1.5.5",
     "pandas>=3.0.5",
+    "pyarrow>=25.0.1",
     "pyyaml>=6.0",
 ]
 
@@ -52,13 +53,11 @@ packages = ["src/vcgen_query"]
 # directory: local SEND extracts use ``.vcgen_query_cache`` below it.
 "notebooks/02_editable_cohort_query.ipynb" = "vcgen_query/notebooks/02_editable_cohort_query.ipynb"
 "GRIT42_SAVED_QUERY_GUIDE.md" = "vcgen_query/GRIT42_SAVED_QUERY_GUIDE.md"
-"GRIT42_MEMBERSHIP_PARITY.md" = "vcgen_query/GRIT42_MEMBERSHIP_PARITY.md"
 
 [tool.hatch.build.targets.sdist]
 include = [
     "/.vscode/settings.json",
     "/GRIT42_SAVED_QUERY_GUIDE.md",
-    "/GRIT42_MEMBERSHIP_PARITY.md",
     "/notebooks/02_editable_cohort_query.ipynb",
     "/src/vcgen_query",
     "/README.md",

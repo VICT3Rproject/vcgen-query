@@ -16,20 +16,20 @@ def test_ensure_extracted_re_extracts_when_archive_changes(tmp_path):
     with ZipFile(archive, "w") as zf:
         zf.writestr("dm.csv", "STUDYID\nS1\n")
     db.ensure_extracted(archive, cache, domains=["DM"])
-    extracted = (cache / "dm.csv").read_text()
+    extracted = (cache / "DM.csv").read_text()
     assert extracted == "STUDYID\nS1\n"
     marker = (cache / ".archive_sha256").read_text().strip()
     assert marker == db.archive_sha256(archive)
 
     # Same archive, different cache target -> reuses marker logic, no error.
     db.ensure_extracted(archive, cache, domains=["DM"])
-    assert (cache / "dm.csv").read_text() == "STUDYID\nS1\n"
+    assert (cache / "DM.csv").read_text() == "STUDYID\nS1\n"
 
     # Archive content changes -> marker mismatch forces re-extraction.
     with ZipFile(archive, "w") as zf:
         zf.writestr("dm.csv", "STUDYID\nS1\nS2\n")
     db.ensure_extracted(archive, cache, domains=["DM"])
-    assert (cache / "dm.csv").read_text() == "STUDYID\nS1\nS2\n"
+    assert (cache / "DM.csv").read_text() == "STUDYID\nS1\nS2\n"
     assert (cache / ".archive_sha256").read_text().strip() == db.archive_sha256(archive)
 
 
@@ -41,9 +41,26 @@ def test_ensure_extracted_repairs_same_size_corruption(tmp_path):
         zf.writestr("dm.csv", original)
     db.ensure_extracted(archive, cache, domains=["DM"])
     # Same-size corruption: size check passes, CRC-32 check must catch it.
-    (cache / "dm.csv").write_text("X" * len(original))
+    (cache / "DM.csv").write_text("X" * len(original))
     db.ensure_extracted(archive, cache, domains=["DM"])
-    assert (cache / "dm.csv").read_text() == original
+    assert (cache / "DM.csv").read_text() == original
+
+
+def test_quoted_field_after_the_sniffer_sample_keeps_its_comma(tmp_path):
+    # Failure mode: the dialect sniffer reads only the first rows. When none of
+    # them is quoted it turns quoting off, and a later quoted comma splits a field.
+    path = tmp_path / "LB.csv"
+    unquoted = "".join(f"S{index},ALT,serum\n" for index in range(25_000))
+    path.write_text(
+        "STUDYID,LBTEST,LBSPEC\n"
+        + unquoted
+        + 'S_LAST,"Creatine kinase, heart type","said ""no data"""\n',
+        encoding="utf-8",
+    )
+    con = db.duckdb.connect()
+    db.register_csv_views(con, tmp_path, domains=("LB",))
+    row = con.execute("SELECT LBTEST, LBSPEC FROM LB WHERE STUDYID = 'S_LAST'").fetchone()
+    assert row == ("Creatine kinase, heart type", 'said "no data"')
 
 
 def test_register_csv_views_and_derived_views(tmp_path, make_connection, basic_subjects):
