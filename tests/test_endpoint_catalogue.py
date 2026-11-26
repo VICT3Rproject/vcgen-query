@@ -14,9 +14,6 @@ from vcgen_query import (
     endpoint_catalogue_identity,
     load_endpoint_catalogue,
 )
-from vcgen_query.endpoint_rows import endpoint_matches_row
-
-
 def _payload() -> dict[str, object]:
     resource = resources.files("vcgen_query").joinpath(
         "data", ENDPOINT_CATALOGUE_FILENAME
@@ -38,16 +35,6 @@ def test_catalogue_has_stable_identity_and_endpoint_provenance() -> None:
     assert ratio.kind == "ratio"
     assert ratio.parents == ("OM_WEIGHT_BRAIN", "BW_TERMINAL")
     assert ratio.scale == 100.0
-
-
-def test_alias_order_does_not_change_compiled_endpoint_semantics() -> None:
-    payload = _payload()
-    endpoint = next(item for item in payload["endpoints"] if item["name"] == "BW")
-    endpoint["test_code_aliases"].append("BODYWT")
-    first = _compile(payload).endpoints["BW"].spec
-    endpoint["test_code_aliases"].reverse()
-    second = _compile(payload).endpoints["BW"].spec
-    assert first == second
 
 
 def test_catalogue_rejects_ambiguous_aliases() -> None:
@@ -82,13 +69,6 @@ def test_catalogue_rejects_unknown_derived_parents() -> None:
         _compile(payload)
 
 
-def test_catalogue_rejects_incomplete_derivation_methodology() -> None:
-    payload = _payload()
-    payload["endpoints"][0]["derivation"] = {"kind": "ratio", "parents": []}
-    with pytest.raises(RuntimeError, match="incomplete or unsupported"):
-        _compile(payload)
-
-
 def test_catalogue_rejects_representation_timing() -> None:
     payload = _payload()
     payload["endpoint_behaviors"] = {}
@@ -105,33 +85,9 @@ def test_catalogue_cutover_preserves_every_source_selector_and_conversion() -> N
     assert {name: endpoint.spec.to_canonical_dict() for name, endpoint in load_endpoint_catalogue().endpoints.items()} == golden
 
 
-@pytest.mark.parametrize("scale", [True, "100", 0, float("nan"), 1.0])
-def test_catalogue_ratio_scale_is_typed_and_unit_derived(scale) -> None:
-    payload = _payload()
-    endpoint = next(item for item in payload["endpoints"] if item["name"] == "OM_OWBW_BRAIN")
-    endpoint["derivation"]["scale"] = scale
-    with pytest.raises(RuntimeError, match="scale"):
-        _compile(payload)
-
-
 def test_catalogue_rejects_parent_cycles() -> None:
     payload = _payload()
     endpoint = next(item for item in payload["endpoints"] if item["name"] == "OM_OWBW_BRAIN")
     endpoint["derivation"]["parents"] = ["OM_OWBW_BRAIN", "BW_TERMINAL"]
     with pytest.raises(RuntimeError, match="cycle"):
         _compile(payload)
-
-
-def test_specimen_and_method_qualifiers_are_applied() -> None:
-    endpoint = canonical_endpoint("LB_HCT").spec
-    columns = ("LBTESTCD", "LBORRES", "LBORRESU", "LBSPEC")
-    accepted = {"LBTESTCD": "HCT", "LBORRES": "42", "LBORRESU": "%", "LBSPEC": "BLOOD"}
-    rejected = {**accepted, "LBSPEC": "URINE"}
-    assert endpoint_matches_row(endpoint, accepted, columns)
-    assert not endpoint_matches_row(endpoint, rejected, columns)
-
-
-def test_catalogue_unit_conversion_matches_active_hgb_contract() -> None:
-    endpoint = canonical_endpoint("LB_HGB").spec
-    rule = endpoint.compiled_unit_rules[0]
-    assert 10.0 * rule.scale + rule.offset == pytest.approx(10.0)

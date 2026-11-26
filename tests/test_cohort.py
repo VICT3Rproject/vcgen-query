@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from vcgen_query import endpoint_catalogue_identity, execute_query, parse_query
+from vcgen_query import CohortQuery, execute_query, parse_subject_query
 
 
 def _send(
@@ -34,15 +34,13 @@ def _rule(
 
 def _query(predicate: dict[str, object] | None, **extra: object) -> object:
     raw: dict[str, object] = {
-        "contract": "vcgen.cohort_query.v5",
+        "contract": "vcgen.subject_query.v1",
         "query_id": "synthetic-execution",
-        "requested_endpoints": ["BW"],
-        "endpoint_catalogue": endpoint_catalogue_identity(),
         **extra,
     }
     if predicate is not None:
         raw["predicate"] = predicate
-    return parse_query(raw)
+    return CohortQuery.compose(parse_subject_query(raw), ["BW"])
 
 
 def _members(result) -> set[tuple[str, str]]:

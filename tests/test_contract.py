@@ -1,28 +1,20 @@
-"""Behavioral tests for the v3 predicate query contract."""
+"""Behavioral tests for the subject-query and cohort-query contracts."""
 
 from __future__ import annotations
 
 import math
 
 import pytest
-import vcgen_query
-
 from vcgen_query import (
-    COHORT_QUERY_CONTRACT,
-    DayWindow,
-    DerivedField,
+    SUBJECT_QUERY_CONTRACT,
+    EndpointObservations,
     EndpointSpec,
-    endpoint_catalogue_identity,
-    ObservationContract,
-    PreStudyEndpointField,
-    PredicateGroup,
-    PredicateRule,
-    Query,
     QueryError,
     SendColumnField,
     fingerprint_observation_contract,
     fingerprint_predicate,
-    parse_query,
+    parse_cohort_query,
+    parse_subject_query,
 )
 
 
@@ -57,66 +49,13 @@ def _rule(
 
 def _query(predicate: dict[str, object] | None = None, **extra: object) -> dict[str, object]:
     payload: dict[str, object] = {
-        "contract": COHORT_QUERY_CONTRACT,
-        "query_id": "synthetic-v3",
-        "requested_endpoints": ["BW"],
-        "endpoint_catalogue": endpoint_catalogue_identity(),
+        "contract": SUBJECT_QUERY_CONTRACT,
+        "query_id": "synthetic-subject-query",
         **extra,
     }
     if predicate is not None:
         payload["predicate"] = predicate
     return payload
-
-
-def test_contract_id_and_absent_predicate_are_canonical_all_subjects() -> None:
-    query = parse_query(_query())
-
-    assert query.contract == "vcgen.cohort_query.v5"
-    assert query.predicate is None
-    assert query.import_provenance is None
-    assert "predicate" not in query.to_canonical_dict()
-    assert "import_provenance" not in query.to_canonical_dict()
-
-
-def test_source_data_error_is_a_public_value_error() -> None:
-    assert issubclass(vcgen_query.SourceDataError, ValueError)
-
-
-def test_manual_conversion_types_are_not_public() -> None:
-    assert not hasattr(vcgen_query, "UnitConversion")
-    assert not hasattr(vcgen_query, "UnitConversionRule")
-
-
-def test_direct_endpoint_construction_enforces_and_normalizes_parser_invariants() -> None:
-    endpoint = EndpointSpec(
-        name="HGB",
-        domain="LB",
-        test_codes=("ｈｇｂ", "HGB"),
-        test_names=(" hemoglobin ",),
-        source_units=("g/L", "G/L"),
-        specimens=(" blood ",),
-        specimen_match="contains",
-        sexes=("m", "M"),
-        day_window=DayWindow(1, 28),
-    )
-
-    assert endpoint.test_codes == ("HGB",)
-    assert endpoint.test_names == ("HEMOGLOBIN",)
-    assert endpoint.source_units == ("G/L", "g/L")
-    assert endpoint.specimens == ("BLOOD",)
-    assert endpoint.sexes == ("M",)
-
-    with pytest.raises(QueryError, match="specimen_match"):
-        EndpointSpec("HCT", "LB", ("HCT",), specimen_match="substring")
-    with pytest.raises(QueryError, match="non-empty"):
-        EndpointSpec("HCT", "LB", ())
-
-
-def test_requested_endpoints_resolve_only_through_the_catalogue() -> None:
-    parsed = parse_query(_query(requested_endpoints=["LB_HGB"]))
-
-    assert tuple(item.name for item in parsed.resolved_endpoints) == ("LB_HGB",)
-    assert parsed.resolved_endpoints[0].domain == "LB"
 
 
 @pytest.mark.parametrize(
@@ -132,123 +71,12 @@ def test_requested_endpoints_are_required_unique_uppercase_catalogue_names(
     endpoints: list[str], message: str
 ) -> None:
     with pytest.raises(QueryError, match=message):
-        parse_query(_query(requested_endpoints=endpoints))
+        EndpointObservations(tuple(endpoints))
 
 
-def test_requested_endpoints_are_required_in_serialized_queries() -> None:
-    payload = _query()
-    del payload["requested_endpoints"]
-    with pytest.raises(QueryError, match="requested_endpoints"):
-        parse_query(payload)
-
-
-def test_day_window_is_integer_only_inclusive_and_ordered() -> None:
-    window = DayWindow(-1, 28)
-
-    assert window.contains(-1)
-    assert window.contains(28)
-    assert not window.contains(29)
-    assert not window.contains(None)
-    with pytest.raises(QueryError, match="at least one"):
-        DayWindow()
-    with pytest.raises(QueryError, match="integers"):
-        DayWindow(1.5, 28)
-    with pytest.raises(QueryError, match="must not exceed"):
-        DayWindow(29, 28)
-
-
-def test_direct_field_construction_rejects_noncanonical_variants() -> None:
-    with pytest.raises(QueryError, match="uppercase SEND identifier"):
-        SendColumnField("dm", "SEX", "string")
-    with pytest.raises(QueryError, match="unsupported"):
-        DerivedField("unknown", "string")
-    with pytest.raises(QueryError, match="must be 'number'"):
-        PreStudyEndpointField("HCT", value_type="string")
-
-
-def test_direct_predicate_construction_enforces_operator_and_value_coupling() -> None:
-    field = SendColumnField("DM", "SEX", "string")
-    rule = PredicateRule(field, "in", ["M", "F", "M"])
-
-    assert rule.value == ("F", "M")
-    with pytest.raises(QueryError, match="operator"):
-        PredicateRule(field, "equals", "M")
-    with pytest.raises(QueryError, match="scalar"):
-        PredicateRule(field, "eq", ["M"])
-    with pytest.raises(QueryError, match="omitted or null"):
-        PredicateRule(field, "is_empty", "")
-
-
-def test_direct_group_and_query_construction_require_typed_entities() -> None:
-    rule = PredicateRule(SendColumnField("DM", "SEX", "string"), "eq", "M")
-    group = PredicateGroup("and", [rule, rule])
-
-    assert group.children == (rule,)
-    with pytest.raises(QueryError, match="non-empty"):
-        PredicateGroup("and", ())
-    with pytest.raises(QueryError, match="typed predicates"):
-        PredicateGroup("and", ({"operator": "eq"},))
-    with pytest.raises(QueryError, match="typed predicate"):
-        Query("direct", ("BW",), endpoint_catalogue_identity(), predicate={"operator": "eq"})
-    with pytest.raises(QueryError, match="requested_endpoints"):
-        Query("direct", (), endpoint_catalogue_identity())
-    with pytest.raises(QueryError, match="unsupported contract"):
-        Query(
-            "direct",
-            ("BW",),
-            endpoint_catalogue_identity(),
-            contract="vcgen.cohort_query.v3",
-        )
-
-
-def test_observation_container_rejects_invalid_members() -> None:
-    with pytest.raises(QueryError, match="EndpointSpec"):
-        ObservationContract(endpoints=({},))
-
-
-@pytest.mark.parametrize("name", ["hct", "HCT value", "1_HCT", "STUDY_ID"])
-def test_endpoint_names_must_be_non_reserved_uppercase_machine_ids(name: str) -> None:
-    with pytest.raises(QueryError):
-        EndpointSpec(name, "LB", ("HCT",))
-
-
-@pytest.mark.parametrize(
-    ("field", "value"),
-    [
-        ("test_codes", ("UNKNOWN",)),
-        ("test_names", ("N/A",)),
-        ("specimens", (" ",)),
-        ("sexes", ("NOT AVAILABLE",)),
-    ],
-)
-def test_endpoint_selectors_reject_missing_categories(field: str, value: tuple[str, ...]) -> None:
-    arguments = {"name": "HCT", "domain": "LB", "test_codes": ("HCT",), field: value}
-    with pytest.raises(QueryError, match="non-missing category"):
-        EndpointSpec(**arguments)
-
-
-def test_observation_contract_rejects_removed_options_and_duplicate_endpoint_ids() -> None:
-    with pytest.raises(QueryError, match="unsupported key"):
-        parse_query(_query(observation_contract={"options": {"future": True}}))
-    with pytest.raises(QueryError, match="unique"):
-        ObservationContract(
-            (EndpointSpec("HCT", "LB", ("HCT",)), EndpointSpec("HCT", "LB", ("HGB",)))
-        )
-
-
-def test_target_unit_compiles_all_exact_source_labels() -> None:
-    endpoint = EndpointSpec(
-        "MASS", "BW", ("BW",), source_units=("g", "G", "kg"), target_unit="g"
-    )
-
-    assert endpoint.source_units == ("G", "g", "kg")
-    assert [(rule.source_unit, rule.source_ucum, rule.scale, rule.offset) for rule in endpoint.compiled_unit_rules] == [
-        ("G", "g", 1.0, 0.0),
-        ("g", "g", 1.0, 0.0),
-        ("kg", "kg", 1000.0, 0.0),
-    ]
-    with pytest.raises(QueryError, match="source_units must be non-empty"):
-        EndpointSpec("HGB", "LB", ("HGB",), target_unit="g/dL")
+def test_cohort_queries_require_one_final_endpoint_stage() -> None:
+    with pytest.raises(QueryError, match="endpoint_observations"):
+        parse_cohort_query({"contract": "vcgen.cohort_query.v7", "subject_query": _query(), "stages": []})
 
 
 @pytest.mark.parametrize(
@@ -286,7 +114,7 @@ def test_unit_labels_are_trimmed_but_not_casefolded_or_rewritten() -> None:
 
 def test_legacy_manual_conversion_rules_are_rejected() -> None:
     with pytest.raises(QueryError, match="unsupported key"):
-        parse_query(
+        parse_subject_query(
             _query(
                 observation_contract={
                     "endpoints": [
@@ -311,55 +139,14 @@ def test_legacy_manual_conversion_rules_are_rejected() -> None:
     [
         {"query_id": "missing-contract"},
         {"contract": "vcgen.cohort_query.v3", "query_id": "old-contract"},
+        {"contract": "vcgen.cohort_query.v5", "query_id": "old-contract"},
     ],
 )
-def test_native_parser_requires_explicit_v5_contract(payload: dict[str, object]) -> None:
+def test_native_parsers_require_their_explicit_contract(payload: dict[str, object]) -> None:
     with pytest.raises(QueryError):
-        parse_query(payload)
-
-
-@pytest.mark.parametrize(
-    ("operator", "value", "value_type"),
-    [
-        ("eq", "M", "string"),
-        ("ne", "F", "string"),
-        ("in", ["M", "F", "M"], "string"),
-        ("not_in", ["F", "M", "F"], "string"),
-        ("contains", "IST", "string"),
-        ("not_contains", "MOUSE", "string"),
-        ("starts_with", "WI", "string"),
-        ("not_starts_with", "MO", "string"),
-        ("ends_with", "HAN", "string"),
-        ("not_ends_with", "MOUSE", "string"),
-        ("is_empty", None, "string"),
-        ("is_not_empty", None, "string"),
-        ("gt", 1, "number"),
-        ("gte", 1, "number"),
-        ("lt", 2, "number"),
-        ("lte", 2, "number"),
-        ("between", [1, 2], "number"),
-        ("not_between", [1, 2], "number"),
-        ("eq", "2020-01-01", "datetime"),
-    ],
-)
-def test_every_canonical_operator_parses_typed_value(
-    operator: str, value: object, value_type: str
-) -> None:
-    field = {
-        "string": _field(),
-        "number": _field(column="AGE", value_type="number"),
-        "datetime": _field(column="RFSTDTC", value_type="datetime"),
-    }[value_type]
-    parsed = parse_query(_query(_rule(operator, value, field=field)))
-
-    assert parsed.predicate is not None
-    canonical = parsed.to_canonical_dict()["predicate"]
-    assert canonical["operator"] == operator
-    if operator in {"is_empty", "is_not_empty"}:
-        assert "value" not in canonical
-    else:
-        expected = sorted(set(value)) if operator in {"in", "not_in"} else value
-        assert canonical["value"] == expected
+        parse_subject_query(payload)
+    with pytest.raises(QueryError):
+        parse_cohort_query(payload)
 
 
 @pytest.mark.parametrize(
@@ -426,7 +213,7 @@ def test_every_canonical_operator_parses_typed_value(
 )
 def test_malformed_predicates_fail_closed(raw: dict[str, object]) -> None:
     with pytest.raises(QueryError):
-        parse_query(raw)
+        parse_subject_query(raw)
 
 
 def test_send_column_fields_are_closed_by_the_versioned_grit42_catalogue() -> None:
@@ -438,20 +225,10 @@ def test_send_column_fields_are_closed_by_the_versioned_grit42_catalogue() -> No
         SendColumnField("LB", "LBSTRESN", "string")
 
 
-def test_normalization_sorts_commutative_children_and_removes_exact_duplicates() -> None:
-    female = _rule("eq", "F")
-    male = _rule("eq", "M")
-    left = parse_query(_query({"group": "or", "children": [male, female, male]}))
-    right = parse_query(_query({"group": "or", "children": [female, male]}))
-
-    assert left.to_canonical_dict()["predicate"] == right.to_canonical_dict()["predicate"]
-    assert fingerprint_predicate(left.predicate) == fingerprint_predicate(right.predicate)
-
-
 def test_predicate_fingerprint_ignores_query_and_import_provenance() -> None:
     predicate = {"group": "and", "children": [_rule("eq", "M")]}
-    first = parse_query(_query(predicate, query_id="first"))
-    second = parse_query(
+    first = parse_subject_query(_query(predicate, query_id="first"))
+    second = parse_subject_query(
         _query(
             predicate,
             query_id="second",
@@ -460,14 +237,13 @@ def test_predicate_fingerprint_ignores_query_and_import_provenance() -> None:
                 "source_contract": "grit42.form_subject_query.v1",
                 "source_payload_sha256": "b" * 64,
             },
-            requested_endpoints=["LB_HCT"],
         )
     )
 
     assert fingerprint_predicate(first.predicate) == fingerprint_predicate(second.predicate)
     assert first.import_provenance is None
     assert second.import_provenance is not None
-    assert parse_query(second.to_canonical_dict()) == second
+    assert parse_subject_query(second.to_dict()) == second
 
 
 @pytest.mark.parametrize(
@@ -492,70 +268,11 @@ def test_predicate_fingerprint_ignores_query_and_import_provenance() -> None:
 )
 def test_import_provenance_fails_closed(provenance: dict[str, str]) -> None:
     with pytest.raises(QueryError):
-        parse_query(_query(import_provenance=provenance))
-
-
-def test_nested_groups_and_negation_round_trip() -> None:
-    predicate = {
-        "group": "and",
-        "children": [
-            _rule("eq", "RAT", field=_field(column="SPECIES")),
-            {
-                "group": "or",
-                "negated": True,
-                "children": [_rule("eq", "F"), _rule("eq", "M")],
-            },
-        ],
-    }
-
-    parsed = parse_query(_query(predicate))
-
-    canonical = parsed.to_canonical_dict()["predicate"]
-    nested = next(child for child in canonical["children"] if child.get("group") == "or")
-    assert canonical["group"] == "and"
-    assert nested["negated"] is True
+        parse_subject_query(_query(import_provenance=provenance))
 
 
 def test_observation_fingerprint_includes_catalogue_endpoint_semantics() -> None:
-    first = parse_query(_query(requested_endpoints=["LB_HGB"]))
-    changed = parse_query(_query(requested_endpoints=["LB_HCT"]))
+    first = EndpointObservations(("LB_HGB",))
+    changed = EndpointObservations(("LB_HCT",))
 
     assert fingerprint_observation_contract(first) != fingerprint_observation_contract(changed)
-
-
-def test_observation_fingerprint_is_normalization_stable_and_endpoint_order_sensitive() -> None:
-    first = parse_query(
-        _query(requested_endpoints=["LB_HCT", "BW"])
-    )
-    equivalent = parse_query(
-        _query(requested_endpoints=["LB_HCT", "BW"])
-    )
-    reordered = parse_query(
-        _query(requested_endpoints=["BW", "LB_HCT"])
-    )
-
-    assert fingerprint_observation_contract(first) == fingerprint_observation_contract(equivalent)
-    assert fingerprint_observation_contract(first) != fingerprint_observation_contract(reordered)
-
-
-@pytest.mark.parametrize(
-    "endpoint",
-    [
-        {
-            "name": "HGB",
-            "domain": "LB",
-            "test_codes": ["HGB"],
-            "source_units": ["g/dL"],
-            "unit_conversion": {
-                "target_unit": "g/dL",
-                "rules": [{"source_unit": "g/dL", "scale": 2}],
-            },
-        },
-        {"name": "study_id", "domain": "LB", "test_codes": ["HCT"]},
-    ],
-)
-def test_daily_projection_contract_rejects_ambiguous_endpoint_metadata(
-    endpoint: dict[str, object],
-) -> None:
-    with pytest.raises(QueryError):
-        parse_query(_query(observation_contract={"endpoints": [endpoint]}))

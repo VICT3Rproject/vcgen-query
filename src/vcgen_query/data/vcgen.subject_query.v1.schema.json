@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vict3r.org/schemas/vcgen.subject_query.v1.schema.json",
+  "title": "VCGen subject query v1 (Grit42-compatible membership layer)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contract", "query_id"],
+  "properties": {
+    "contract": {"const": "vcgen.subject_query.v1"},
+    "query_id": {"type": "string", "minLength": 1},
+    "predicate": {"$ref": "https://vict3r.org/schemas/vcgen.subject_predicate.v1.schema.json"},
+    "import_provenance": {"$ref": "https://vict3r.org/schemas/grit42.subject_query_import.v1.schema.json"}
+  }
+}

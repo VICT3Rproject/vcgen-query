@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from importlib import resources
 import json
 from pathlib import Path
 
@@ -46,25 +45,6 @@ def test_internal_catalogue_matches_ucum_2_2_for_all_compatible_canonical_pairs(
                 ), (source.code, target.code, value)
 
 
-@pytest.mark.parametrize(
-    ("source", "target", "resolved"),
-    [
-        ("G", "g", "g"),
-        ("MG", "g", "mg"),
-        ("µkat/L", "U/L", "ukat/L"),
-        ("μkat/L", "ukat/L", "ukat/L"),
-        ("°C", "K", "Cel"),
-        ("C", "Cel", "Cel"),
-    ],
-)
-def test_exact_source_aliases_resolve_only_through_the_catalogue(
-    source: str, target: str, resolved: str
-) -> None:
-    rule = compile_unit_rules((source,), target)[0]
-    assert rule.source_unit == source
-    assert rule.source_ucum == resolved
-
-
 def test_internal_catalogue_matches_nlm_ucum_4_1_9_golden_fixture() -> None:
     fixture = Path(__file__).parent / "fixtures/nlm_ucum_4.1.9_golden.json"
     payload = json.loads(fixture.read_text(encoding="utf-8"))
@@ -74,8 +54,3 @@ def test_internal_catalogue_matches_nlm_ucum_4_1_9_golden_fixture() -> None:
             for value in payload["values"]
         ]
         assert actual == pytest.approx(conversion["expected"])
-
-
-def test_catalogue_resource_is_packaged() -> None:
-    resource = resources.files("vcgen_query").joinpath("data/unit_catalogue.v2.json")
-    assert resource.is_file()

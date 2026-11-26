@@ -1,121 +1,124 @@
-# yaml-language-server: $schema=../vcgen.cohort_query.v5.schema.json
-# Endpoint source selectors are resolved by the package catalogue.
-contract: vcgen.cohort_query.v5
-query_id: wistar_han_28d_historical_discovery
-predicate:
-  group: and
-  children:
-  - field:
-      kind: derived
-      name: planned_dose_duration_days
-      value_type: number
-    operator: between
-    value:
-    - 28
-    - 28
-  - field:
-      kind: derived
-      name: study_start_year
-      value_type: number
-    operator: between
-    value:
-    - 2017
-    - 2025
-  - field:
-      kind: derived
-      name: species
-      value_type: string
-    operator: eq
-    value: RAT
-  - field:
-      kind: derived
-      name: sex
-      value_type: string
-    operator: in
-    value:
-    - F
-    - M
-  - field:
-      kind: derived
-      name: strain
-      value_type: string
-    operator: eq
-    value: WISTAR HAN
-  - field:
-      kind: derived
-      name: route
-      value_type: string
-    operator: in
-    value:
-    - ORAL
-    - ORAL GAVAGE
-requested_endpoints:
-- LB_RBC
-- LB_HGB
-- LB_HCT
-- LB_MCH
-- LB_MCHC
-- LB_MCV
-- LB_RETI
-- LB_PLAT
-- LB_WBC
-- LB_LYM
-- LB_NEUT
-- LB_BASO
-- LB_EOS
-- LB_MONO
-- LB_ALT
-- LB_AST
-- LB_ALP
-- LB_GLDH
-- LB_GGT
-- LB_CK
-- LB_GLUC
-- LB_CHOL
-- LB_TRIG
-- LB_CREAT
-- LB_UREA
-- LB_PROT
-- LB_ALB
-- LB_SODIUM
-- LB_K
-- LB_CL
-- LB_CA
-- LB_PHOS
-- BW
-- BW_TERMINAL
-- OM_WEIGHT_BRAIN
-- OM_WEIGHT_HEART
-- OM_WEIGHT_LIVER
-- OM_WEIGHT_KIDNEY
-- OM_WEIGHT_TESTIS
-- OM_WEIGHT_EPIDIDYMIS
-- OM_WEIGHT_PROSTATE
-- OM_WEIGHT_SEMINAL_VESICLE
-- OM_WEIGHT_ADRENAL
-- OM_WEIGHT_SPLEEN
-- OM_WEIGHT_THYMUS
-- OM_WEIGHT_OVARY
-- OM_WEIGHT_UTERUS
-- LB_APTT
-- LB_BILI
-- LB_FIBRINO
-- LB_PT
-- OM_OWBW_BRAIN
-- OM_OWBW_HEART
-- OM_OWBW_LIVER
-- OM_OWBW_KIDNEY
-- OM_OWBW_TESTIS
-- OM_OWBW_EPIDIDYMIS
-- OM_OWBW_PROSTATE
-- OM_OWBW_SEMINAL_VESICLE
-- OM_OWBW_ADRENAL
-- OM_OWBW_SPLEEN
-- OM_OWBW_THYMUS
-- OM_OWBW_OVARY
-- LB_VOLUME_URINE
-- LB_PROT_URINE
-endpoint_catalogue:
-  contract: vcgen.canonical_endpoint_catalogue.v4
-  catalogue_id: grit42-canonical-endpoints-2026-09-17-v4
-  sha256: 8ef29868c68b1b02f7dba9aa7790b70c046d4898aa04b3f3e784ea67ec7152e4
+# yaml-language-server: $schema=../vcgen.cohort_query.v7.schema.json
+contract: vcgen.cohort_query.v7
+subject_query:
+  contract: vcgen.subject_query.v1
+  query_id: wistar_han_28d_historical_discovery
+  predicate:
+    group: and
+    children:
+    - field:
+        kind: derived
+        name: planned_dose_duration_days
+        value_type: number
+      operator: between
+      value:
+      - 28
+      - 28
+    - field:
+        kind: derived
+        name: study_start_year
+        value_type: number
+      operator: between
+      value:
+      - 2017
+      - 2025
+    - field:
+        kind: derived
+        name: species
+        value_type: string
+      operator: eq
+      value: RAT
+    - field:
+        kind: derived
+        name: sex
+        value_type: string
+      operator: in
+      value:
+      - F
+      - M
+    - field:
+        kind: derived
+        name: strain
+        value_type: string
+      operator: eq
+      value: WISTAR HAN
+    - field:
+        kind: derived
+        name: route
+        value_type: string
+      operator: in
+      value:
+      - ORAL
+      - ORAL GAVAGE
+stages:
+- stage: endpoint_observations
+  requested_endpoints:
+  - LB_RBC
+  - LB_HGB
+  - LB_HCT
+  - LB_MCH
+  - LB_MCHC
+  - LB_MCV
+  - LB_RETI
+  - LB_PLAT
+  - LB_WBC
+  - LB_LYM
+  - LB_NEUT
+  - LB_BASO
+  - LB_EOS
+  - LB_MONO
+  - LB_ALT
+  - LB_AST
+  - LB_ALP
+  - LB_GLDH
+  - LB_GGT
+  - LB_CK
+  - LB_GLUC
+  - LB_CHOL
+  - LB_TRIG
+  - LB_CREAT
+  - LB_UREA
+  - LB_PROT
+  - LB_ALB
+  - LB_SODIUM
+  - LB_K
+  - LB_CL
+  - LB_CA
+  - LB_PHOS
+  - BW
+  - BW_TERMINAL
+  - OM_WEIGHT_BRAIN
+  - OM_WEIGHT_HEART
+  - OM_WEIGHT_LIVER
+  - OM_WEIGHT_KIDNEY
+  - OM_WEIGHT_TESTIS
+  - OM_WEIGHT_EPIDIDYMIS
+  - OM_WEIGHT_PROSTATE
+  - OM_WEIGHT_SEMINAL_VESICLE
+  - OM_WEIGHT_ADRENAL
+  - OM_WEIGHT_SPLEEN
+  - OM_WEIGHT_THYMUS
+  - OM_WEIGHT_OVARY
+  - OM_WEIGHT_UTERUS
+  - LB_APTT
+  - LB_BILI
+  - LB_FIBRINO
+  - LB_PT
+  - OM_OWBW_BRAIN
+  - OM_OWBW_HEART
+  - OM_OWBW_LIVER
+  - OM_OWBW_KIDNEY
+  - OM_OWBW_TESTIS
+  - OM_OWBW_EPIDIDYMIS
+  - OM_OWBW_PROSTATE
+  - OM_OWBW_SEMINAL_VESICLE
+  - OM_OWBW_ADRENAL
+  - OM_OWBW_SPLEEN
+  - OM_OWBW_THYMUS
+  - OM_OWBW_OVARY
+  - LB_VOLUME_URINE
+  - LB_PROT_URINE
+  endpoint_catalogue:
+    contract: vcgen.canonical_endpoint_catalogue.v4
+    catalogue_id: grit42-canonical-endpoints-2026-09-17-v4
+    sha256: 8ef29868c68b1b02f7dba9aa7790b70c046d4898aa04b3f3e784ea67ec7152e4

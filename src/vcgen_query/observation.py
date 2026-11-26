@@ -25,7 +25,7 @@ is numerically usable without re-parsing.
 
 from __future__ import annotations
 
-from collections import defaultdict
+from collections import Counter, defaultdict
 from dataclasses import dataclass, field, fields
 from typing import Any, Sequence
 
@@ -195,6 +195,11 @@ def extract_observations(
     records: list[ObservationRecord] = []
     warnings: list[str] = []
     skipped_not_selected = 0
+    # Source-row accounting: every row read ends in exactly one of these outcomes.
+    rows_read = 0
+    rows_matched = 0
+    rows_lost: Counter[str] = Counter()
+    unit_status: Counter[str] = Counter()
 
     for domain, domain_endpoints in sorted(endpoints_by_domain.items()):
         columns = table_columns(con, domain.lower())
@@ -213,6 +218,7 @@ def extract_observations(
         for batch in fetch_batches(cursor):
             for raw in batch:
                 source_index += 1
+                rows_read += 1
                 row = dict(zip(domain_columns, raw))
                 study_id = str(row.get(STUDY_ID) or "")
                 subject_id = str(row.get(SUBJECT_ID) or "").strip()
@@ -222,19 +228,30 @@ def extract_observations(
                     skipped_not_selected += 1
                     continue
                 study_day = first_numeric_day(row, days)
-                matching = [
+                matched = [
                     endpoint
                     for endpoint in domain_endpoints
                     if endpoint_matches_row(endpoint, row, columns)
-                    and endpoint.applies_to_sex(context.sex)
-                    and (endpoint.day_window is None or endpoint.day_window.contains(study_day))
+                ]
+                applicable = [endpoint for endpoint in matched if endpoint.applies_to_sex(context.sex)]
+                matching = [
+                    endpoint
+                    for endpoint in applicable
+                    if endpoint.day_window is None or endpoint.day_window.contains(study_day)
                 ]
                 if not matching:
+                    rows_lost[
+                        "no_endpoint_match" if not matched
+                        else "sex_not_applicable" if not applicable
+                        else "outside_day_window"
+                    ] += 1
                     continue
+                rows_matched += 1
                 parsed = parse_result(domain, row, domain_columns)
                 measurement = measurement_context(domain, row, domain_columns, parsed_result=parsed)
                 order = source_order_key(domain, row, stable_index=source_index)
                 for endpoint in matching:
+                    unit_status[_unit_status(endpoint, measurement["unit"])] += 1
                     identity = measurement_identity(
                         domain,
                         row,
@@ -284,6 +301,16 @@ def extract_observations(
         "endpoint_count": len(endpoints),
         "domain_count": len(endpoints_by_domain),
         "skipped_not_selected": skipped_not_selected,
+        "source_rows_read": rows_read,
+        "source_rows_matched": rows_matched,
+        "source_rows_no_endpoint_match": rows_lost["no_endpoint_match"],
+        "source_rows_sex_not_applicable": rows_lost["sex_not_applicable"],
+        "source_rows_outside_day_window": rows_lost["outside_day_window"],
+        # Records keep their source unit; no conversion is applied at this stage.
+        "records_unit_canonical": unit_status["canonical"],
+        "records_unit_not_canonical": unit_status["not_canonical"],
+        "records_unit_missing": unit_status["missing"],
+        "records_without_canonical_unit": unit_status["no_canonical_unit"],
     }
     return ObservationResult(
         records=tuple(records),
@@ -294,6 +321,21 @@ def extract_observations(
 
 
 # --- endpoint matching helpers (ported from the host extraction layer) -----
+
+
+def _unit_status(endpoint: EndpointSpec, unit: str | None) -> str:
+    """Classify a record unit against the endpoint's canonical unit (no conversion)."""
+
+    if endpoint.target_unit is None:
+        return "no_canonical_unit"
+    if unit is None:
+        return "missing"
+    if unit == endpoint.target_unit or any(
+        rule.source_unit == unit and rule.scale == 1 and rule.offset == 0
+        for rule in endpoint.compiled_unit_rules
+    ):
+        return "canonical"
+    return "not_canonical"
 
 
 def _endpoint_filtered_cursor(

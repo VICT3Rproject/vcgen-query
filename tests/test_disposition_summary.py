@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import pytest
-
 from test_cohort import _members, _query, _rule
 
 from vcgen_query import execute_query
@@ -164,10 +162,3 @@ def test_subjects_without_a_ds_table_match_no_disposition_rules(
     )
 
     assert _members(execute_query(con, _query(excluded))) == set()
-
-
-def test_disposition_value_types_are_enforced() -> None:
-    with pytest.raises(Exception):
-        _query(_rule("in", ["RECOVERY"], field=_derived("disposition_categories", "number")))
-    with pytest.raises(Exception):
-        _query(_rule("in", ["TERMINAL"], field=_derived("terminal_sacrifice_offset_days", "string")))

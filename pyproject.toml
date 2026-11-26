@@ -50,7 +50,6 @@ packages = ["src/vcgen_query"]
 [tool.hatch.build.targets.wheel.force-include]
 # Keep the editable notebook sources in the wheel. Do not include the complete
 # directory: local SEND extracts use ``.vcgen_query_cache`` below it.
-"notebooks/01_gurjanov_28d_generation_core.ipynb" = "vcgen_query/notebooks/01_gurjanov_28d_generation_core.ipynb"
 "notebooks/02_editable_cohort_query.ipynb" = "vcgen_query/notebooks/02_editable_cohort_query.ipynb"
 "GRIT42_SAVED_QUERY_GUIDE.md" = "vcgen_query/GRIT42_SAVED_QUERY_GUIDE.md"
 "GRIT42_MEMBERSHIP_PARITY.md" = "vcgen_query/GRIT42_MEMBERSHIP_PARITY.md"
@@ -60,7 +59,6 @@ include = [
     "/.vscode/settings.json",
     "/GRIT42_SAVED_QUERY_GUIDE.md",
     "/GRIT42_MEMBERSHIP_PARITY.md",
-    "/notebooks/01_gurjanov_28d_generation_core.ipynb",
     "/notebooks/02_editable_cohort_query.ipynb",
     "/src/vcgen_query",
     "/README.md",

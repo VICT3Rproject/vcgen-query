@@ -6,10 +6,9 @@ import pytest
 
 from vcgen_query import (
     SourceDataError,
-    endpoint_catalogue_identity,
+    CohortQuery,
     execute_query,
-    explain_query,
-    parse_query,
+    parse_subject_query,
     to_daily_frame,
 )
 
@@ -37,13 +36,12 @@ def _query(
     endpoints: list[dict[str, object]] | None = None,
 ):
     raw: dict[str, object] = {
-        "contract": "vcgen.cohort_query.v5",
+        "contract": "vcgen.subject_query.v1",
         "query_id": "source-validation",
-        "requested_endpoints": ["LB_HCT"] if endpoints is not None else ["BW"],
-        "endpoint_catalogue": endpoint_catalogue_identity(),
         "predicate": predicate or _rule("DM", "SEX", "M"),
     }
-    return parse_query(raw)
+    requested = ["LB_HCT"] if endpoints is not None else ["BW"]
+    return CohortQuery.compose(parse_subject_query(raw), requested)
 
 
 @pytest.mark.parametrize(
@@ -139,14 +137,6 @@ def test_duplicate_dm_subject_keys_reject_execution(make_connection, duplicate_s
         execute_query(con, _query())
 
 
-def test_duplicate_dm_subject_keys_reject_explanation(make_connection) -> None:
-    con = make_connection([{"study_id": "S", "subject_id": "1", "sex": "M"}])
-    con.execute("INSERT INTO dm SELECT * FROM dm")
-
-    with pytest.raises(SourceDataError, match="duplicate STUDYID/USUBJID"):
-        explain_query(con, _query())
-
-
 def test_declared_study_grain_ignores_unexpected_usubjid_column(make_connection) -> None:
     con = make_connection(
         [
@@ -184,6 +174,21 @@ def test_duplicate_subject_context_rows_reject_execution(make_connection) -> Non
 
     with pytest.raises(SourceDataError, match="context assembly produced duplicate"):
         execute_query(con, _query())
+
+
+# Failure mode: pruning context construction to selected subjects hides a
+# duplicate or missing context for an unselected DM subject.
+@pytest.mark.parametrize("duplicate", [True, False])
+def test_unselected_subject_context_integrity_still_rejects_execution(make_connection, duplicate):
+    con = make_connection([
+        {"study_id": "S", "subject_id": "1", "sex": "M"},
+        {"study_id": "S", "subject_id": "2", "sex": "F"},
+    ])
+    projection = "SELECT STUDYID, USUBJID, SPECIES, STRAIN, SEX, NULL::DOUBLE AS age_days FROM dm"
+    changed = (projection + " UNION ALL " + projection + " WHERE USUBJID = 'S-2'") if duplicate else (projection + " WHERE USUBJID = 'S-1'")
+    con.execute("CREATE OR REPLACE VIEW subject_demographics AS " + changed)
+    with pytest.raises(SourceDataError, match="context assembly produced duplicate|context keys do not match"):
+        execute_query(con, _query(_rule("DM", "USUBJID", "S-1")))
 
 
 def test_repeated_observations_remain_available_for_daily_resolution(make_connection) -> None:

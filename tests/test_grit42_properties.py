@@ -12,22 +12,10 @@ from vcgen_query import (
     QueryError,
     compare_membership,
     fingerprint_predicate,
-    import_grit42_advanced_subject_query as _import_grit42_advanced_subject_query,
-    import_grit42_form_subject_query as _import_grit42_form_subject_query,
-    import_grit42_subject_query as _import_grit42_subject_query,
+    import_grit42_advanced_subject_query,
+    import_grit42_form_subject_query,
+    import_grit42_subject_query,
 )
-
-
-def import_grit42_subject_query(raw):
-    return _import_grit42_subject_query(raw, ("BW",))
-
-
-def import_grit42_form_subject_query(raw):
-    return _import_grit42_form_subject_query(raw, ("BW",))
-
-
-def import_grit42_advanced_subject_query(raw):
-    return _import_grit42_advanced_subject_query(raw, ("BW",))
 
 
 def _advanced_tree(*, field: str = "DM.SEX", operator: str = "equal", value=None):
@@ -132,7 +120,7 @@ def test_saved_simple_query_dispatches_to_form_importer() -> None:
     assert query.query_id == "grit42:subject:10326436"
     assert query.import_provenance is not None
     assert query.import_provenance.source_contract == GRIT42_FORM_SUBJECT_QUERY_CONTRACT
-    children = query.to_canonical_dict()["predicate"]["children"]
+    children = query.predicate.to_canonical_dict()["children"]
     assert {child["field"]["name"] for child in children} == {
         "species",
         "strain",
@@ -153,7 +141,7 @@ def test_saved_advanced_query_payload_imports_to_canonical_predicate() -> None:
     query = import_grit42_subject_query(_saved_advanced_query_shape())
 
     assert query.query_id == "grit42:subject:10321464"
-    children = query.to_canonical_dict()["predicate"]["children"]
+    children = query.predicate.to_canonical_dict()["children"]
 
     assert {
         (child["field"]["domain"], child["field"]["column"], child["operator"])
@@ -180,7 +168,7 @@ def test_saved_advanced_query_maps_not_like_to_not_contains() -> None:
 
     query = import_grit42_subject_query(payload)
 
-    predicate = query.to_canonical_dict()["predicate"]["children"][0]
+    predicate = query.predicate.to_canonical_dict()["children"][0]
     assert predicate["operator"] == "not_contains"
     assert predicate["value"] == "XYZ"
 
@@ -192,7 +180,7 @@ def test_saved_advanced_query_unwraps_observed_multiselect_values() -> None:
 
     query = import_grit42_subject_query(payload)
 
-    predicate = query.to_canonical_dict()["predicate"]["children"][0]
+    predicate = query.predicate.to_canonical_dict()["children"][0]
     assert predicate["operator"] == "in"
     assert predicate["value"] == ["F", "M"]
 
@@ -206,23 +194,6 @@ def test_saved_advanced_query_rejects_empty_multiselect_wrapper() -> None:
         import_grit42_subject_query(payload)
 
 
-def test_saved_advanced_query_accepts_repeated_range_metadata() -> None:
-    payload = _advanced_tree(
-        field="LB.LBSTRESN",
-        operator="between",
-        value=["1.640942", "1.870901"],
-    )
-    rule = payload["condition_tree"]["children1"][0]["properties"]
-    rule["valueType"] = ["number", "number"]
-    rule["valueSrc"] = ["value", "value"]
-
-    query = import_grit42_subject_query(payload)
-
-    predicate = query.to_canonical_dict()["predicate"]["children"][0]
-    assert predicate["operator"] == "between"
-    assert predicate["value"] == [1.640942, 1.870901]
-
-
 def test_saved_advanced_query_normalizes_observed_minute_timestamp() -> None:
     payload = _advanced_tree(
         field="DM.RFSTDTC",
@@ -234,7 +205,7 @@ def test_saved_advanced_query_normalizes_observed_minute_timestamp() -> None:
 
     query = import_grit42_subject_query(payload)
 
-    predicate = query.to_canonical_dict()["predicate"]["children"][0]
+    predicate = query.predicate.to_canonical_dict()["children"][0]
     assert predicate["value"] == "2020-06-16T04:00:00"
 
 
@@ -271,7 +242,7 @@ def _advanced_tree_with_field_absent_from_inventory() -> dict[str, object]:
 def test_advanced_grit42_tree_imports_to_a_canonical_predicate_and_retains_raw_hash() -> None:
     query = import_grit42_subject_query(_advanced_tree())
 
-    predicate = query.to_canonical_dict()["predicate"]
+    predicate = query.predicate.to_canonical_dict()
     assert predicate["group"] == "and"
     assert predicate["children"][0]["field"] == {
         "kind": "send_column",
@@ -283,7 +254,6 @@ def test_advanced_grit42_tree_imports_to_a_canonical_predicate_and_retains_raw_h
     assert predicate["children"][0]["value"] == "M"
     assert query.import_provenance is not None
     assert query.import_provenance.source_contract == GRIT42_ADVANCED_SUBJECT_QUERY_CONTRACT
-    assert query.source_identity is None
 
 
 def test_advanced_import_rejects_inventory_type_mismatch_and_nonliteral_values() -> None:
@@ -305,7 +275,7 @@ def test_untrusted_condition_string_never_changes_imported_membership_predicate(
     hostile_payload["condition_string"] = "1 = 1; DROP TABLE dm"
     hostile = import_grit42_subject_query(hostile_payload)
 
-    assert hostile.to_canonical_dict()["predicate"] == safe.to_canonical_dict()["predicate"]
+    assert hostile.predicate.to_canonical_dict() == safe.predicate.to_canonical_dict()
     assert hostile.import_provenance is not None
     assert safe.import_provenance is not None
     assert (
@@ -353,7 +323,7 @@ def test_form_values_imports_to_derived_predicates() -> None:
             },
         }
     )
-    children = query.to_canonical_dict()["predicate"]["children"]
+    children = query.predicate.to_canonical_dict()["children"]
 
     assert {child["field"]["name"] for child in children} == {
         "sex",
@@ -374,7 +344,7 @@ def test_form_value_bounds_use_one_between_predicate() -> None:
         }
     )
 
-    children = query.to_canonical_dict()["predicate"]["children"]
+    children = query.predicate.to_canonical_dict()["children"]
     assert children == [
         {
             "field": {

@@ -76,7 +76,7 @@ def test_expanded_bank_covers_query_semantics() -> None:
     } == {"alt_and_ast": 2, "ast_and_any_numeric": 5}
 
     canonical = {
-        case.case_id: bank.query_for(case).to_canonical_dict()["predicate"] for case in bank.cases
+        case.case_id: bank.query_for(case).predicate.to_canonical_dict() for case in bank.cases
     }
     assert any(
         node.get("field", {}).get("value_type") == "datetime"
@@ -86,7 +86,7 @@ def test_expanded_bank_covers_query_semantics() -> None:
     operators = {
         node["operator"]
         for case in bank.cases
-        for node in nodes(bank.query_for(case).to_canonical_dict()["predicate"])
+        for node in nodes(bank.query_for(case).predicate.to_canonical_dict())
         if "operator" in node
     }
     assert {"contains", "not_contains", "starts_with", "ends_with"} <= operators

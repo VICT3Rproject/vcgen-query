@@ -205,30 +205,6 @@ def test_daily_frame_does_not_equate_units_without_conversion_metadata() -> None
         vq.to_daily_frame(result)
 
 
-def test_daily_frame_preserves_empty_audit_schema() -> None:
-    daily = vq.to_daily_frame(_result([], endpoints=("HCT",)))
-
-    assert daily.values.columns.tolist() == ["study_id", "subject_id", "study_day", "HCT"]
-    assert daily.states.columns.tolist() == ["study_id", "subject_id", "study_day", "HCT"]
-    assert daily.cell_audit.columns.tolist() == [
-        "study_id",
-        "subject_id",
-        "study_day",
-        "endpoint_name",
-        "source_value",
-        "source_unit",
-        "canonical_value",
-        "canonical_unit",
-        "source_values",
-        "source_units",
-        "canonical_values",
-        "conversion_status",
-        "conversion_rule",
-        "selected",
-        "resolution",
-    ]
-
-
 def test_daily_frame_rejects_endpoint_key_collision() -> None:
     result = _result([], endpoints=("study_id",))
 

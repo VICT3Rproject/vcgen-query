@@ -166,24 +166,25 @@ import vcgen_query as vq
 raw_path = Path("tmp/grit42-queries/grit42-subject-query-10321464.json")
 saved_query = json.loads(raw_path.read_text(encoding="utf-8"))
 
-query = vq.import_grit42_subject_query(saved_query, ["BW", "LB_HCT"])
+query = vq.import_grit42_subject_query(saved_query)
 
 print(query.query_id)
 print(query.import_provenance.source_contract)
 print(query.import_provenance.source_payload_sha256)
 ```
 
-The VCGen service accepts the resulting `vcgen.cohort_query.v5` document, not
-the raw Grit42 record. Serialize `query.to_canonical_dict()` as JSON or YAML for
-service upload. Keep the same ordered `requested_endpoints` list in the
-parallel service request field.
+The VCGen service accepts the resulting `vcgen.subject_query.v1` document, not
+the raw Grit42 record. Serialize `query.to_dict()` as JSON or YAML for service
+upload. Put the ordered endpoint selection in the request's own
+`requested_endpoints` field.
 
 Use `import_grit42_subject_query()` for the raw VICT3R response. Do not pass
-that response to `load_query()`. `load_query()` reads the local
-`vcgen.cohort_query.v5` format, not a VICT3R API record.
+that response to `load_subject_query()`, which reads the local
+`vcgen.subject_query.v1` format, not a VICT3R API record.
 
-The imported filter selects subjects. The second argument is the required,
-ordered set of canonical output endpoint names. Source selectors, units,
+The imported query selects subjects only. Its membership is the Grit42 parity
+checkpoint. Endpoint selection is a later stage:
+`vq.CohortQuery.compose(query, ["BW", "LB_HCT"])`. Source selectors, units,
 specimen rules, and display facts come from the package endpoint catalogue.
 Predicate endpoint references do not become outputs unless they are also in
 the requested set.
