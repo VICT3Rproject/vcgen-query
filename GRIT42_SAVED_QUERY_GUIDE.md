@@ -174,9 +174,9 @@ print(query.import_provenance.source_contract)
 print(query.import_provenance.source_payload_sha256)
 ```
 
-To send the query to the VCG Service, serialize `query.to_dict()` as JSON or
-YAML. The service does not accept the raw Grit42 record; see the
-[request contract](../../docs/service/README.md).
+To pass the query to a caller that accepts `vcgen.subject_query.v1`, serialize
+`query.to_dict()` as JSON or YAML. Do not pass the raw Grit42 record to such a
+caller.
 
 Use `import_grit42_subject_query()` for the raw VICT3R response. Do not pass
 that response to `load_subject_query()`, which reads the local

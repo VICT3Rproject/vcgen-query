@@ -4,20 +4,13 @@
 measurements as pandas DataFrames. It accepts local VCGen queries and saved
 Grit42 queries. It does not train models or generate virtual controls.
 
-**Status:** public alpha (`0.4.0a0`).
+**Status:** public alpha (`0.5.0a0`).
 
 ## Vocabulary
 
-The [glossary](../../GLOSSARY.md) defines the domain terms. These terms are
-specific to this package:
-
-| Term | Meaning in this package |
-|---|---|
-| SEND | Standard for Exchange of Nonclinical Data. SEND stores study data in named tables called domains: `DM` holds subject information, `BW` body weight, `LB` laboratory results, `TS` study summaries. A subject is one animal in a source study. |
-| Predicate | The filter rules of a subject query. |
-| Observation | One recorded measurement for one subject. |
-| Grit42 | The VICT3R system that stores SEND data and supports saved subject queries. |
-| UCUM | The Unified Code for Units of Measure, used to identify units and valid conversions. |
+The [glossary](GLOSSARY.md) defines the domain terms of this package: SEND,
+subject query, predicate, membership, observation, endpoint, endpoint
+catalogue, catalogue lock, data decision, and others.
 
 ## Install
 
@@ -26,9 +19,9 @@ repository. Pin the release tag so that a later change to `main` cannot change
 the installed package:
 
 ```bash
-python -m pip install "vcgen-query @ git+https://github.com/VICT3Rproject/vcgen-query.git@v0.4.0a0"
+python -m pip install "vcgen-query @ git+https://github.com/VICT3Rproject/vcgen-query.git@v0.5.0a0"
 # or, in a uv project
-uv add "vcgen-query @ git+https://github.com/VICT3Rproject/vcgen-query.git@v0.4.0a0"
+uv add "vcgen-query @ git+https://github.com/VICT3Rproject/vcgen-query.git@v0.5.0a0"
 ```
 
 For development, clone `https://github.com/VICT3Rproject/vcgen-query.git` and
@@ -84,9 +77,8 @@ It is not a UV package cache and is not part of a wheel or source distribution.
 ## Define a query
 
 A cohort query is an ordered list of stage blocks. Each block carries display
-metadata (`info`: id, name, kind, origin, description) and its parameters. The
-stages, the stage records, and the curated exclusions are in
-[Query pipeline stages](../../docs/query_pipeline_stages.md). The query library
+metadata (`info`: id, name, kind, origin, description) and its parameters, and
+each block writes one stage record into the query trace. The query library
 runs four blocks: `SubjectQuery` (`vcgen.subject_query.v1`), `StudyExclusion`
 (optional), `EndpointExclusion` (optional), and `EndpointObservations`.
 The `SubjectQuery` block is the Grit42-compatible layer: the package keeps it
@@ -144,15 +136,16 @@ Predicate groups keep their submitted child order, so explanation node paths
 match the document. Fingerprints use an order-free canonical form, so a
 reordered predicate has the same fingerprint.
 
-Endpoint names are uppercase canonical identifiers from the locked endpoint
-catalogue (see [`src/vcgen_query/data/README.md`](src/vcgen_query/data/README.md)).
+Endpoint names are uppercase canonical identifiers from the active endpoint
+catalogue. The package bundles one locked endpoint catalogue; a caller can name
+another one ([endpoint catalogue and data decisions](src/vcgen_query/data/README.md#endpoint-catalogue-and-data-decisions)).
 A request must contain at least one unique name. Empty does not mean all. SEND
 predicate domains, columns, and value types must exist in the Grit42 column
 catalogue. Raw predicate columns do not become output endpoints.
 
 ### Source matching by the endpoint catalogue
 
-The query YAML does not define source selectors. The locked endpoint catalogue stores
+The query YAML does not define source selectors. The endpoint catalogue stores
 each endpoint's domain, test aliases, specimen and method rules, source units,
 canonical UCUM target unit, display label, primitive or deterministic-derived
 methodology, and provenance. Timing and parent-alignment choices belong to the
@@ -316,7 +309,7 @@ import, and run a saved query.
 | Resource | Use |
 |---|---|
 | [`all_subjects.yaml`](src/vcgen_query/data/examples/all_subjects.yaml) | Select every subject. |
-| [`wistar_han_28d_cohort.yaml`](src/vcgen_query/data/examples/wistar_han_28d_cohort.yaml) | A broad 28-day Wistar Han subject query. |
+| [`wistar_han_28d_subjects.yaml`](src/vcgen_query/data/examples/wistar_han_28d_subjects.yaml) | A broad 28-day Wistar Han subject query. |
 | [`wistar_han_28d_with_observations.yaml`](src/vcgen_query/data/examples/wistar_han_28d_with_observations.yaml) | A cohort query (v7): the broad 28-day Wistar Han subject query, then body weight and haematocrit. |
 | [`wistar_han_28d_historical.yaml`](src/vcgen_query/data/queries/wistar_han_28d_historical.yaml) | A cohort query (v7) that finds candidate Wistar Han studies for source acquisition. |
 | [`hosted_debug_wistar_han_28d.yaml`](src/vcgen_query/data/queries/hosted_debug_wistar_han_28d.yaml) | The subject query compiled from the checked-in Grit42 form fixture. |
@@ -332,8 +325,7 @@ Files under `data/examples` and `data/queries` are local query documents. Load
 a `vcgen.subject_query.v1` file with `load_subject_query()` and a
 `vcgen.cohort_query.v7` file with `load_cohort_query()`. Files under
 `data/saved_grit42_queries` are Grit42 source records for
-`import_grit42_subject_query()` only. The [VCG Service request
-contract](../../docs/service/README.md) does not accept them.
+`import_grit42_subject_query()` only; they are not query documents.
 
 The notebook uses a study-specific day 21-35 terminal window only for its
 display table. It does not remove or change observations in the query result.

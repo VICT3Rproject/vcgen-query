@@ -1,6 +1,6 @@
 # Repository Guidelines
 
-This package is public alpha software. Keep its runtime dependency set small (`pyproject.toml`). Scientific modelling belongs in the parent project, not this package. The [README](README.md) owns the public API and query semantics.
+This package is public alpha software. Keep its runtime dependency set small (`pyproject.toml`). Scientific modelling belongs in the caller, not this package. The [README](README.md) owns the public API and query semantics; the [glossary](GLOSSARY.md) owns the domain terms. Package docs do not name a specific caller.
 
 ## Architecture & Data Flow
 
@@ -9,8 +9,8 @@ query YAML/JSON or Grit42 record
   -> config.py / contract.py / query.py / grit42.py (load, import, validate)
   -> result.evaluate_membership() evaluates the subject predicate (or the caller loads a cached
      PredicateEvaluation); result.execute_query(membership=...) never evaluates it. It runs
-     the stage blocks in order and records a trace. The stage order is in
-     docs/query_pipeline_stages.md of the parent repository.
+     the stage blocks in order and records a trace. The stage order is `_STAGE_STEPS`
+     in result.py.
   -> duckdb.py (open ZIP, CSV directory, or injected connection)
   -> set_execution.py (compile predicates to temporary subject-key relations)
   -> cohort.py (build subject and study context)
@@ -32,7 +32,7 @@ State is local and synchronous: frozen dataclasses plus per-execution DuckDB tem
 ## Key Directories
 
 - `src/vcgen_query/`: library implementation and public API.
-- `src/vcgen_query/data/`: bundled schemas, query documents, and reviewed tables; `src/vcgen_query/data/README.md` indexes them. The endpoint catalogue and the data decisions are not here.
+- `src/vcgen_query/data/`: bundled schemas, query documents, reviewed tables, and the bundled endpoint catalogue (`endpoint_catalogue/catalogue.json.gz`, the gzip of the exact bytes of one locked endpoint catalogue); `src/vcgen_query/data/README.md` indexes them. The package ships no data decisions.
 - `tests/`: flat, behavior-oriented pytest suite with synthetic SEND data.
 - `tests/fixtures/`: durable external golden data, currently including UCUM comparisons.
 - `notebooks/`: the executable user example `02_editable_cohort_query.ipynb`, which the wheel includes. No test executes it.
@@ -54,7 +54,7 @@ uv run python scripts/audit_release_artifacts.py dist/*
 
 There is no installed CLI for normal query execution. Use the Python API in the [README](README.md#getting-started).
 
-Regenerate the dated Grit42 endpoint catalogue only from the parent checkout layout:
+Regenerate the dated Grit42 endpoint catalogue only in a checkout that has `docs/send_column_lookup.csv` two directories above this package (the script reads it):
 
 ```bash
 uv run python scripts/build_grit42_endpoint_catalogue.py
@@ -67,7 +67,7 @@ uv run python scripts/build_grit42_endpoint_catalogue.py
 - Model validated contracts and result facts as typed, frozen dataclasses. Do not add mutable service containers or speculative interfaces.
 - Parse external input fail-closed. Raise `QueryError` for query/contract errors; preserve exception causes.
 - Record recoverable assumptions and warnings in receipts. Do not silently guess units, missing fields, source identity, or ambiguous measurements.
-- Keep the subject query exactly as submitted and keep fingerprints deterministic. Fingerprints and parity hashes depend on both ([Query pipeline stages](../../docs/query_pipeline_stages.md)).
+- Keep the subject query exactly as submitted and keep fingerprints deterministic. Fingerprints and parity hashes depend on both.
 - Keep endpoint selection out of the subject query. Add later query steps as stage blocks in `query.py` (register the class in `_STAGE_TYPES`, with `info` metadata) and a runner in `result.py` (`_STAGE_STEPS`).
 - Stream large endpoint tables with existing batch helpers. Do not materialize complete SEND domains without need.
 - Keep execution synchronous. Do not introduce async wrappers around local DuckDB or pandas work.

@@ -110,7 +110,7 @@ def test_predicate_fingerprint_ignores_child_order_and_is_stable_across_cutover(
         parse_subject_query(reordered).predicate
     )
     packaged = yaml.safe_load(
-        resources.files("vcgen_query").joinpath("data/examples/wistar_han_28d_cohort.yaml").read_text()
+        resources.files("vcgen_query").joinpath("data/examples/wistar_han_28d_subjects.yaml").read_text()
     )
     # Recorded after the route and dose frequency aliases (route_aliases.ex.v1.yaml,
     # dose_frequency_aliases.v1.yaml) joined the semantics of the `route` and

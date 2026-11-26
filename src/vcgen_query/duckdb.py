@@ -15,8 +15,7 @@ selection.
   per-subject aggregated sets so the canonical selectors use exact membership.
 * DuckDB is a required package dependency.
 
-Column constants come from the package-local :mod:`vcgen_query.send_columns`,
-not the host ``vcgen_ai.constants``.
+Column constants come from the package-local :mod:`vcgen_query.send_columns`.
 """
 
 from __future__ import annotations
@@ -450,8 +449,8 @@ def _package_source_digests() -> tuple[tuple[str, str], ...]:
 def _python_derived_identity() -> str:
     """Return the identity of the code and the active endpoint catalogue behind the Python tables.
 
-    The catalogue is not part of the package, and ``VCGEN_ENDPOINT_CATALOGUE`` can
-    name another one, so its identity is read at each call and never cached here.
+    The caller can name a locked endpoint catalogue instead of the bundled one
+    (``VCGEN_ENDPOINT_CATALOGUE``), so its identity is read at each call and never cached here.
     """
 
     from .endpoint_catalogue import endpoint_catalogue_identity

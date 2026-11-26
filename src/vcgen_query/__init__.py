@@ -102,7 +102,7 @@ from .identities import (
     SUBJECT_QUERY_CONTRACT,
 )
 
-__version__ = "0.4.0a0"
+__version__ = "0.5.0a0"
 __all__ = [
     "CanonicalOperator",
     "CohortQuery",

@@ -1,17 +1,17 @@
-"""Recorded decisions about source-data defects, applied during observation extraction.
+"""Data decisions: reviewed per-study corrections of one source archive, applied during observation extraction.
 
-Contract ``vcgen.data_decisions.v3``: the curate step of the parent project
-writes one ``data_decisions.yaml`` beside ``catalogue.json`` with the decisions
-of its rules and of the reviewed exceptions, by the endpoint names of that
-catalogue. ``load_data_decisions`` reads it through the catalogue lock
-(``load_locked_decisions``). The query never runs the rules; it reads static
-lists.
+Contract ``vcgen.data_decisions.v3``: the catalogue curation of a source archive
+writes one ``data_decisions.yaml`` beside its ``catalogue.json``, by the endpoint
+names of that catalogue. ``load_data_decisions`` reads the file that the caller
+names through the catalogue lock (``load_locked_decisions``). With the bundled
+endpoint catalogue there are no data decisions. The query never runs the rules;
+it reads static lists.
 
 Actions:
 
 A row with an unknown specimen (NO DATA, blank, unresolved) whose LBCAT is a
 category of another specimen panel of the catalogue takes no panel decision of
-this panel (plan C31): urine pH with NO DATA never becomes blood pH.
+this panel: urine pH with NO DATA never becomes blood pH.
 
 - ``impute_specimen``: rows of the cell with an unknown specimen (NO DATA,
   blank, unresolved) take ``value``, and so do rows of the classes in
@@ -56,7 +56,7 @@ from .query import StageWarning
 from .specimen import NOT_A_SPECIMEN, real_specimen_classes, specimen_matrix
 
 DATA_DECISIONS_CONTRACT = "vcgen.data_decisions.v3"
-# The curated decisions: an output of the curate step, beside catalogue.json.
+# The data decisions of a catalogue curation, beside its catalogue.json.
 DATA_DECISIONS_FILENAME = "data_decisions.yaml"
 DecisionAction = Literal["impute_specimen", "exclude_panel", "drop_rows", "drop_method_rows", "exclude_endpoint",
                          "reinterpret_unit"]
@@ -218,8 +218,8 @@ def data_decisions_from_mapping(
 ) -> DataDecisions:
     """Validate one decision document against ``catalogue``.
 
-    A document names the endpoints of the catalogue of its curate run, so
-    ``catalogue`` is that catalogue (the active catalogue when None).
+    A document names the endpoints of the catalogue of its catalogue curation,
+    so ``catalogue`` is that catalogue (the active catalogue when None).
     """
 
     if not isinstance(document, Mapping) or document.get("contract") != DATA_DECISIONS_CONTRACT:
@@ -373,20 +373,26 @@ def merge_data_decisions(
 
 @lru_cache(maxsize=1)
 def load_data_decisions() -> DataDecisions:
-    """The active decisions: the locked curate output beside the active catalogue. There is no packaged file."""
+    """The active data decisions: the locked ones beside the caller's catalogue, else none (bundled catalogue)."""
 
-    return load_locked_decisions(*decisions_location(), catalogue=load_endpoint_catalogue())
+    location = decisions_location()
+    if location is None:
+        return EMPTY_DATA_DECISIONS
+    return load_locked_decisions(*location, catalogue=load_endpoint_catalogue())
 
 
-def decisions_location() -> tuple[Path, Path]:
-    """The curated decisions and the catalogue lock: the decisions are the sibling of ``catalogue.json``."""
+def decisions_location() -> tuple[Path, Path] | None:
+    """The locked data decisions (the sibling of the caller's ``catalogue.json``) and the catalogue lock."""
 
-    catalogue, lock = catalogue_location()
+    location = catalogue_location()
+    if location is None:
+        return None
+    catalogue, lock = location
     return catalogue.with_name(DATA_DECISIONS_FILENAME), lock
 
 
 def load_locked_decisions(path: Path, lock: Path, *, catalogue: EndpointCatalogue | None = None) -> DataDecisions:
-    """Read the curated decisions only when their md5 (their DVC identity) is the lock's (C27); no fallback.
+    """Read the data decisions only when their md5 is the one of the catalogue lock; no fallback.
 
     The decisions are validated against ``catalogue``, which the caller has loaded from the locked
     ``catalogue.json`` beside them (``load_data_decisions`` passes the active, shared one). Without it the
@@ -394,7 +400,7 @@ def load_locked_decisions(path: Path, lock: Path, *, catalogue: EndpointCatalogu
     """
 
     if not path.is_file():
-        raise QueryError(f"Data decisions {path} are missing; get them with dvc pull.")
+        raise QueryError(f"Data decisions {path} are missing.")
     try:
         expected = yaml.safe_load(lock.read_text(encoding="utf-8"))["outputs"][DATA_DECISIONS_FILENAME]
     except (OSError, KeyError, TypeError) as error:

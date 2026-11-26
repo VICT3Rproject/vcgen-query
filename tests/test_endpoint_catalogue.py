@@ -6,13 +6,13 @@ import json
 import pytest
 
 from vcgen_query import endpoint_catalogue_from_mapping
-from vcgen_query.endpoint_catalogue import catalogue_location
+from vcgen_query.endpoint_catalogue import bundled_catalogue_bytes
 
 
 def _payload() -> dict[str, object]:
-    """The locked catalogue of the source root, as a mapping to change."""
+    """The bundled endpoint catalogue, as a mapping to change."""
 
-    return json.loads(catalogue_location()[0].read_text(encoding="utf-8"))
+    return json.loads(bundled_catalogue_bytes())
 
 
 def _compile(payload: dict[str, object]):
