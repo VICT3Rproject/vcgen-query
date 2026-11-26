@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "vcgen-query"
-version = "0.4.0a0"
+version = "0.5.0a0"
 description = "Local SEND cohort-query library for the VICT3R virtual-control project"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -53,11 +53,13 @@ packages = ["src/vcgen_query"]
 # directory: local SEND extracts use ``.vcgen_query_cache`` below it.
 "notebooks/02_editable_cohort_query.ipynb" = "vcgen_query/notebooks/02_editable_cohort_query.ipynb"
 "GRIT42_SAVED_QUERY_GUIDE.md" = "vcgen_query/GRIT42_SAVED_QUERY_GUIDE.md"
+"GLOSSARY.md" = "vcgen_query/GLOSSARY.md"
 
 [tool.hatch.build.targets.sdist]
 include = [
     "/.vscode/settings.json",
     "/GRIT42_SAVED_QUERY_GUIDE.md",
+    "/GLOSSARY.md",
     "/notebooks/02_editable_cohort_query.ipynb",
     "/src/vcgen_query",
     "/README.md",

@@ -1,15 +1,13 @@
 """Shared fixtures and synthetic SEND builders for the vcgen-query test suite.
 
 Tests build small, deterministic SEND-like datasets in an in-memory DuckDB
-connection and run the derived views, mirroring the host project's fixture
-pattern but self-contained inside this package.
+connection and run the derived views.
 """
 
 from __future__ import annotations
 
 from collections.abc import Iterable, Mapping
 import os
-from pathlib import Path
 from typing import Any
 
 import pytest
@@ -17,10 +15,10 @@ import pytest
 from vcgen_query.duckdb import connect, create_derived_views
 from vcgen_query import CohortQuery, QueryResult, evaluate_membership, execute_query
 
-# The runtime reads the locked catalogue and decisions of the source root
-# (`data/catalogue/`, src/vcgen_ai/curation/catalogue/README.md "Runtime"). The tests can
-# run from this package directory, so they name the repository root.
-os.environ.setdefault("VCGEN_SOURCE_ROOT", str(Path(__file__).resolve().parents[3]))
+# The tests run on the bundled endpoint catalogue and no data decisions, also when the
+# environment of the caller names a locked endpoint catalogue.
+for _name in ("VCGEN_ENDPOINT_CATALOGUE", "VCGEN_ENDPOINT_CATALOGUE_LOCK"):
+    os.environ.pop(_name, None)
 
 
 def members(result) -> set[tuple[str, str]]:

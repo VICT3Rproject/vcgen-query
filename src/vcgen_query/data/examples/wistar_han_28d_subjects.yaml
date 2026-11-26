@@ -1,6 +1,6 @@
 # yaml-language-server: $schema=../vcgen.subject_query.v1.schema.json
 contract: vcgen.subject_query.v1
-query_id: wistar_han_28d_cohort
+query_id: wistar_han_28d_subjects
 predicate:
   group: and
   children:

@@ -40,13 +40,13 @@ import yaml
 from conftest import run_query
 from vcgen_query import CohortQuery, QueryError, parse_subject_query
 from vcgen_query.data_decisions import DataDecisions, data_decisions_from_mapping, load_locked_decisions
-from vcgen_query.endpoint_catalogue import catalogue_location
+from vcgen_query.endpoint_catalogue import bundled_catalogue_bytes
 
 REVIEWED = "dvc-md5:" + "a" * 32
 
 
 def _document(*decisions: dict[str, object]) -> dict[str, object]:
-    """A curated document; a decision without a source gets the rule source of the curate step."""
+    """A curated document; a decision without a source gets the rule source of the catalogue curation."""
 
     return {
         "contract": "vcgen.data_decisions.v3",
@@ -350,7 +350,7 @@ def test_malformed_curated_decisions_are_rejected(decision: dict[str, object], m
 
 def test_locked_decisions_must_be_the_locked_bytes(tmp_path) -> None:
     catalogue = tmp_path / "catalogue.json"
-    catalogue.write_bytes(catalogue_location()[0].read_bytes())
+    catalogue.write_bytes(bundled_catalogue_bytes())
     path = tmp_path / "data_decisions.yaml"
     path.write_text(yaml.safe_dump(_curated(SCALE, READING), sort_keys=False), encoding="utf-8")
     lock = tmp_path / "lock.yaml"

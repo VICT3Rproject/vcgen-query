@@ -1,12 +1,13 @@
-"""The runtime reads only the locked endpoint catalogue (C6, src/vcgen_ai/curation/catalogue/README.md).
+"""The runtime reads the endpoint catalogue that the caller locks, else the bundled one.
 
 Failure modes:
 
 - the catalogue file is missing, and the loader uses another catalogue;
 - one byte of the catalogue changed, and the loader accepts it;
 - the lock is missing or names no catalogue, and the loader accepts any file;
-- `VCGEN_ENDPOINT_CATALOGUE` is ignored, so a test or a service reads the
-  catalogue of the source root.
+- the caller names only the catalogue or only the lock, and the loader silently
+  uses the bundled catalogue and no data decisions;
+- the caller names a locked catalogue, and the loader uses the bundled one.
 """
 
 from __future__ import annotations
@@ -18,21 +19,38 @@ import pytest
 import yaml
 
 from vcgen_query.contract_helpers import QueryError
-from vcgen_query.endpoint_catalogue import catalogue_location, load_locked_catalogue
+from vcgen_query.data_decisions import EMPTY_DATA_DECISIONS, load_data_decisions
+from vcgen_query.endpoint_catalogue import (
+    bundled_catalogue_bytes,
+    catalogue_location,
+    load_endpoint_catalogue,
+    load_locked_catalogue,
+)
 
-# A valid catalogue to lock (the locked catalogue of the source root); the content does not matter to the loader.
-CATALOGUE = catalogue_location()[0].read_bytes()
+# A valid catalogue to lock; the content does not matter to the loader.
+CATALOGUE = bundled_catalogue_bytes()
 
 
 def _locked(root: Path, raw: bytes = CATALOGUE) -> tuple[Path, Path]:
-    catalogue = root / "data/catalogue/catalogue.json"
-    lock = root / "config/curation/catalogue/lock.yaml"
-    catalogue.parent.mkdir(parents=True)
-    lock.parent.mkdir(parents=True)
+    catalogue = root / "catalogue.json"
+    lock = root / "lock.yaml"
     catalogue.write_bytes(raw)
     lock.write_text(yaml.safe_dump({"contract": "vcgen.catalogue_lock.v1",
                                     "outputs": {"catalogue.json": hashlib.md5(CATALOGUE).hexdigest()}}))
     return catalogue, lock
+
+
+@pytest.fixture
+def active_catalogue(monkeypatch):
+    """Start with no caller catalogue, and clear the per-process catalogue and decisions around the test."""
+
+    monkeypatch.delenv("VCGEN_ENDPOINT_CATALOGUE", raising=False)
+    monkeypatch.delenv("VCGEN_ENDPOINT_CATALOGUE_LOCK", raising=False)
+    load_endpoint_catalogue.cache_clear()
+    load_data_decisions.cache_clear()
+    yield
+    load_endpoint_catalogue.cache_clear()
+    load_data_decisions.cache_clear()
 
 
 def test_the_locked_catalogue_loads(tmp_path):
@@ -48,7 +66,7 @@ def test_a_changed_byte_stops_the_loader(tmp_path):
 
 def test_a_missing_catalogue_or_lock_stops_the_loader(tmp_path):
     catalogue, lock = _locked(tmp_path)
-    with pytest.raises(QueryError, match="dvc pull"):
+    with pytest.raises(QueryError, match="is missing"):
         load_locked_catalogue(catalogue.with_name("missing.json"), lock)
     with pytest.raises(QueryError, match="lock"):
         load_locked_catalogue(catalogue, lock.with_name("missing.yaml"))
@@ -57,12 +75,27 @@ def test_a_missing_catalogue_or_lock_stops_the_loader(tmp_path):
         load_locked_catalogue(catalogue, lock)
 
 
-def test_the_location_follows_the_environment(tmp_path, monkeypatch):
-    monkeypatch.setenv("VCGEN_SOURCE_ROOT", str(tmp_path))
-    monkeypatch.delenv("VCGEN_ENDPOINT_CATALOGUE", raising=False)
-    monkeypatch.delenv("VCGEN_ENDPOINT_CATALOGUE_LOCK", raising=False)
-    assert catalogue_location() == (tmp_path / "data/catalogue/catalogue.json",
-                                    tmp_path / "config/curation/catalogue/lock.yaml")
-    monkeypatch.setenv("VCGEN_ENDPOINT_CATALOGUE", str(tmp_path / "a.json"))
-    monkeypatch.setenv("VCGEN_ENDPOINT_CATALOGUE_LOCK", str(tmp_path / "a.yaml"))
-    assert catalogue_location() == (tmp_path / "a.json", tmp_path / "a.yaml")
+@pytest.mark.parametrize("name", ["VCGEN_ENDPOINT_CATALOGUE", "VCGEN_ENDPOINT_CATALOGUE_LOCK"])
+def test_a_half_named_catalogue_is_refused(tmp_path, monkeypatch, active_catalogue, name):
+    monkeypatch.setenv(name, str(tmp_path / "named"))
+    with pytest.raises(QueryError, match="Set both"):
+        load_endpoint_catalogue()
+    with pytest.raises(QueryError, match="Set both"):
+        load_data_decisions()
+
+
+def test_the_caller_locked_catalogue_replaces_the_bundled_one(tmp_path, monkeypatch, active_catalogue):
+    catalogue, lock = _locked(tmp_path, CATALOGUE + b"\n")
+    lock.write_text(yaml.safe_dump({"outputs": {"catalogue.json": hashlib.md5(CATALOGUE + b"\n").hexdigest()}}))
+    monkeypatch.setenv("VCGEN_ENDPOINT_CATALOGUE", str(catalogue))
+    monkeypatch.setenv("VCGEN_ENDPOINT_CATALOGUE_LOCK", str(lock))
+    assert catalogue_location() == (catalogue, lock)
+    assert load_endpoint_catalogue().identity.md5 == hashlib.md5(CATALOGUE + b"\n").hexdigest()
+    with pytest.raises(QueryError, match="Data decisions .* are missing"):
+        load_data_decisions()
+
+
+def test_without_a_caller_catalogue_the_bundled_one_has_no_data_decisions(active_catalogue):
+    assert catalogue_location() is None
+    assert load_endpoint_catalogue().identity.md5 == hashlib.md5(CATALOGUE).hexdigest()
+    assert load_data_decisions() is EMPTY_DATA_DECISIONS

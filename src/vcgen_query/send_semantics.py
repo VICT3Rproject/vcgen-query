@@ -1,6 +1,6 @@
 """Central SEND-like column and endpoint parsing helpers.
 
-This module is a dependency-free port of the host project's SEND semantics. It
+This module holds the SEND semantics of the package without dependencies. It
 classifies raw SEND result cells, derives measurement identities, and selects
 baseline records deterministically. It depends only on the standard library so
 that the contract and parsing layers remain usable without DuckDB or pandas.

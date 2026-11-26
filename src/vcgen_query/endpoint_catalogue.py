@@ -5,6 +5,8 @@ from __future__ import annotations
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from functools import lru_cache
+from importlib.resources import files
+import gzip
 import hashlib
 import json
 import math
@@ -23,11 +25,12 @@ from .unit_catalogue import unit_dimension, ratio_unit_scale
 
 
 ENDPOINT_CATALOGUE_CONTRACT = "vcgen.canonical_endpoint_catalogue.v6"
-# The locked catalogue: a curate run output in DVC, bound by its lock in Git.
+# A caller names a locked endpoint catalogue and its catalogue lock with both variables. Without them, the
+# package uses its bundled endpoint catalogue and no data decisions. The bundled file is the gzip of the exact
+# bytes of a locked catalogue, so its identity (the md5 of those bytes) is the one that the catalogue lock names.
 CATALOGUE_ENV = "VCGEN_ENDPOINT_CATALOGUE"
 CATALOGUE_LOCK_ENV = "VCGEN_ENDPOINT_CATALOGUE_LOCK"
-CATALOGUE_PATH = Path("data/catalogue/catalogue.json")
-CATALOGUE_LOCK_PATH = Path("config/curation/catalogue/lock.yaml")
+BUNDLED_CATALOGUE = "data/endpoint_catalogue/catalogue.json.gz"
 
 
 @dataclass(frozen=True)
@@ -257,19 +260,26 @@ def _specimen_panels(value: Any) -> dict[str, SpecimenPanel]:
     return panels
 
 
-def catalogue_location() -> tuple[Path, Path]:
-    """The catalogue and its lock: the environment, else the paths under `VCGEN_SOURCE_ROOT` (else the cwd)."""
+def catalogue_location() -> tuple[Path, Path] | None:
+    """The locked endpoint catalogue and its catalogue lock that the caller names, or None for the bundled one.
 
-    root = Path(os.environ.get("VCGEN_SOURCE_ROOT") or Path.cwd())
-    return (Path(os.environ.get(CATALOGUE_ENV) or root / CATALOGUE_PATH),
-            Path(os.environ.get(CATALOGUE_LOCK_ENV) or root / CATALOGUE_LOCK_PATH))
+    A caller sets both ``VCGEN_ENDPOINT_CATALOGUE`` and ``VCGEN_ENDPOINT_CATALOGUE_LOCK``; one without the
+    other is refused, so a half-configured caller never falls back to the bundled endpoint catalogue.
+    """
+
+    catalogue, lock = os.environ.get(CATALOGUE_ENV), os.environ.get(CATALOGUE_LOCK_ENV)
+    if not catalogue and not lock:
+        return None
+    if not catalogue or not lock:
+        raise QueryError(f"Set both {CATALOGUE_ENV} and {CATALOGUE_LOCK_ENV}, or neither.")
+    return Path(catalogue), Path(lock)
 
 
 def load_locked_catalogue(catalogue: Path, lock: Path) -> EndpointCatalogue:
-    """Read the catalogue only when its md5 (its DVC identity) is the one of the lock (C6). There is no fallback."""
+    """Read the catalogue only when its md5 is the one of the catalogue lock. There is no fallback."""
 
     if not catalogue.is_file():
-        raise QueryError(f"Endpoint catalogue {catalogue} is missing; get it with dvc pull.")
+        raise QueryError(f"Endpoint catalogue {catalogue} is missing.")
     try:
         expected = yaml.safe_load(lock.read_text(encoding="utf-8"))["outputs"]["catalogue.json"]
     except (OSError, KeyError, TypeError) as error:
@@ -282,11 +292,23 @@ def load_locked_catalogue(catalogue: Path, lock: Path) -> EndpointCatalogue:
     return endpoint_catalogue_from_mapping(catalogue_mapping(json.loads(raw_bytes), "endpoint catalogue"), md5=digest)
 
 
+def bundled_catalogue_bytes() -> bytes:
+    """The bytes of the locked endpoint catalogue that the package bundles."""
+
+    return gzip.decompress(files("vcgen_query").joinpath(BUNDLED_CATALOGUE).read_bytes())
+
+
 @lru_cache(maxsize=1)
 def load_endpoint_catalogue() -> EndpointCatalogue:
-    """The active catalogue: the locked curate output (`catalogue_location`). There is no packaged catalogue."""
+    """The active endpoint catalogue: the locked one that the caller names (`catalogue_location`), else the bundled one."""
 
-    return load_locked_catalogue(*catalogue_location())
+    location = catalogue_location()
+    if location is not None:
+        return load_locked_catalogue(*location)
+    raw_bytes = bundled_catalogue_bytes()
+    return endpoint_catalogue_from_mapping(
+        catalogue_mapping(json.loads(raw_bytes), "endpoint catalogue"), md5=hashlib.md5(raw_bytes).hexdigest()
+    )
 
 
 def endpoint_catalogue_from_mapping(
